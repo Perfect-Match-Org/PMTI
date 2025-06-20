@@ -13,6 +13,31 @@ pnpm i
 pnpm dev
 ```
 
+## Code Architecture
+
+**Next.js 15 App Router Structure**:
+- Uses App Router with TypeScript
+- Server-side authentication with NextAuth.js
+- MongoDB with Mongoose (connection ready, models not yet implemented)
+- shadcn/ui component library with Radix UI primitives
+- Tailwind CSS v4 with CSS variables for theming
+
+**Path Aliases** (configured in tsconfig.json):
+```
+@/*           → ./src/*
+@components/* → ./src/components/*
+@ui/*         → ./src/components/ui/*
+@lib/*        → ./src/lib/*
+@db/*         → ./src/db/*
+@utils/*      → ./src/lib/utils/*
+```
+
+**Key Directories**:
+- `src/app/` - Next.js App Router pages and API routes
+- `src/components/ui/` - shadcn/ui component library
+- `src/lib/` - Utility functions
+- `src/db/` - Database models and controllers
+
 ## Contributing
 
 We welcome contributions to the Cornell Perfect Match repository. If you would like to contribute, please fork the
