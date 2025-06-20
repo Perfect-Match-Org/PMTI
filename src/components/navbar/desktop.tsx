@@ -16,13 +16,19 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
+import { navigationItems, type NavItem } from "./nav-config";
 
-export function Navbar() {
+export function DesktopNavbar() {
   const { data: session } = useSession();
 
+  const filteredNavItems = navigationItems.filter((item: NavItem) => {
+    if (item.requiresAuth && !session) return false;
+    return true;
+  });
+
   return (
-    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center px-12">
+    <nav className="hidden md:flex border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-16 items-center px-12 w-full">
         <div className="flex items-center space-x-4">
           <Link href="/" className="font-bold text-xl">
             PMTI
@@ -32,15 +38,21 @@ export function Navbar() {
         <div className="ml-auto flex items-center space-x-4">
           <NavigationMenu>
             <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link href="/" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
-                    Home
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+              {filteredNavItems.map((item) => (
+                <NavigationMenuItem key={item.href}>
+                  <NavigationMenuLink asChild>
+                    <Link
+                      href={item.href}
+                      className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50"
+                    >
+                      {item.label}
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
             </NavigationMenuList>
           </NavigationMenu>
+
           {session ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
