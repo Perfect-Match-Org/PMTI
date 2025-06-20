@@ -8,8 +8,9 @@ export default async function Home() {
   const session = await getServerSession(authOptions);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-background">
-      <Card className="w-full max-w-md shadow-lg">
+    <main className="container mx-auto py-8 px-4">
+      <div className="flex justify-center">
+        <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold tracking-tight">
             Welcome to PMTI
@@ -39,7 +40,8 @@ export default async function Home() {
           )}
           <AuthButtons />
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </main>
   );
 }
