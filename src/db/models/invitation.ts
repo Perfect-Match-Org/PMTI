@@ -69,20 +69,20 @@ invitationSchema.methods.isExpired = function (): boolean {
 };
 
 invitationSchema.methods.accept = function (sessionId: string) {
-  this.status = "accepted";
+  this.status = InvitationStatus.Accepted;
   this.sessionId = sessionId;
   return this.save();
 };
 
 invitationSchema.methods.decline = function () {
-  this.status = "declined";
+  this.status = InvitationStatus.Declined;
   return this.save();
 };
 
 // Auto-expire invitations after 30 minutes
 invitationSchema.methods.checkAndExpire = function () {
-  if (this.isExpired() && this.status === "pending") {
-    this.status = "expired";
+  if (this.isExpired() && this.status === InvitationStatus.Pending) {
+    this.status = InvitationStatus.Expired;
     return this.save();
   }
   return Promise.resolve(this);
