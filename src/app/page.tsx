@@ -14,7 +14,7 @@ export default async function Home() {
         <div className="container mx-auto px-12 h-[calc(100vh-4rem)] flex items-center">
           <div className="grid lg:grid-cols-2 gap-8 items-center w-full">
             {/* Left side - Text content */}
-            <div className="space-y-8">
+            <div className="space-y-8 pt-10 lg:pt-0">
               <div className="space-y-4">
                 <h1 className="text-5xl font-bold tracking-tight">Perfect Match Type Indicator</h1>
                 <p className="text-xl text-muted-foreground">

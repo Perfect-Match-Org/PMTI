@@ -16,7 +16,7 @@ export function TypesGrid({ onTypeClick }: TypesGridProps) {
 
   return (
     <section className="py-16 bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto px-4 md:px-12">
+      <div className="container mx-auto px-12">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold pb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Discover Your Couple Type
