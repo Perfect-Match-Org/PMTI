@@ -41,6 +41,9 @@
       "@utils/*": [
         "./src/lib/utils/*"
       ],
+      "@models": [
+        "./src/db/models"
+      ],
     }
   },
   "include": [
