@@ -1,5 +1,7 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import dbConnect from "@/lib/dbConnect";
+import User from "@/db/models/user";
 
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error(
@@ -26,10 +28,28 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user }) {
-      if (user.email && isValidCornellEmail(user.email)) {
-        return true;
+      if (!user.email || !isValidCornellEmail(user.email)) {
+        return false;
       }
-      return false;
+
+      try {
+        await dbConnect();
+
+        const existingUser = await User.findOne({ email: user.email });
+
+        if (!existingUser) {
+          await User.create({
+            email: user.email,
+            name: user.name || user.email.split("@")[0],
+            profilePicture: user.image,
+          });
+        }
+
+        return true;
+      } catch (error) {
+        console.error("Error creating user:", error);
+        return false;
+      }
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
