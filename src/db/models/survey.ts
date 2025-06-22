@@ -1,6 +1,7 @@
 import { Schema, model, models, Document, Types } from "mongoose";
 import { CoupleTypeCode, ScoreWeights } from "@/lib/constants/coupleTypes";
 import { RelationshipType } from "@/lib/constants/relationships";
+import { getQuestionById, QuestionType } from "@/lib/constants/questions";
 
 enum SurveyStatus {
   Started = "started",
@@ -85,6 +86,27 @@ const surveyResponseSchema = new Schema<ISurveyResponse>(
   },
   { _id: false }
 );
+
+// Validation for cooperative questions - both users must have same response
+surveyResponseSchema.pre('validate', function() {
+  const question = getQuestionById(this.questionId);
+  if (question && question.type === QuestionType.Cooperative) {
+    if (this.user1Response.selectedOption !== this.user2Response.selectedOption) {
+      throw new Error(`Cooperative question ${this.questionId} requires both users to have the same response`);
+    }
+  }
+  
+  // Validate that selected options exist for the question
+  if (question) {
+    const validOptions = question.options.map(opt => opt.id);
+    if (!validOptions.includes(this.user1Response.selectedOption)) {
+      throw new Error(`Invalid option ${this.user1Response.selectedOption} for question ${this.questionId}`);
+    }
+    if (!validOptions.includes(this.user2Response.selectedOption)) {
+      throw new Error(`Invalid option ${this.user2Response.selectedOption} for question ${this.questionId}`);
+    }
+  }
+});
 
 // Create a schema that matches the ScoreWeights interface structure
 const scoreWeightsSchema = new Schema(
