@@ -51,6 +51,9 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
+    async redirect({ url, baseUrl }) {
+      return baseUrl;
+    },
   },
   pages: { error: "/auth/error" },
   cookies: {
