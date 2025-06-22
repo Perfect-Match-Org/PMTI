@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
-import { Button } from "./ui/button";
+import { Button } from "./button";
 import { LogIn, LogOut } from "lucide-react";
 
 export function AuthButtons() {

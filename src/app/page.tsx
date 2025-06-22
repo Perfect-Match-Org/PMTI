@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./api/auth/[...nextauth]/route";
-import { AuthButtons } from "@/components/authButtons";
+import { AuthButtons } from "@ui/authButtons";
 import { Button } from "@/components/ui/button";
 import { TypesGrid } from "@/components/typesGrid";
 
