@@ -8,8 +8,16 @@ export interface QuestionOption {
   scores: ScoreWeights; // Uses same scoring system as couple types
 }
 
+export enum QuestionType {
+  Individual = "individual", // Each user answers separately in parallel
+  Cooperative = "cooperative", // Both users must collaborate to select one answer together
+}
+
 export interface Question {
   questionId: string; // Unique identifier like "Q001"
+
+  // Question type determines completion behavior
+  type: QuestionType;
 
   // Question content
   storyline: string; // The scenario text
@@ -23,6 +31,12 @@ export interface Question {
     user2: {
       question: string;
       context?: string;
+    };
+    // For cooperative questions, shared perspective
+    shared?: {
+      question: string;
+      context?: string;
+      instructions?: string; // Instructions for how to collaborate
     };
   };
 
@@ -43,6 +57,7 @@ export interface Question {
 export const SURVEY_QUESTIONS: Question[] = [
   {
     questionId: "Q001",
+    type: QuestionType.Individual,
     storyline:
       "It's Friday evening and you both just finished a long work week. You're both tired but want to spend quality time together.",
     perspectives: {
@@ -92,6 +107,7 @@ export const SURVEY_QUESTIONS: Question[] = [
 
   {
     questionId: "Q002",
+    type: QuestionType.Individual,
     storyline:
       "You're planning a vacation together. You have a week off and a decent budget, but you have different ideas about what would be fun.",
     perspectives: {
@@ -141,6 +157,7 @@ export const SURVEY_QUESTIONS: Question[] = [
 
   {
     questionId: "Q003",
+    type: QuestionType.Cooperative,
     storyline:
       "You're having a disagreement about something important to both of you. The conversation is getting a bit heated.",
     perspectives: {
@@ -151,6 +168,11 @@ export const SURVEY_QUESTIONS: Question[] = [
       user2: {
         question: "What's your approach when you disagree with someone you care about?",
         context: "Consider what helps you resolve differences constructively",
+      },
+      shared: {
+        question: "How should you both handle this disagreement together?",
+        context: "Discuss and agree on the best approach for both of you",
+        instructions: "Talk it through and select the option you both feel comfortable with",
       },
     },
     options: [
@@ -190,6 +212,7 @@ export const SURVEY_QUESTIONS: Question[] = [
 
   {
     questionId: "Q004",
+    type: QuestionType.Individual,
     storyline:
       "It's a typical weekend and you have no specific plans. You both have free time and energy to do whatever you want.",
     perspectives: {
@@ -239,6 +262,7 @@ export const SURVEY_QUESTIONS: Question[] = [
 
   {
     questionId: "Q005",
+    type: QuestionType.Cooperative,
     storyline:
       "You're talking about your future together and what you want your life to look like in 5-10 years.",
     perspectives: {
@@ -249,6 +273,11 @@ export const SURVEY_QUESTIONS: Question[] = [
       user2: {
         question: "What aspects of your future together excite you most?",
         context: "Consider what success looks like to you as a couple",
+      },
+      shared: {
+        question: "What's most important for your future together?",
+        context: "Discuss your individual visions and find common ground",
+        instructions: "Share your thoughts and agree on what represents both of your priorities",
       },
     },
     options: [
