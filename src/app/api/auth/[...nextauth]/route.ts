@@ -52,6 +52,18 @@ export const authOptions: NextAuthOptions = {
       }
     },
   },
+  pages: { error: "/auth/error" },
+  cookies: {
+    pkceCodeVerifier: {
+      name: "next-auth.pkce.code_verifier",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production", // Use secure cookie only in production (avoid HTTP warnings in dev)
+      },
+    },
+  },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
