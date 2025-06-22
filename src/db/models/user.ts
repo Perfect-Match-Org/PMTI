@@ -11,7 +11,6 @@ interface ISurveyHistory {
 export interface IUser extends Document {
   email: string;
   name: string;
-  profilePicture?: string;
   surveyHistory: ISurveyHistory[];
   totalSurveysTaken: number;
   preferences: {
@@ -63,9 +62,6 @@ const userSchema = new Schema<IUser>({
     type: String,
     required: true,
     trim: true,
-  },
-  profilePicture: {
-    type: String,
   },
   surveyHistory: [surveyHistorySchema],
   totalSurveysTaken: {
