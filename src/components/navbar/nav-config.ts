@@ -11,13 +11,8 @@ export const navigationItems: NavItem[] = [
     href: "/",
   },
   {
-    label: "Dashboard",
-    href: "/dashboard",
-    requiresAuth: true,
-  },
-  {
-    label: "Profile",
-    href: "/profile",
+    label: "Lobby",
+    href: "/lobby",
     requiresAuth: true,
   },
   {
