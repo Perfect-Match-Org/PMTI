@@ -10,7 +10,7 @@ export default async function Home() {
   return (
     <main>
       {/* Hero Section */}
-      <section className="min-h-[calc(100vh-4rem)]">
+      <section className="min-h-screen">
         <div className="container mx-auto px-12 h-[calc(100vh-4rem)] flex items-center">
           <div className="grid lg:grid-cols-2 gap-8 items-center w-full">
             {/* Left side - Text content */}
