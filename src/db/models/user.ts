@@ -78,7 +78,6 @@ const userSchema = new Schema<IUser>({
 });
 
 // Indexes for performance
-userSchema.index({ email: 1 });
 userSchema.index({ "surveyHistory.partnerId": 1 });
 
 // Methods
