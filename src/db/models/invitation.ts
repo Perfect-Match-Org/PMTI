@@ -58,8 +58,7 @@ const invitationSchema = new Schema<IInvitation>({
 
 // Indexes for performance
 invitationSchema.index({ fromUser: 1 });
-invitationSchema.index({ toEmail: 1 });
-invitationSchema.index({ status: 1 });
+invitationSchema.index({ toEmail: 1, status: 1 });
 invitationSchema.index({ expiresAt: 1 });
 invitationSchema.index({ sessionId: 1 });
 
