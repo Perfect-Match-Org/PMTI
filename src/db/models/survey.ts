@@ -210,7 +210,6 @@ const surveySchema = new Schema<ISurvey>({
 surveySchema.index({ "participants.user1": 1, "participants.user2": 1 });
 surveySchema.index({ completedAt: 1 });
 surveySchema.index({ "result.coupleType": 1 });
-surveySchema.index({ sessionId: 1 });
 surveySchema.index({ status: 1 });
 
 // Methods
