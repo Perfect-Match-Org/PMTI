@@ -1,4 +1,6 @@
 import { Schema, model, models, Document, Types } from "mongoose";
+import { RelationshipType } from "@/lib/constants/relationships";
+import { randomUUID } from "crypto";
 
 enum InvitationStatus {
   Pending = "pending",
@@ -10,6 +12,7 @@ export interface IInvitation extends Document {
   fromUser: Types.ObjectId;
   toEmail: string;
   status: InvitationStatus;
+  relationship: RelationshipType;
   expiresAt: Date;
   sentAt: Date;
   sessionId?: string; // Link to survey session once accepted
@@ -40,6 +43,11 @@ const invitationSchema = new Schema<IInvitation>({
     required: true,
     default: InvitationStatus.Pending,
   },
+  relationship: {
+    type: String,
+    enum: Object.values(RelationshipType),
+    required: true,
+  },
   expiresAt: {
     type: Date,
     required: true,
@@ -52,6 +60,7 @@ const invitationSchema = new Schema<IInvitation>({
   },
   sessionId: {
     type: String,
+    unique: true,
     // Will be set when invitation is accepted and survey session is created
   },
 });
@@ -67,10 +76,25 @@ invitationSchema.methods.isExpired = function (): boolean {
   return new Date() > this.expiresAt;
 };
 
-invitationSchema.methods.accept = function (sessionId: string) {
+invitationSchema.methods.accept = async function () {
   this.status = InvitationStatus.Accepted;
-  this.sessionId = sessionId;
-  return this.save();
+
+  // Retry up to 3 times in case of UUID collision (extremely rare)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    this.sessionId = `session_${randomUUID()}`;
+    try {
+      return await this.save();
+    } catch (error: any) {
+      // Check if it's a duplicate key error on sessionId
+      if (error.code === 11000 && error.keyPattern?.sessionId) {
+        if (attempt === 2) {
+          throw new Error("Failed to generate unique session ID after 3 attempts");
+        }
+        continue;
+      }
+      throw error;
+    }
+  }
 };
 
 invitationSchema.methods.decline = function () {
