@@ -1,4 +1,4 @@
-import { eq, sql, or } from 'drizzle-orm'
+import { eq, sql, or, inArray } from 'drizzle-orm'
 import { dbConnect } from '@/lib/dbConnect'
 import { users, surveyHistory, type User } from '@/db/schema'
 import { RelationshipType } from '@/lib/constants/relationships'
@@ -114,7 +114,7 @@ export async function getUserSurveyHistory(userEmail: string) {
       name: users.name
     })
     .from(users)
-    .where(or(...partnerEmails.map(email => eq(users.email, email))))
+    .where(inArray(users.email, partnerEmails))
 
   const partnerMap = new Map(partners.map(p => [p.email, p]))
 
