@@ -6,7 +6,14 @@
     "dev": "next dev --turbopack -H localhost -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "generate": "drizzle-kit generate",
+    "migrate:dev": "drizzle-kit migrate",
+    "migrate:prod": "drizzle-kit migrate --env production",
+    "lint": "next lint",
+    "supa:start": "supabase start",
+    "supa:stop": "supabase stop",
+    "supa:status": "supabase status",
+    "supa:reset": "supabase db reset"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -40,8 +47,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^16.5.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
+    "supabase": "^2.26.9",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.4",
     "typescript": "^5"
