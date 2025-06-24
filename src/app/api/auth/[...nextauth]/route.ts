@@ -1,7 +1,8 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import dbConnect from "@/lib/dbConnect";
-import User from "@/db/models/user";
+import { dbConnect } from "@/lib/dbConnect";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error(
@@ -33,15 +34,18 @@ export const authOptions: NextAuthOptions = {
       }
 
       try {
-        await dbConnect();
+        const db = await dbConnect();
 
-        const existingUser = await User.findOne({ email: user.email });
+        const existingUser = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, user.email))
+          .limit(1);
 
-        if (!existingUser) {
-          await User.create({
+        if (existingUser.length === 0) {
+          await db.insert(users).values({
             email: user.email,
             name: user.name || user.email.split("@")[0],
-            profilePicture: user.image,
           });
         }
 

@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import dbConnect from "@/lib/dbConnect";
-import Invitation from "@/db/models/invitation";
-import User from "@/db/models/user";
+import { getUserByEmail, getReceivedInvitations } from "@/db/services";
 
 export async function GET() {
   try {
@@ -11,23 +9,13 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await dbConnect();
-
-    const user = await User.findOne({ email: session.user.email });
+    const user = await getUserByEmail(session.user.email);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get received invitations
-    const receivedInvitations = await Invitation.find({
-      toEmail: session.user.email,
-      status: "pending",
-    })
-      .populate("fromUser", "name email")
-      .sort({ sentAt: -1 })
-      .limit(10); // Limit to 10 most recent invitations
-    // Assuming that no one will receive more than 10 invitations at a time
-    // Thus no pagination is needed
+    const receivedInvitations = await getReceivedInvitations(session.user.email, 10);
 
     return NextResponse.json({
       received: receivedInvitations,

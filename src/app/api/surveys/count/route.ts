@@ -1,19 +1,24 @@
 import { NextResponse } from "next/server";
-import dbConnect from "@/lib/dbConnect";
-import Survey from "@/db/models/survey";
+import { getSurveyCountByStatus } from "@/db/services";
+import { SurveyStatus, surveyStatusEnum } from "@/db/schema/survey";
 
 export async function GET(request: Request) {
   try {
-    await dbConnect();
-
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status");
+    const statusParam = searchParams.get("status");
 
-    const filter = status ? { status } : {};
-    const surveyCount = await Survey.countDocuments(filter);
+    let status: SurveyStatus | undefined;
+    if (statusParam) {
+      if (!Object.values(surveyStatusEnum).includes(statusParam as SurveyStatus)) {
+        return NextResponse.json({ error: "Invalid status parameter" }, { status: 400 });
+      }
+      status = statusParam as SurveyStatus;
+    }
+
+    const count = await getSurveyCountByStatus(status);
 
     return NextResponse.json({
-      count: surveyCount,
+      count,
     });
   } catch (error) {
     console.error("Error fetching survey data:", error);
