@@ -5,6 +5,10 @@ export * from "./invitation";
 export * from "./analytics";
 export * from "./feedback";
 
+// Export enums explicitly for drizzle ORM to recognize and generate types
+export { relationshipTypeEnum } from "@/lib/constants/relationships";
+export { coupleTypeEnum } from "@/lib/constants/coupleTypes";
+
 // Relations
 import { relations } from "drizzle-orm";
 import { users } from "./user";
