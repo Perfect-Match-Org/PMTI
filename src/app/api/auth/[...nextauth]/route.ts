@@ -1,8 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { dbConnect } from "@/lib/dbConnect";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { createOrUpdateUser } from "@/db/services/userService";
 
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error(
@@ -29,29 +27,15 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user }) {
-      if (!user.email || !isValidCornellEmail(user.email)) {
+      if (!user.email || !user.name || !isValidCornellEmail(user.email)) {
         return false;
       }
 
       try {
-        const db = await dbConnect();
-
-        const existingUser = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, user.email))
-          .limit(1);
-
-        if (existingUser.length === 0) {
-          await db.insert(users).values({
-            email: user.email,
-            name: user.name || user.email.split("@")[0],
-          });
-        }
-
+        await createOrUpdateUser(user.email, user.name);
         return true;
       } catch (error) {
-        console.error("Error creating user:", error);
+        console.error("Error creating/updating user:", error);
         return false;
       }
     },

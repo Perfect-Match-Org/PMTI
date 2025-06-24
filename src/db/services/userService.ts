@@ -7,15 +7,46 @@ import { RelationshipType } from '@/lib/constants/relationships'
  * Get user by email address
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const db = await dbConnect()
-  
+  const db = await dbConnect();
+
+  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+  return user || null;
+}
+
+/**
+ * Create or update user during authentication
+ * Optimized for the common case of existing registered users
+ */
+export async function createOrUpdateUser(email: string, name?: string): Promise<User> {
+  const db = await dbConnect();
+
+  const existingUser = await getUserByEmail(email);
+  if (existingUser?.hasRegistered) {
+    return existingUser;
+  }
+
+  // Only do UPSERT for new users or unregistered users
+  const actualName = name || email.split("@")[0];
+
   const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1)
-  
-  return user || null
+    .insert(users)
+    .values({
+      email,
+      name: actualName,
+      hasRegistered: true,
+    })
+    .onConflictDoUpdate({
+      // Case when user entry was created by an invitation but not registered
+      target: users.email,
+      set: {
+        name: actualName,
+        hasRegistered: true,
+      },
+    })
+    .returning();
+
+  return user;
 }
 
 /**
