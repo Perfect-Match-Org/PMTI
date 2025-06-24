@@ -1,42 +1,43 @@
-import mongoose, { Mongoose } from "mongoose";
+import { drizzle } from "drizzle-orm/postgres-js";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "@/db/schema";
 
 declare global {
-  var mongoose: {
-    conn: Mongoose | null;
-    promise: Promise<Mongoose> | null;
+  var drizzle: {
+    client: postgres.Sql | null;
+    db: PostgresJsDatabase<typeof schema> | null;
   };
 }
 
-const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/pmti?directConnection=true";
+const DATABASE_URL = process.env.DATABASE_URL;
 
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+if (!DATABASE_URL) {
+  throw new Error("Please define the DATABASE_URL environment variable inside .env.local");
 }
 
-let cached = global.mongoose;
+let cached = global.drizzle;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = global.drizzle = { client: null, db: null };
 }
 
-async function dbConnect() {
-  if (cached.conn) {
-    return cached.conn;
+export async function dbConnect(): Promise<PostgresJsDatabase<typeof schema>> {
+  if (cached.db && cached.client) {
+    return cached.db;
   }
 
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
+  if (!cached.client) {
+    cached.client = postgres(DATABASE_URL!, {
+      prepare: false,
+      max: 1,
     });
   }
-  cached.conn = await cached.promise;
-  console.log("Connected to MongoDB");
-  return cached.conn;
-}
 
-export default dbConnect;
+  if (!cached.db) {
+    cached.db = drizzle(cached.client, { schema });
+  }
+
+  console.log("Connected to Supabase PostgreSQL");
+  return cached.db;
+}
