@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { netid, relationship } = await request.json();
-    const toEmail = `${netid}@cornell.edu`;
+    const toEmail = netid === "PM" ? "cornell.perfectmatch@gmail.com" : `${netid}@cornell.edu`; // PM for debugging purposes
 
     // Check if user exists
     const fromUser = await getUserByEmail(session.user.email);
