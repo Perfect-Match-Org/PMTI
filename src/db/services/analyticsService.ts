@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { dbConnect } from "@/lib/dbConnect";
 import {
   coupleTypeAnalytics,
@@ -20,35 +20,21 @@ export async function incrementCoupleTypeFrequency(
 ): Promise<CoupleTypeAnalytic> {
   const db = await dbConnect();
 
-  // Try to update existing record first
-  const [existingRecord] = await db
-    .select()
-    .from(coupleTypeAnalytics)
-    .where(eq(coupleTypeAnalytics.typeCode, typeCode))
-    .limit(1);
+  const [record] = await db
+    .insert(coupleTypeAnalytics)
+    .values({
+      typeCode,
+      frequency: 1,
+    })
+    .onConflictDoUpdate({
+      target: coupleTypeAnalytics.typeCode,
+      set: {
+        frequency: sql`${coupleTypeAnalytics.frequency} + 1`,
+      },
+    })
+    .returning();
 
-  if (existingRecord) {
-    const [updatedRecord] = await db
-      .update(coupleTypeAnalytics)
-      .set({
-        frequency: existingRecord.frequency + 1,
-      })
-      .where(eq(coupleTypeAnalytics.typeCode, typeCode))
-      .returning();
-
-    return updatedRecord;
-  } else {
-    // Create new record if it doesn't exist
-    const [newRecord] = await db
-      .insert(coupleTypeAnalytics)
-      .values({
-        typeCode,
-        frequency: 1,
-      })
-      .returning();
-
-    return newRecord;
-  }
+  return record;
 }
 
 /**
@@ -86,42 +72,26 @@ export async function updateQuestionOptionFrequency(
 ): Promise<QuestionAnalytic> {
   const db = await dbConnect();
 
-  // Try to get existing record first
-  const [existingRecord] = await db
-    .select()
-    .from(questionAnalytics)
-    .where(eq(questionAnalytics.questionId, questionId))
-    .limit(1);
+  // Use atomic UPSERT with JSON operations to handle race conditions
+  const [record] = await db
+    .insert(questionAnalytics)
+    .values({
+      questionId,
+      optionFrequency: { [optionId]: 1 },
+    })
+    .onConflictDoUpdate({
+      target: questionAnalytics.questionId,
+      set: {
+        optionFrequency: sql`json_set(
+          COALESCE(${questionAnalytics.optionFrequency}, '{}'),
+          '$.' || ${optionId},
+          COALESCE(json_extract(${questionAnalytics.optionFrequency}, '$.' || ${optionId}), 0) + 1
+        )`,
+      },
+    })
+    .returning();
 
-  if (existingRecord) {
-    // Update existing record
-    const currentFrequency = existingRecord.optionFrequency as Record<string, number>;
-    const updatedFrequency = {
-      ...currentFrequency,
-      [optionId]: (currentFrequency[optionId] || 0) + 1,
-    };
-
-    const [updatedRecord] = await db
-      .update(questionAnalytics)
-      .set({
-        optionFrequency: updatedFrequency,
-      })
-      .where(eq(questionAnalytics.questionId, questionId))
-      .returning();
-
-    return updatedRecord;
-  } else {
-    // Create new record if it doesn't exist
-    const [newRecord] = await db
-      .insert(questionAnalytics)
-      .values({
-        questionId,
-        optionFrequency: { [optionId]: 1 },
-      })
-      .returning();
-
-    return newRecord;
-  }
+  return record;
 }
 
 /**
