@@ -36,16 +36,18 @@ export async function addResponse(
 ): Promise<void> {
   const db = await dbConnect();
 
-  await db.insert(surveyResponses).values({
-    surveyId,
-    userEmail,
-    questionId,
-    selectedOption,
-    respondedAt: new Date(),
-  });
+  await db.transaction(async (tx) => {
+    await tx.insert(surveyResponses).values({
+      surveyId,
+      userEmail,
+      questionId,
+      selectedOption,
+      respondedAt: new Date(),
+    });
 
-  // Update survey's last activity
-  await db.update(surveys).set({ lastActivityAt: new Date() }).where(eq(surveys.id, surveyId));
+    // Update survey's last activity
+    await tx.update(surveys).set({ lastActivityAt: new Date() }).where(eq(surveys.id, surveyId));
+  });
 }
 
 /**
@@ -120,25 +122,31 @@ export async function updateCurrentProgress(
 /**
  * Get all responses for a survey grouped by user
  */
-export async function getSurveyResponses(surveyId: string) {
+export async function getSurveyResponses(surveyId: string, limit: number = 1000, userEmail?: string) {
   const db = await dbConnect();
+
+  const whereConditions = userEmail 
+    ? and(eq(surveyResponses.surveyId, surveyId), eq(surveyResponses.userEmail, userEmail))
+    : eq(surveyResponses.surveyId, surveyId);
 
   return await db
     .select()
     .from(surveyResponses)
-    .where(eq(surveyResponses.surveyId, surveyId))
-    .orderBy(surveyResponses.respondedAt);
+    .where(whereConditions)
+    .orderBy(surveyResponses.respondedAt)
+    .limit(limit);
 }
 
 /**
  * Get the latest response for each user for a specific question
  */
-export async function getLatestUserResponses(surveyId: string, questionId: string) {
+export async function getLatestUserResponses(surveyId: string, questionId: string, limit: number = 100) {
   const db = await dbConnect();
 
   return await db
     .select()
     .from(surveyResponses)
     .where(and(eq(surveyResponses.surveyId, surveyId), eq(surveyResponses.questionId, questionId)))
-    .orderBy(surveyResponses.respondedAt);
+    .orderBy(surveyResponses.respondedAt)
+    .limit(limit);
 }

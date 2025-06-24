@@ -144,10 +144,7 @@ export async function getReceivedInvitations(email: string, limit: number = 10) 
     })
     .from(invitations)
     .leftJoin(users, eq(invitations.fromUserEmail, users.email))
-    .where(and(
-      eq(invitations.toUserEmail, email),
-      eq(invitations.status, "pending")
-    ))
+    .where(and(eq(invitations.toUserEmail, email), eq(invitations.status, "pending")))
     .orderBy(desc(invitations.sentAt))
     .limit(limit);
 }
@@ -155,7 +152,10 @@ export async function getReceivedInvitations(email: string, limit: number = 10) 
 /**
  * Get pending invitation by sender and recipient email
  */
-export async function getPendingInvitation(fromUserEmail: string, toEmail: string): Promise<Invitation | null> {
+export async function getPendingInvitation(
+  fromUserEmail: string,
+  toEmail: string
+): Promise<Invitation | null> {
   const db = await dbConnect();
 
   const [invitation] = await db
@@ -198,32 +198,28 @@ export async function createInvitation(data: {
 }): Promise<Invitation> {
   const db = await dbConnect();
 
-  // Ensure the recipient user exists
-  const [existingToUser] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, data.toEmail))
-    .limit(1);
-
-  if (!existingToUser) {
-    // Create the user if they don't exist (they'll be created when they sign in)
-    await db
+  // Use transaction to ensure data consistency
+  return await db.transaction(async (tx) => {
+    // Ensure the recipient user exists using UPSERT
+    await tx
       .insert(users)
       .values({
         email: data.toEmail,
         name: data.toEmail.split("@")[0], // Use email prefix as default name
-      });
-  }
+        hasRegistered: false, 
+      })
+      .onConflictDoNothing();
 
-  // Create invitation (expiresAt will default to NOW() + 30 minutes from schema)
-  const [invitation] = await db
-    .insert(invitations)
-    .values({
-      fromUserEmail: data.fromUserEmail,
-      toUserEmail: data.toEmail,
-      relationship: data.relationship,
-    })
-    .returning();
+    // Create invitation (expiresAt will default to NOW() + 30 minutes from schema)
+    const [invitation] = await tx
+      .insert(invitations)
+      .values({
+        fromUserEmail: data.fromUserEmail,
+        toUserEmail: data.toEmail,
+        relationship: data.relationship,
+      })
+      .returning();
 
-  return invitation;
+    return invitation;
+  });
 }
