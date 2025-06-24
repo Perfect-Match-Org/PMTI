@@ -8,6 +8,7 @@ CREATE TABLE "users" (
 	"name" text NOT NULL,
 	"total_surveys_taken" integer DEFAULT 0 NOT NULL,
 	"email_notifications" boolean DEFAULT true NOT NULL,
+	"has_registered" boolean DEFAULT false NOT NULL,
 	CONSTRAINT "user_email_check" CHECK ("users"."email" LIKE '%@cornell.edu' OR "users"."email" = 'cornell.perfectmatch@gmail.com')
 );
 --> statement-breakpoint

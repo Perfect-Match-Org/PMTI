@@ -1,5 +1,5 @@
 {
-  "id": "02adcea7-e075-49ba-9c8c-6f2fee9e5925",
+  "id": "01241c53-2d9a-4b99-8df9-3bd4343e40cd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -33,6 +33,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
+        },
+        "has_registered": {
+          "name": "has_registered",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},
