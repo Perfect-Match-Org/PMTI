@@ -9,7 +9,8 @@ export async function GET(request: Request) {
 
     let status: SurveyStatus | undefined;
     if (statusParam) {
-      if (!Object.values(surveyStatusEnum).includes(statusParam as SurveyStatus)) {
+      if (!surveyStatusEnum.enumValues.includes(statusParam as SurveyStatus)) {
+        console.error("Invalid status parameter:", statusParam);
         return NextResponse.json({ error: "Invalid status parameter" }, { status: 400 });
       }
       status = statusParam as SurveyStatus;
