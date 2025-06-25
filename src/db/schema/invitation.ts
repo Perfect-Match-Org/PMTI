@@ -7,6 +7,7 @@ export const invitationStatusEnum = pgEnum("invitation_status", [
   "pending",
   "accepted",
   "declined",
+  "cancelled",
 ]);
 
 export const invitations = pgTable(
