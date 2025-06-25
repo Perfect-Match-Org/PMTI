@@ -1,11 +1,12 @@
 CREATE TYPE "public"."couple_type_code" AS ENUM('ADVENTUROUS_PLANNERS', 'COZY_HOMEBODIES', 'SOCIAL_BUTTERFLIES', 'THOUGHTFUL_DEEP_THINKERS', 'SPONTANEOUS_ADVENTURERS', 'BALANCED_PARTNERS', 'CREATIVE_COLLABORATORS', 'SUPPORTIVE_COMPANIONS', 'AMBITIOUS_ACHIEVERS', 'RELAXED_ROMANTICS', 'INTELLECTUAL_EXPLORERS', 'PRACTICAL_PARTNERS', 'PLAYFUL_COMPANIONS', 'MINDFUL_MATCHES', 'INDEPENDENT_TOGETHER', 'TRADITIONAL_SWEETHEARTS');--> statement-breakpoint
 CREATE TYPE "public"."relationship_type" AS ENUM('couple', 'situationship', 'besties', 'just_friends');--> statement-breakpoint
 CREATE TYPE "public"."survey_status" AS ENUM('started', 'completed', 'abandoned');--> statement-breakpoint
-CREATE TYPE "public"."invitation_status" AS ENUM('pending', 'accepted', 'declined', 'expired');--> statement-breakpoint
+CREATE TYPE "public"."invitation_status" AS ENUM('pending', 'accepted', 'declined', 'cancelled');--> statement-breakpoint
 CREATE TYPE "public"."feedback_rating" AS ENUM('positive', 'negative');--> statement-breakpoint
 CREATE TABLE "users" (
 	"email" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
+	"avatar" text,
 	"total_surveys_taken" integer DEFAULT 0 NOT NULL,
 	"email_notifications" boolean DEFAULT true NOT NULL,
 	"has_registered" boolean DEFAULT false NOT NULL,
