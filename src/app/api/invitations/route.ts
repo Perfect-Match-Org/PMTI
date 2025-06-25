@@ -18,6 +18,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Check if recipient user exists
+    const toUser = await getUserByEmail(toEmail);
+    if (!toUser) {
+      return NextResponse.json({ error: "Recipient user not found" }, { status: 404 });
+    }
+
     // Check for existing pending invitation
     const existingInvitation = await getPendingInvitation(fromUser.email, toEmail);
 
@@ -38,6 +44,7 @@ export async function POST(request: NextRequest) {
       invitation: {
         id: invitation.id,
         toEmail,
+        name: toUser.name,
         status: invitation.status,
         expiresAt: invitation.expiresAt,
       },

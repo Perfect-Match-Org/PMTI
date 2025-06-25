@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { getUserByEmail, getReceivedInvitations } from "@/db/services";
+import { getUserByEmail, getSentInvitations } from "@/db/services";
 
 export async function GET() {
   try {
@@ -14,13 +14,14 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get received invitations
-    const receivedInvitations = await getReceivedInvitations(session.user.email, 10);
+    // Get sent invitations (limit to 1 since user can only have one pending invitation at a time in the form)
+    const sentInvitations = await getSentInvitations(session.user.email, 1);
 
     return NextResponse.json({
-      received: receivedInvitations,
+      outbound: sentInvitations[0] || null, // Return the first sent invitation or null if none exist
     });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch invitations" }, { status: 500 });
+    console.error("Failed to fetch sent invitations:", error);
+    return NextResponse.json({ error: "Failed to fetch sent invitations" }, { status: 500 });
   }
 }
