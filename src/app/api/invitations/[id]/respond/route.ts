@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { acceptInvitation, declineInvitation, checkAndExpireInvitation, getInvitationById } from "@/db/services";
+import { acceptInvitation, declineInvitation, getInvitationById } from "@/db/services";
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -22,10 +22,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Check and expire if needed
-    const checkedInvitation = await checkAndExpireInvitation(params.id);
-    if (checkedInvitation.status === "expired") {
+    // Check if invitation is expired
+    if (invitation.status === "pending" && new Date() > invitation.expiresAt) {
       return NextResponse.json({ error: "Invitation expired" }, { status: 400 });
+    }
+    if (invitation.status === "accepted" || invitation.status === "declined") {
+      return NextResponse.json({ error: "Invitation already responded to" }, { status: 400 });
     }
 
     let updatedInvitation;

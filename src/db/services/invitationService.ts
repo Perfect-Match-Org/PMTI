@@ -1,4 +1,4 @@
-import { eq, and, lt, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { dbConnect } from "@/lib/dbConnect";
 import { invitations, users, type Invitation, type NewInvitation } from "@/db/schema";
 import { randomUUID } from "crypto";
@@ -76,59 +76,15 @@ export async function declineInvitation(invitationId: string): Promise<Invitatio
   return updatedInvitation;
 }
 
-/**
- * Auto-expire invitations that are past their expiry date
- */
-export async function checkAndExpireInvitation(invitationId: string): Promise<Invitation> {
-  const db = await dbConnect();
 
-  // Get the current invitation
-  const [invitation] = await db
-    .select()
-    .from(invitations)
-    .where(eq(invitations.id, invitationId))
-    .limit(1);
-
-  if (!invitation) {
-    throw new Error("Invitation not found");
-  }
-
-  // Check if expired and still pending
-  if (isExpiredHelper(invitation) && invitation.status === "pending") {
-    const [updatedInvitation] = await db
-      .update(invitations)
-      .set({ status: "expired" })
-      .where(eq(invitations.id, invitationId))
-      .returning();
-
-    return updatedInvitation;
-  }
-
-  return invitation;
-}
 
 /**
- * Batch expire all pending invitations that are past their expiry date
- */
-export async function expireOldInvitations(): Promise<number> {
-  const db = await dbConnect();
-
-  const result = await db
-    .update(invitations)
-    .set({ status: "expired" })
-    .where(and(eq(invitations.status, "pending"), lt(invitations.expiresAt, new Date())))
-    .returning({ id: invitations.id });
-
-  return result.length;
-}
-
-/**
- * Get received invitations for a user by email
+ * Get received invitations for a user by email (excludes expired)
  */
 export async function getReceivedInvitations(email: string, limit: number = 10) {
   const db = await dbConnect();
 
-  // Get received invitations with sender information
+  // Get received invitations with sender information, excluding expired ones
   return await db
     .select({
       id: invitations.id,
@@ -144,7 +100,11 @@ export async function getReceivedInvitations(email: string, limit: number = 10) 
     })
     .from(invitations)
     .leftJoin(users, eq(invitations.fromUserEmail, users.email))
-    .where(and(eq(invitations.toUserEmail, email), eq(invitations.status, "pending")))
+    .where(and(
+      eq(invitations.toUserEmail, email), 
+      eq(invitations.status, "pending"),
+      sql`${invitations.expiresAt} > NOW()` // Only non-expired invitations
+    ))
     .orderBy(desc(invitations.sentAt))
     .limit(limit);
 }

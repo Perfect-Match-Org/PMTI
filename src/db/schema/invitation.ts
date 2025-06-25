@@ -7,7 +7,6 @@ export const invitationStatusEnum = pgEnum("invitation_status", [
   "pending",
   "accepted",
   "declined",
-  "expired",
 ]);
 
 export const invitations = pgTable(
@@ -37,11 +36,11 @@ export const invitations = pgTable(
     index("invitations_expires_at_idx").on(table.expiresAt),
     // Email validation constraints (Cornell emails only)
     check(
-      "from_user_email_check", 
+      "from_user_email_check",
       sql`${table.fromUserEmail} LIKE '%@cornell.edu' OR ${table.fromUserEmail} = 'cornell.perfectmatch@gmail.com'`
     ),
     check(
-      "to_user_email_check", 
+      "to_user_email_check",
       sql`${table.toUserEmail} LIKE '%@cornell.edu' OR ${table.toUserEmail} = 'cornell.perfectmatch@gmail.com'`
     ),
   ]
