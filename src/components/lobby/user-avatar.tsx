@@ -49,25 +49,25 @@ export function UserAvatar({
 
   return (
     <div className={cn("relative inline-block", className)} {...props}>
-      {/* Circular loading ring for pending status */}
-      {status === "pending" && (
-        <div className={cn(
-          "absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin",
-          avatarSize
-        )} />
-      )}
-      
       <Avatar className={cn(
         avatarSize,
-        status === "rejected" && "grayscale opacity-60"
+        (status === "pending" || status === "rejected") && "saturate-30 opacity-90",
       )}>
         <AvatarImage src={src} alt={alt} />
         <AvatarFallback className={cn(
-          status === "rejected" && "bg-muted-foreground/20"
+          (status === "rejected" || status === "pending") && "bg-muted-foreground/20",
         )}>
           {fallback || "?"}
         </AvatarFallback>
       </Avatar>
+
+      {/* Circular loading ring for pending status - positioned above avatar */}
+      {status === "pending" && (
+        <div className={cn(
+          "absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin pointer-events-none",
+          avatarSize
+        )} />
+      )}
 
       {/* Small X overlay for rejected status */}
       {status === "rejected" && (
