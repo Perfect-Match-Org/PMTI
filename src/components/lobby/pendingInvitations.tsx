@@ -5,43 +5,52 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "./user-avatar";
+import { supabase } from "@/lib/supabase";
+import { useSession } from "next-auth/react";
 
 interface PendingInvitation {
   id: string;
-  fromUser: string;
+  fromUser: {
+    email: string;
+    name: string;
+    avatar?: string | null;
+  };
+  status: string;
   relationship: string;
-  createdAt: Date;
-  userAvatar?: string;
-  userDisplayName?: string;
+  sentAt: Date;
+  expiresAt: Date;
+  sessionId: string | null;
 }
 
 export function PendingInvitations() {
+  const { data: session } = useSession();
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Centralized function to format invitation data from API
+  const formatInvitationData = (apiInvitation: any): PendingInvitation => ({
+    id: apiInvitation.id,
+    fromUser: apiInvitation.fromUser,
+    status: apiInvitation.status,
+    relationship: apiInvitation.relationship,
+    sentAt: new Date(apiInvitation.sentAt),
+    expiresAt: new Date(apiInvitation.expiresAt),
+    sessionId: apiInvitation.sessionId,
+  });
+
   useEffect(() => {
-    // TODO: Fetch pending invitations from API
-    const fetchInvitations = async () => {
+    if (!session?.user?.email) return;
+
+    const fetchInitialInvitations = async () => {
       try {
-        // Placeholder data for now
-        setInvitations([
-          {
-            id: "1",
-            fromUser: "john.doe",
-            relationship: "Couple",
-            createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-            userDisplayName: "John Doe",
-            userAvatar: undefined // Will show fallback
-          },
-          {
-            id: "2", 
-            fromUser: "jane.smith",
-            relationship: "Besties",
-            createdAt: new Date(Date.now() - 1000 * 60 * 15), // 15 minutes ago
-            userDisplayName: "Jane Smith",
-            userAvatar: undefined
-          }
-        ]);
+        const response = await fetch("/api/invitations/inbound");
+        if (!response.ok) {
+          throw new Error("Failed to fetch invitations");
+        }
+
+        const data = await response.json();
+        const formattedInvitations = data.inbound.map(formatInvitationData);
+        setInvitations(formattedInvitations);
       } catch (error) {
         console.error("Failed to fetch invitations:", error);
       } finally {
@@ -49,21 +58,124 @@ export function PendingInvitations() {
       }
     };
 
-    fetchInvitations();
-  }, []);
+    // Fetch initial data once
+    fetchInitialInvitations();
+
+    // Set up real-time subscription with user-specific channel
+    console.log('Setting up real-time subscription for:', session.user.email);
+    const channel = supabase
+      .channel(`user-invitations-${session.user.email}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'invitations',
+          filter: `to_user_email=eq.${session.user.email}`
+        },
+        async (payload) => {
+          console.log('Real-time invitation update:', payload);
+          console.log('Event type:', payload.eventType);
+          console.log('Payload new:', payload.new);
+          console.log('Payload old:', payload.old);
+
+          if (payload.eventType === 'INSERT') {
+            const newInvitation = payload.new as any;
+            if (newInvitation.status === 'pending' && new Date(newInvitation.expires_at) > new Date()) {
+              try {
+                // Fetch user data to get the actual name
+                const userResponse = await fetch(`/api/users/${encodeURIComponent(newInvitation.from_user_email)}`);
+                const userData = userResponse.ok ? await userResponse.json() : null;
+
+                const formattedInvitation: PendingInvitation = {
+                  id: newInvitation.id,
+                  fromUser: {
+                    email: newInvitation.from_user_email,
+                    name: userData?.name || newInvitation.from_user_email.split("@")[0],
+                    avatar: userData?.avatar || null,
+                  },
+                  status: newInvitation.status,
+                  relationship: newInvitation.relationship,
+                  sentAt: new Date(newInvitation.sent_at),
+                  expiresAt: new Date(newInvitation.expires_at),
+                  sessionId: newInvitation.session_id,
+                };
+                setInvitations(prev => [formattedInvitation, ...prev]);
+              } catch (error) {
+                console.error('Failed to fetch user data for new invitation:', error);
+              }
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedInvitation = payload.new as any;
+            // Remove invitation if status changed from pending (accepted, declined, cancelled)
+            if (updatedInvitation.status !== 'pending') {
+              setInvitations(prev => prev.filter(inv => inv.id !== updatedInvitation.id));
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const deletedInvitation = payload.old as any;
+            setInvitations(prev => prev.filter(inv => inv.id !== deletedInvitation.id));
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
+
+    // Cleanup subscription
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.email]);
 
   const handleAccept = async (invitationId: string) => {
-    // TODO: Accept invitation API call
-    console.log("Accepting invitation:", invitationId);
-    // Remove invitation from list after accepting
-    setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+    try {
+      const response = await fetch(`/api/invitations/${invitationId}/respond`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ action: "accept" })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to accept invitation");
+      }
+
+      // Remove invitation from list after accepting
+      setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+      
+      // TODO: Navigate to quiz with sessionId
+      console.log("Invitation accepted, sessionId:", data.sessionId);
+    } catch (error) {
+      console.error("Failed to accept invitation:", error);
+      alert(error instanceof Error ? error.message : "Failed to accept invitation");
+    }
   };
 
   const handleDecline = async (invitationId: string) => {
-    // TODO: Decline invitation API call
-    console.log("Declining invitation:", invitationId);
-    // Remove invitation from list after declining
-    setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+    try {
+      const response = await fetch(`/api/invitations/${invitationId}/respond`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ action: "decline" })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to decline invitation");
+      }
+
+      // Remove invitation from list after declining
+      setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+    } catch (error) {
+      console.error("Failed to decline invitation:", error);
+      alert(error instanceof Error ? error.message : "Failed to decline invitation");
+    }
   };
 
   if (isLoading) {
@@ -98,35 +210,35 @@ export function PendingInvitations() {
               <div key={invitation.id} className="border rounded-lg p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <UserAvatar
-                    src={invitation.userAvatar}
-                    alt={invitation.userDisplayName}
-                    fallback={invitation.userDisplayName?.charAt(0) || invitation.fromUser.charAt(0).toUpperCase()}
+                    src={invitation.fromUser.avatar || undefined}
+                    alt={invitation.fromUser.name}
+                    fallback={invitation.fromUser.name?.charAt(0) || invitation.fromUser.email.charAt(0).toUpperCase()}
                     status="pending"
                     size="md"
                   />
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium">{invitation.userDisplayName || invitation.fromUser}</p>
+                        <p className="font-medium">{invitation.fromUser.name}</p>
                         <Badge variant="secondary">{invitation.relationship}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {invitation.createdAt.toLocaleTimeString()}
+                        {invitation.sentAt.toLocaleTimeString()}
                       </p>
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={() => handleAccept(invitation.id)}
                     className="flex-1"
                   >
                     Accept
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => handleDecline(invitation.id)}
                     className="flex-1"
                   >
