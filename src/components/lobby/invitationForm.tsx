@@ -17,7 +17,7 @@ export function InvitationForm() {
   const [netid, setNetid] = useState("");
   const [relationship, setRelationship] = useState<RelationshipType>(RelationshipType.COUPLE);
   const [isLoading, setIsLoading] = useState(false);
-  const [invitedUser, setInvitedUser] = useState<{
+  const [invitationDetails, setInvitationDetails] = useState<{
     id?: string;
     name?: string;
     avatar?: string;
@@ -51,7 +51,7 @@ export function InvitationForm() {
 
           setNetid(netidFromEmail === "cornell.perfectmatch" ? "PM" : netidFromEmail);
           setRelationship(sentInvitation.relationship);
-          setInvitedUser({
+          setInvitationDetails({
             id: sentInvitation.id,
             name: sentInvitation.toUser.name,
             avatar: sentInvitation.toUser.avatar,
@@ -93,12 +93,12 @@ export function InvitationForm() {
             // Double check for safety
             if (updatedInvitation.id === invitationId) {
               if (updatedInvitation.status === 'accepted') {
-                setInvitedUser(prev => ({ ...prev, status: 'accepted' }));
+                setInvitationDetails(prev => ({ ...prev, status: 'accepted' }));
               } else if (updatedInvitation.status === 'declined') {
-                setInvitedUser(prev => ({ ...prev, status: 'rejected' }));
+                setInvitationDetails(prev => ({ ...prev, status: 'rejected' }));
               } else if (updatedInvitation.status === 'cancelled') {
                 // Reset form if invitation was cancelled from another source
-                setInvitedUser({ status: "empty" });
+                setInvitationDetails({ status: "empty" });
                 setNetid("");
               }
             }
@@ -119,14 +119,14 @@ export function InvitationForm() {
 
   // Real-time subscription to monitor invitation status changes
   useEffect(() => {
-    if (invitedUser.id) {
-      setupSubscription(invitedUser.id);
+    if (invitationDetails.id) {
+      setupSubscription(invitationDetails.id);
     }
 
     return () => {
       cleanupSubscription();
     };
-  }, [session?.user?.email, invitedUser.id]);
+  }, [session?.user?.email, invitationDetails.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +159,7 @@ export function InvitationForm() {
 
 
       // Update invited user to pending state
-      setInvitedUser({
+      setInvitationDetails({
         id: data.invitation.id,
         name: data.invitation.name || netid,
         avatar: recipientAvatar,
@@ -179,10 +179,10 @@ export function InvitationForm() {
   };
 
   const cancelInvitation = async () => {
-    if (invitedUser.id) {
+    if (invitationDetails.id) {
       // Fallback to local state reset if no ID
       try {
-        const response = await fetch(`/api/invitations/${invitedUser.id}/cancel`, {
+        const response = await fetch(`/api/invitations/${invitationDetails.id}/cancel`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json"
@@ -200,7 +200,7 @@ export function InvitationForm() {
       }
 
       // Reset the form state
-      setInvitedUser({ status: "empty" });
+      setInvitationDetails({ status: "empty" });
       setNetid("");
     }
   };
@@ -240,22 +240,22 @@ export function InvitationForm() {
             {/* Invited User Avatar */}
             <div className="flex flex-col items-center gap-2">
               <UserAvatar
-                src={invitedUser.avatar}
-                alt={invitedUser.name}
-                fallback={invitedUser.name?.charAt(0)?.toUpperCase() || "?"}
-                status={invitedUser.status}
+                src={invitationDetails.avatar}
+                alt={invitationDetails.name}
+                fallback={invitationDetails.name?.charAt(0)?.toUpperCase() || "?"}
+                status={invitationDetails.status}
                 size="lg"
               />
               <p className="text-sm font-medium">
-                {invitedUser.status === "empty" ? "Partner" : invitedUser.name}
+                {invitationDetails.status === "empty" ? "Partner" : invitationDetails.name}
               </p>
             </div>
           </div>
 
           {/* Status Message */}
-          {invitedUser.status !== "empty" && (
+          {invitationDetails.status !== "empty" && (
             <div className="mt-4 text-center">
-              {invitedUser.status === "pending" && (
+              {invitationDetails.status === "pending" && (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Invitation sent! Waiting for response...</p>
                   <div className="flex justify-center space-x-2">
@@ -268,10 +268,10 @@ export function InvitationForm() {
                   </div>
                 </div>
               )}
-              {invitedUser.status === "accepted" && (
+              {invitationDetails.status === "accepted" && (
                 <p className="text-sm text-green-600">✓ Invitation accepted! Ready to start quiz.</p>
               )}
-              {invitedUser.status === "rejected" && (
+              {invitationDetails.status === "rejected" && (
                 <p className="text-sm text-destructive">✗ Invitation declined.</p>
               )}
             </div>
@@ -287,7 +287,7 @@ export function InvitationForm() {
               placeholder="abc123"
               value={netid}
               onChange={(e) => setNetid(e.target.value)}
-              disabled={invitedUser.status === "pending" || invitedUser.status === "accepted"}
+              disabled={invitationDetails.status === "pending" || invitationDetails.status === "accepted"}
               required
             />
           </div>
@@ -298,7 +298,7 @@ export function InvitationForm() {
               id="relationship"
               value={relationship}
               onChange={(e) => setRelationship(e.target.value as RelationshipType)}
-              disabled={invitedUser.status === "pending" || invitedUser.status === "accepted"}
+              disabled={invitationDetails.status === "pending" || invitationDetails.status === "accepted"}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {getAllRelationshipTypes().map((type) => (
@@ -312,7 +312,7 @@ export function InvitationForm() {
           <Button
             type="submit"
             className="w-full"
-            disabled={isLoading || !netid.trim() || invitedUser.status === "pending" || invitedUser.status === "accepted"}
+            disabled={isLoading || !netid.trim() || invitationDetails.status === "pending" || invitationDetails.status === "accepted"}
           >
             {isLoading ? "Sending..." : "Send Invitation"}
           </Button>
