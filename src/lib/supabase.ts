@@ -7,6 +7,7 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
+// Client-side Supabase instance (safe for browser)
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     autoRefreshToken: true,
@@ -19,15 +20,3 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     }
   }
 })
-
-// Server-side client for API routes (uses service role key)
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-)
