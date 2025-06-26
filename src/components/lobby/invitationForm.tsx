@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,8 @@ import { RelationshipType, RELATIONSHIP_LABELS, getAllRelationshipTypes } from "
 import { UserAvatar } from "./user-avatar";
 import { useSession } from "next-auth/react";
 import { Heart } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 export function InvitationForm() {
   const { data: session } = useSession();
@@ -16,52 +18,191 @@ export function InvitationForm() {
   const [relationship, setRelationship] = useState<RelationshipType>(RelationshipType.COUPLE);
   const [isLoading, setIsLoading] = useState(false);
   const [invitedUser, setInvitedUser] = useState<{
+    id?: string;
     name?: string;
     avatar?: string;
     status: "empty" | "pending" | "accepted" | "rejected";
   }>({ status: "empty" });
+  const subscriptionRef = useRef<RealtimeChannel>(null);
+
+  const cleanupSubscription = () => {
+    if (subscriptionRef.current) {
+      console.log('Cleaning up previous subscription');
+      supabase.removeChannel(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+  };
+
+  // Fetch sent invitations on component load to restore state after refresh
+  useEffect(() => {
+    if (!session?.user?.email) return;
+
+    const fetchSentInvitations = async () => {
+      try {
+        const response = await fetch("/api/invitations/outbound");
+        if (!response.ok) return; // Silently fail if no sent invitations
+
+        const data = await response.json();
+        const sentInvitation = data.outbound;
+
+        // If there's a pending sent invitation, restore the form state
+        if (sentInvitation) {
+          const netidFromEmail = sentInvitation.toUser.email.split("@")[0];
+
+          setNetid(netidFromEmail === "cornell.perfectmatch" ? "PM" : netidFromEmail);
+          setRelationship(sentInvitation.relationship);
+          setInvitedUser({
+            id: sentInvitation.id,
+            name: sentInvitation.toUser.name,
+            avatar: sentInvitation.toUser.avatar,
+            status: "pending"
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch sent invitations:", error);
+      }
+    };
+
+    fetchSentInvitations();
+  }, [session?.user?.email]);
+
+  const setupSubscription = async (invitationId: string) => {
+    if (!session?.user?.email || !invitationId) return;
+
+    console.log('Setting up real-time subscription for sent invitation:', invitationId);
+
+    // Need to wait for any previous subscription to be cleaned up
+    await cleanupSubscription();
+
+    try {
+      const channel = supabase
+        .channel(`invitation-${invitationId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'invitations',
+            filter: `id=eq.${invitationId}`,
+          },
+          (payload) => {
+            console.log('Real-time invitation status update:', payload);
+
+            const updatedInvitation = payload.new as any;
+
+            // Double check for safety
+            if (updatedInvitation.id === invitationId) {
+              if (updatedInvitation.status === 'accepted') {
+                setInvitedUser(prev => ({ ...prev, status: 'accepted' }));
+              } else if (updatedInvitation.status === 'declined') {
+                setInvitedUser(prev => ({ ...prev, status: 'rejected' }));
+              } else if (updatedInvitation.status === 'cancelled') {
+                // Reset form if invitation was cancelled from another source
+                setInvitedUser({ status: "empty" });
+                setNetid("");
+              }
+            }
+          }
+        )
+        .subscribe((status) => {
+          console.log('Invitation sender subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to invitation updates');
+          }
+        });
+
+      subscriptionRef.current = channel;
+    } catch (error) {
+      console.error('Failed to setup subscription:', error);
+    }
+  };
+
+  // Real-time subscription to monitor invitation status changes
+  useEffect(() => {
+    if (invitedUser.id) {
+      setupSubscription(invitedUser.id);
+    }
+
+    return () => {
+      cleanupSubscription();
+    };
+  }, [session?.user?.email, invitedUser.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // TODO: Call invitation API
-      console.log("Sending invitation to:", netid, "as", relationship);
+      const response = await fetch("/api/invitations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ netid, relationship })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send invitation");
+      }
+
+      // Fetch recipient (invited user) details for avatar
+      let recipientAvatar = undefined;
+
+      const toEmail = netid === "PM" ? "cornell.perfectmatch@gmail.com" : `${netid}@cornell.edu`;
+      const userResponse = await fetch(`/api/users/${encodeURIComponent(toEmail)}`);
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        recipientAvatar = userData.avatar;
+      }
+
 
       // Update invited user to pending state
       setInvitedUser({
-        name: netid, // Will be replaced with actual user data from API
-        avatar: undefined, // Will be fetched from API
+        id: data.invitation.id,
+        name: data.invitation.name || netid,
+        avatar: recipientAvatar,
         status: "pending"
       });
 
-      // Placeholder for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // TODO: Replace with actual API response
-      // For demo purposes, randomly accept/reject after 3 seconds
-      setTimeout(() => {
-        setInvitedUser(prev => ({
-          ...prev,
-          status: Math.random() > 0.5 ? "accepted" : "rejected"
-        }));
-      }, 3000);
-
     } catch (error) {
       console.error("Failed to send invitation:", error);
+      alert(error instanceof Error ? error.message : "Failed to send invitation");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const resetInvitation = () => {
+  const resendInvitation = () => {
     // API call to send invitation again
   };
 
-  const cancelInvitation = () => {
-    setInvitedUser({ status: "empty" });
-    setNetid("");
+  const cancelInvitation = async () => {
+    if (invitedUser.id) {
+      // Fallback to local state reset if no ID
+      try {
+        const response = await fetch(`/api/invitations/${invitedUser.id}/cancel`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to cancel invitation");
+        }
+      } catch (error) {
+        console.error("Failed to cancel invitation:", error);
+        alert(error instanceof Error ? error.message : "Failed to cancel invitation");
+      }
+
+      // Reset the form state
+      setInvitedUser({ status: "empty" });
+      setNetid("");
+    }
   };
 
   return (
@@ -118,7 +259,7 @@ export function InvitationForm() {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Invitation sent! Waiting for response...</p>
                   <div className="flex justify-center space-x-2">
-                    <Button size="sm" onClick={resetInvitation} variant="outline">
+                    <Button size="sm" onClick={resendInvitation} variant="outline">
                       Send Again
                     </Button>
                     <Button size="sm" onClick={cancelInvitation} variant="destructive" className="ml-2">
