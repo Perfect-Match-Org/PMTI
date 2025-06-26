@@ -76,7 +76,20 @@ export async function declineInvitation(invitationId: string): Promise<Invitatio
   return updatedInvitation;
 }
 
+/**
+ * Cancel an invitation
+ */
+export async function cancelInvitation(invitationId: string): Promise<Invitation> {
+  const db = await dbConnect();
 
+  const [updatedInvitation] = await db
+    .update(invitations)
+    .set({ status: "cancelled" })
+    .where(eq(invitations.id, invitationId))
+    .returning();
+
+  return updatedInvitation;
+}
 
 /**
  * Get received invitations for a user by email (excludes expired)
@@ -91,6 +104,7 @@ export async function getReceivedInvitations(email: string, limit: number = 10) 
       fromUser: {
         email: users.email,
         name: users.name,
+        avatar: users.avatar,
       },
       status: invitations.status,
       relationship: invitations.relationship,
@@ -100,11 +114,13 @@ export async function getReceivedInvitations(email: string, limit: number = 10) 
     })
     .from(invitations)
     .leftJoin(users, eq(invitations.fromUserEmail, users.email))
-    .where(and(
-      eq(invitations.toUserEmail, email), 
-      eq(invitations.status, "pending"),
-      sql`${invitations.expiresAt} > NOW()` // Only non-expired invitations
-    ))
+    .where(
+      and(
+        eq(invitations.toUserEmail, email),
+        eq(invitations.status, "pending"),
+        sql`${invitations.expiresAt} > NOW()` // Only non-expired invitations
+      )
+    )
     .orderBy(desc(invitations.sentAt))
     .limit(limit);
 }
@@ -131,6 +147,39 @@ export async function getPendingInvitation(
     .limit(1);
 
   return invitation || null;
+}
+
+/**
+ * Get sent invitations for a user by email (excludes expired)
+ */
+export async function getSentInvitations(email: string, limit: number = 1) {
+  const db = await dbConnect();
+
+  return await db
+    .select({
+      id: invitations.id,
+      toUser: {
+        email: users.email,
+        name: users.name,
+        avatar: users.avatar,
+      },
+      status: invitations.status,
+      relationship: invitations.relationship,
+      sentAt: invitations.sentAt,
+      expiresAt: invitations.expiresAt,
+      sessionId: invitations.sessionId,
+    })
+    .from(invitations)
+    .leftJoin(users, eq(invitations.toUserEmail, users.email))
+    .where(
+      and(
+        eq(invitations.fromUserEmail, email),
+        eq(invitations.status, "pending"),
+        sql`${invitations.expiresAt} > NOW()` // Only non-expired invitations
+      )
+    )
+    .orderBy(desc(invitations.sentAt))
+    .limit(limit);
 }
 
 /**
@@ -166,7 +215,7 @@ export async function createInvitation(data: {
       .values({
         email: data.toEmail,
         name: data.toEmail.split("@")[0], // Use email prefix as default name
-        hasRegistered: false, 
+        hasRegistered: false,
       })
       .onConflictDoNothing();
 
