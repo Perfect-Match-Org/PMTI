@@ -19,7 +19,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
  * Create or update user during authentication
  * Optimized for the common case of existing registered users
  */
-export async function createOrUpdateUser(email: string, name?: string): Promise<User> {
+export async function createOrUpdateUser(email: string, name?: string, avatar?: string | null): Promise<User> {
   const db = await dbConnect();
 
   const existingUser = await getUserByEmail(email);
@@ -35,6 +35,7 @@ export async function createOrUpdateUser(email: string, name?: string): Promise<
     .values({
       email,
       name: actualName,
+      avatar: avatar || null,
       hasRegistered: true,
     })
     .onConflictDoUpdate({
@@ -42,6 +43,7 @@ export async function createOrUpdateUser(email: string, name?: string): Promise<
       target: users.email,
       set: {
         name: actualName,
+        avatar: avatar || null,
         hasRegistered: true,
       },
     })

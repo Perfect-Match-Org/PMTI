@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
       }
 
       try {
-        await createOrUpdateUser(user.email, user.name);
+        await createOrUpdateUser(user.email, user.name, user.image);
         return true;
       } catch (error) {
         console.error("Error creating/updating user:", error);
