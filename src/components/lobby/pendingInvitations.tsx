@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "./user-avatar";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 interface PendingInvitation {
   id: string;
@@ -24,6 +25,7 @@ interface PendingInvitation {
 
 export function PendingInvitations() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -145,9 +147,10 @@ export function PendingInvitations() {
 
       // Remove invitation from list after accepting
       setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
-      
-      // TODO: Navigate to quiz with sessionId
-      console.log("Invitation accepted, sessionId:", data.sessionId);
+
+      // Navigate to survey page with sessionId
+      router.push(`/survey/${data.sessionId}`);
+
     } catch (error) {
       console.error("Failed to accept invitation:", error);
       alert(error instanceof Error ? error.message : "Failed to accept invitation");

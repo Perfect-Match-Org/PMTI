@@ -8,12 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RelationshipType, RELATIONSHIP_LABELS, getAllRelationshipTypes } from "@/lib/constants/relationships";
 import { UserAvatar } from "./user-avatar";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
 export function InvitationForm() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [netid, setNetid] = useState("");
   const [relationship, setRelationship] = useState<RelationshipType>(RelationshipType.COUPLE);
   const [isLoading, setIsLoading] = useState(false);
@@ -22,13 +24,14 @@ export function InvitationForm() {
     name?: string;
     avatar?: string;
     status: "empty" | "pending" | "accepted" | "rejected";
+    sessionId?: string;
   }>({ status: "empty" });
   const subscriptionRef = useRef<RealtimeChannel>(null);
 
-  const cleanupSubscription = () => {
+  const cleanupSubscription = async () => {
     if (subscriptionRef.current) {
       console.log('Cleaning up previous subscription');
-      supabase.removeChannel(subscriptionRef.current);
+      await supabase.removeChannel(subscriptionRef.current);
       subscriptionRef.current = null;
     }
   };
@@ -55,7 +58,8 @@ export function InvitationForm() {
             id: sentInvitation.id,
             name: sentInvitation.toUser.name,
             avatar: sentInvitation.toUser.avatar,
-            status: "pending"
+            status: "pending",
+            sessionId: sentInvitation.sessionId
           });
         }
       } catch (error) {
@@ -93,7 +97,14 @@ export function InvitationForm() {
             // Double check for safety
             if (updatedInvitation.id === invitationId) {
               if (updatedInvitation.status === 'accepted') {
-                setInvitationDetails(prev => ({ ...prev, status: 'accepted' }));
+                setInvitationDetails(prev => ({
+                  ...prev,
+                  status: 'accepted',
+                  sessionId: updatedInvitation.session_id
+                }));
+                if (updatedInvitation.session_id) {
+                  router.push(`/survey/${updatedInvitation.session_id}`);
+                }
               } else if (updatedInvitation.status === 'declined') {
                 setInvitationDetails(prev => ({ ...prev, status: 'rejected' }));
               } else if (updatedInvitation.status === 'cancelled') {
@@ -204,6 +215,7 @@ export function InvitationForm() {
       setNetid("");
     }
   };
+
 
   return (
     <Card>
