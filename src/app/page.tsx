@@ -4,6 +4,7 @@ import { AuthButtons } from "@ui/auth-buttons";
 import { Button } from "@/components/ui/button";
 import { TypesGrid } from "@/components/types-grid";
 import { config } from "@/lib/config";
+import ResultsMain from "@/components/results/main";
 
 async function getSurveyCount() {
   try {
@@ -87,8 +88,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Types Section */}
-      <TypesGrid />
+      {/* Results Section */}
+      <ResultsMain />
     </main>
   );
 }
