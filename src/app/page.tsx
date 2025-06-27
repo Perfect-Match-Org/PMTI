@@ -2,8 +2,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import { AuthButtons } from "@ui/authButtons";
 import { Button } from "@/components/ui/button";
+import { TypesGrid } from "@/components/typesGrid";
 import { config } from "@/lib/config";
-import ResultsMain from "@/components/results/main";
 
 async function getSurveyCount() {
   try {
@@ -85,8 +85,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Results Section */}
-      <ResultsMain />
+      {/* Types Section */}
+      <TypesGrid />
     </main>
   );
 }
