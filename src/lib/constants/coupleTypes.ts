@@ -39,6 +39,12 @@ export interface CoupleTypeDefinition {
       primary: string[];
       secondary: string[];
     };
+    dateIdeas?: string[];
+    descriptorWords?: {
+      "s&p": string;
+      "p&e": string;
+      "a&r": string;
+    }
   };
   graphic: {
     iconUrl: string;
@@ -149,8 +155,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
     displayName: "The Cozy Homebodies",
     shortDescription: "Comfort-lovers who find joy in simple, intimate moments together",
     description: {
-      summary:
-        "You both prefer staying in over going out, finding comfort in familiar routines and cozy nights together. Your ideal date is probably a movie night with takeout and soft blankets.",
+      summary: "You both prefer staying in over going out, finding comfort in familiar routines and cozy nights together. Your ideal date is probably a movie night with takeout and soft blankets.",
       traits: ["Comfort-seeking", "Intimate", "Routine-loving", "Content"],
       strengths: [
         "Create a warm, welcoming home environment",
@@ -169,6 +174,12 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
         primary: ["Physical Touch", "Quality Time"],
         secondary: ["Acts of Service", "Words of Affirmation"],
       },
+      dateIdeas: ["Cat cafe meetup", "Super Smash Brothers Ultimate Tournament", "Organic Chem Tutor Watch Party"],
+      descriptorWords: {
+        "s&p": "You value routine and comfort in familiar patterns",
+        "p&e": "You cherish intimate moments away from the outside world",
+        "a&r": "You prefer contemplating life's simple pleasures together"
+      }
     },
     graphic: {
       iconUrl: "/icons/cozy-homebodies.svg",
@@ -179,189 +190,188 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       },
     },
   },
+    // Add placeholders for other types - you can fill these in later
+    [CoupleTypeCode.SOCIAL_BUTTERFLIES]: {
+      code: CoupleTypeCode.SOCIAL_BUTTERFLIES,
+      displayName: "The Social Butterflies",
+      shortDescription: "Outgoing pairs who thrive in social settings and love meeting new people",
+      description: {
+        summary: "You both love being around people and thrive in social situations...",
+        traits: ["Outgoing", "Social", "Energetic", "People-focused"],
+        strengths: [
+          "Great at networking together",
+          "Always have weekend plans",
+          "Bring out the best in each other socially",
+        ],
+      },
+      graphic: {
+        iconUrl: "/icons/social-butterflies.svg",
+        colorScheme: { primary: "#059669", secondary: "#0891B2", accent: "#7C3AED" },
+      },
+    },
 
-  // Add placeholders for other types - you can fill these in later
-  [CoupleTypeCode.SOCIAL_BUTTERFLIES]: {
-    code: CoupleTypeCode.SOCIAL_BUTTERFLIES,
-    displayName: "The Social Butterflies",
-    shortDescription: "Outgoing pairs who thrive in social settings and love meeting new people",
-    description: {
-      summary: "You both love being around people and thrive in social situations...",
-      traits: ["Outgoing", "Social", "Energetic", "People-focused"],
-      strengths: [
-        "Great at networking together",
-        "Always have weekend plans",
-        "Bring out the best in each other socially",
-      ],
+    [CoupleTypeCode.THOUGHTFUL_DEEP_THINKERS]: {
+      code: CoupleTypeCode.THOUGHTFUL_DEEP_THINKERS,
+      displayName: "The Thoughtful Deep Thinkers",
+      shortDescription: "Reflective partners who enjoy meaningful conversations and personal growth",
+      description: {
+        summary: "You both value deep conversations and thoughtful reflection...",
+        traits: ["Reflective", "Analytical", "Growth-oriented", "Philosophical"],
+        strengths: [
+          "Have meaningful conversations",
+          "Support each other's personal growth",
+          "Think before acting",
+        ],
+      },
+      graphic: {
+        iconUrl: "/icons/deep-thinkers.svg",
+        colorScheme: { primary: "#7C2D12", secondary: "#A21CAF", accent: "#1E40AF" },
+      },
     },
-    graphic: {
-      iconUrl: "/icons/social-butterflies.svg",
-      colorScheme: { primary: "#059669", secondary: "#0891B2", accent: "#7C3AED" },
-    },
-  },
 
-  [CoupleTypeCode.THOUGHTFUL_DEEP_THINKERS]: {
-    code: CoupleTypeCode.THOUGHTFUL_DEEP_THINKERS,
-    displayName: "The Thoughtful Deep Thinkers",
-    shortDescription: "Reflective partners who enjoy meaningful conversations and personal growth",
-    description: {
-      summary: "You both value deep conversations and thoughtful reflection...",
-      traits: ["Reflective", "Analytical", "Growth-oriented", "Philosophical"],
-      strengths: [
-        "Have meaningful conversations",
-        "Support each other's personal growth",
-        "Think before acting",
-      ],
+    // Add remaining types with basic structure
+    [CoupleTypeCode.SPONTANEOUS_ADVENTURERS]: {
+      code: CoupleTypeCode.SPONTANEOUS_ADVENTURERS,
+      displayName: "The Spontaneous Adventurers",
+      shortDescription: "Free spirits who love last-minute plans and unexpected experiences",
+      description: {
+        summary: "You both love spontaneity and unexpected adventures...",
+        traits: ["Spontaneous", "Flexible", "Adventurous", "Open-minded"],
+        strengths: ["Always up for new experiences", "Keep life exciting", "Adapt well to changes"],
+      },
+      graphic: {
+        iconUrl: "/icons/spontaneous-adventurers.svg",
+        colorScheme: { primary: "#EA580C", secondary: "#DC2626", accent: "#65A30D" },
+      },
     },
-    graphic: {
-      iconUrl: "/icons/deep-thinkers.svg",
-      colorScheme: { primary: "#7C2D12", secondary: "#A21CAF", accent: "#1E40AF" },
-    },
-  },
 
-  // Add remaining types with basic structure
-  [CoupleTypeCode.SPONTANEOUS_ADVENTURERS]: {
-    code: CoupleTypeCode.SPONTANEOUS_ADVENTURERS,
-    displayName: "The Spontaneous Adventurers",
-    shortDescription: "Free spirits who love last-minute plans and unexpected experiences",
-    description: {
-      summary: "You both love spontaneity and unexpected adventures...",
-      traits: ["Spontaneous", "Flexible", "Adventurous", "Open-minded"],
-      strengths: ["Always up for new experiences", "Keep life exciting", "Adapt well to changes"],
+    [CoupleTypeCode.BALANCED_PARTNERS]: {
+      code: CoupleTypeCode.BALANCED_PARTNERS,
+      displayName: "The Balanced Partners",
+      shortDescription: "Well-rounded couples who complement each other perfectly",
+      description: {
+        summary: "You both bring different strengths that complement each other perfectly...",
+        traits: ["Balanced", "Complementary", "Stable", "Harmonious"],
+        strengths: [
+          "Complement each other's weaknesses",
+          "Create stability together",
+          "Handle different situations well",
+        ],
+      },
+      graphic: {
+        iconUrl: "/icons/balanced-partners.svg",
+        colorScheme: { primary: "#0F766E", secondary: "#7C3AED", accent: "#DB2777" },
+      },
     },
-    graphic: {
-      iconUrl: "/icons/spontaneous-adventurers.svg",
-      colorScheme: { primary: "#EA580C", secondary: "#DC2626", accent: "#65A30D" },
-    },
-  },
 
-  [CoupleTypeCode.BALANCED_PARTNERS]: {
-    code: CoupleTypeCode.BALANCED_PARTNERS,
-    displayName: "The Balanced Partners",
-    shortDescription: "Well-rounded couples who complement each other perfectly",
-    description: {
-      summary: "You both bring different strengths that complement each other perfectly...",
-      traits: ["Balanced", "Complementary", "Stable", "Harmonious"],
-      strengths: [
-        "Complement each other's weaknesses",
-        "Create stability together",
-        "Handle different situations well",
-      ],
+    // Placeholder for remaining types - fill in as needed
+    [CoupleTypeCode.CREATIVE_COLLABORATORS]: {
+      code: CoupleTypeCode.CREATIVE_COLLABORATORS,
+      displayName: "The Creative Collaborators",
+      shortDescription: "Artistic souls who inspire and create together",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/creative-collaborators.svg",
+        colorScheme: { primary: "#7C3AED", secondary: "#DB2777", accent: "#F59E0B" },
+      },
     },
-    graphic: {
-      iconUrl: "/icons/balanced-partners.svg",
-      colorScheme: { primary: "#0F766E", secondary: "#7C3AED", accent: "#DB2777" },
-    },
-  },
 
-  // Placeholder for remaining types - fill in as needed
-  [CoupleTypeCode.CREATIVE_COLLABORATORS]: {
-    code: CoupleTypeCode.CREATIVE_COLLABORATORS,
-    displayName: "The Creative Collaborators",
-    shortDescription: "Artistic souls who inspire and create together",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/creative-collaborators.svg",
-      colorScheme: { primary: "#7C3AED", secondary: "#DB2777", accent: "#F59E0B" },
+    [CoupleTypeCode.SUPPORTIVE_COMPANIONS]: {
+      code: CoupleTypeCode.SUPPORTIVE_COMPANIONS,
+      displayName: "The Supportive Companions",
+      shortDescription: "Caring partners who prioritize emotional support and understanding",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/supportive-companions.svg",
+        colorScheme: { primary: "#059669", secondary: "#0891B2", accent: "#FACC15" },
+      },
     },
-  },
 
-  [CoupleTypeCode.SUPPORTIVE_COMPANIONS]: {
-    code: CoupleTypeCode.SUPPORTIVE_COMPANIONS,
-    displayName: "The Supportive Companions",
-    shortDescription: "Caring partners who prioritize emotional support and understanding",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/supportive-companions.svg",
-      colorScheme: { primary: "#059669", secondary: "#0891B2", accent: "#FACC15" },
+    [CoupleTypeCode.AMBITIOUS_ACHIEVERS]: {
+      code: CoupleTypeCode.AMBITIOUS_ACHIEVERS,
+      displayName: "The Ambitious Achievers",
+      shortDescription: "Goal-oriented couples who motivate each other to succeed",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/ambitious-achievers.svg",
+        colorScheme: { primary: "#1E40AF", secondary: "#DC2626", accent: "#F59E0B" },
+      },
     },
-  },
 
-  [CoupleTypeCode.AMBITIOUS_ACHIEVERS]: {
-    code: CoupleTypeCode.AMBITIOUS_ACHIEVERS,
-    displayName: "The Ambitious Achievers",
-    shortDescription: "Goal-oriented couples who motivate each other to succeed",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/ambitious-achievers.svg",
-      colorScheme: { primary: "#1E40AF", secondary: "#DC2626", accent: "#F59E0B" },
+    [CoupleTypeCode.RELAXED_ROMANTICS]: {
+      code: CoupleTypeCode.RELAXED_ROMANTICS,
+      displayName: "The Relaxed Romantics",
+      shortDescription: "Easy-going lovers who prioritize romance and connection",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/relaxed-romantics.svg",
+        colorScheme: { primary: "#DB2777", secondary: "#F97316", accent: "#7C3AED" },
+      },
     },
-  },
 
-  [CoupleTypeCode.RELAXED_ROMANTICS]: {
-    code: CoupleTypeCode.RELAXED_ROMANTICS,
-    displayName: "The Relaxed Romantics",
-    shortDescription: "Easy-going lovers who prioritize romance and connection",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/relaxed-romantics.svg",
-      colorScheme: { primary: "#DB2777", secondary: "#F97316", accent: "#7C3AED" },
+    [CoupleTypeCode.INTELLECTUAL_EXPLORERS]: {
+      code: CoupleTypeCode.INTELLECTUAL_EXPLORERS,
+      displayName: "The Intellectual Explorers",
+      shortDescription: "Curious minds who love learning and exploring ideas together",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/intellectual-explorers.svg",
+        colorScheme: { primary: "#0F766E", secondary: "#1E40AF", accent: "#A21CAF" },
+      },
     },
-  },
 
-  [CoupleTypeCode.INTELLECTUAL_EXPLORERS]: {
-    code: CoupleTypeCode.INTELLECTUAL_EXPLORERS,
-    displayName: "The Intellectual Explorers",
-    shortDescription: "Curious minds who love learning and exploring ideas together",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/intellectual-explorers.svg",
-      colorScheme: { primary: "#0F766E", secondary: "#1E40AF", accent: "#A21CAF" },
+    [CoupleTypeCode.PRACTICAL_PARTNERS]: {
+      code: CoupleTypeCode.PRACTICAL_PARTNERS,
+      displayName: "The Practical Partners",
+      shortDescription: "Down-to-earth couples who value stability and common sense",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/practical-partners.svg",
+        colorScheme: { primary: "#7C2D12", secondary: "#059669", accent: "#F59E0B" },
+      },
     },
-  },
 
-  [CoupleTypeCode.PRACTICAL_PARTNERS]: {
-    code: CoupleTypeCode.PRACTICAL_PARTNERS,
-    displayName: "The Practical Partners",
-    shortDescription: "Down-to-earth couples who value stability and common sense",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/practical-partners.svg",
-      colorScheme: { primary: "#7C2D12", secondary: "#059669", accent: "#F59E0B" },
+    [CoupleTypeCode.PLAYFUL_COMPANIONS]: {
+      code: CoupleTypeCode.PLAYFUL_COMPANIONS,
+      displayName: "The Playful Companions",
+      shortDescription: "Fun-loving pairs who keep life light and joyful",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/playful-companions.svg",
+        colorScheme: { primary: "#FACC15", secondary: "#F97316", accent: "#7C3AED" },
+      },
     },
-  },
 
-  [CoupleTypeCode.PLAYFUL_COMPANIONS]: {
-    code: CoupleTypeCode.PLAYFUL_COMPANIONS,
-    displayName: "The Playful Companions",
-    shortDescription: "Fun-loving pairs who keep life light and joyful",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/playful-companions.svg",
-      colorScheme: { primary: "#FACC15", secondary: "#F97316", accent: "#7C3AED" },
+    [CoupleTypeCode.MINDFUL_MATCHES]: {
+      code: CoupleTypeCode.MINDFUL_MATCHES,
+      displayName: "The Mindful Matches",
+      shortDescription: "Conscious couples who prioritize mindfulness and intentional living",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/mindful-matches.svg",
+        colorScheme: { primary: "#65A30D", secondary: "#0F766E", accent: "#A21CAF" },
+      },
     },
-  },
 
-  [CoupleTypeCode.MINDFUL_MATCHES]: {
-    code: CoupleTypeCode.MINDFUL_MATCHES,
-    displayName: "The Mindful Matches",
-    shortDescription: "Conscious couples who prioritize mindfulness and intentional living",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/mindful-matches.svg",
-      colorScheme: { primary: "#65A30D", secondary: "#0F766E", accent: "#A21CAF" },
+    [CoupleTypeCode.INDEPENDENT_TOGETHER]: {
+      code: CoupleTypeCode.INDEPENDENT_TOGETHER,
+      displayName: "The Independent Together",
+      shortDescription: "Self-reliant individuals who choose to share their lives",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/independent-together.svg",
+        colorScheme: { primary: "#1E40AF", secondary: "#059669", accent: "#EA580C" },
+      },
     },
-  },
 
-  [CoupleTypeCode.INDEPENDENT_TOGETHER]: {
-    code: CoupleTypeCode.INDEPENDENT_TOGETHER,
-    displayName: "The Independent Together",
-    shortDescription: "Self-reliant individuals who choose to share their lives",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/independent-together.svg",
-      colorScheme: { primary: "#1E40AF", secondary: "#059669", accent: "#EA580C" },
+    [CoupleTypeCode.TRADITIONAL_SWEETHEARTS]: {
+      code: CoupleTypeCode.TRADITIONAL_SWEETHEARTS,
+      displayName: "The Traditional Sweethearts",
+      shortDescription: "Classic romantic partners who value timeless relationship values",
+      description: { summary: "...", traits: [], strengths: [] },
+      graphic: {
+        iconUrl: "/icons/traditional-sweethearts.svg",
+        colorScheme: { primary: "#DB2777", secondary: "#7C2D12", accent: "#FACC15" },
+      },
     },
-  },
-
-  [CoupleTypeCode.TRADITIONAL_SWEETHEARTS]: {
-    code: CoupleTypeCode.TRADITIONAL_SWEETHEARTS,
-    displayName: "The Traditional Sweethearts",
-    shortDescription: "Classic romantic partners who value timeless relationship values",
-    description: { summary: "...", traits: [], strengths: [] },
-    graphic: {
-      iconUrl: "/icons/traditional-sweethearts.svg",
-      colorScheme: { primary: "#DB2777", secondary: "#7C2D12", accent: "#FACC15" },
-    },
-  },
-};
+  };
