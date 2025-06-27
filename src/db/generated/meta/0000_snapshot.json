@@ -1,5 +1,5 @@
 {
-  "id": "a7ab666a-a3d0-4da0-ba6d-f526bf7c1936",
+  "id": "bf6b5545-df52-4cee-b381-50b513a3f627",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -389,6 +389,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "participant_status": {
+          "name": "participant_status",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         },
         "couple_type": {
           "name": "couple_type",

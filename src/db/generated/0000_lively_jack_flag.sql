@@ -42,6 +42,7 @@ CREATE TABLE "surveys" (
 	"survey_version" text DEFAULT '1.0' NOT NULL,
 	"current_question_index" integer DEFAULT 0 NOT NULL,
 	"last_activity_at" timestamp DEFAULT now() NOT NULL,
+	"participant_status" jsonb,
 	"couple_type" "couple_type_code",
 	"participant_scores" jsonb,
 	"compatibility" jsonb,

@@ -32,6 +32,19 @@ export const surveys = pgTable(
     currentQuestionIndex: integer("current_question_index").default(0).notNull(),
     lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
 
+    // Real-time survey state for participant synchronization
+    participantStatus: jsonb("participant_status").$type<
+      Record<
+        string,
+        {
+          isOnline: boolean;
+          currentSelection?: string;
+          hasSubmitted: boolean;
+          lastSeen: Date;
+        }
+      >
+    >(),
+
     coupleType: coupleTypeEnum("couple_type"),
     participantScores: jsonb("participant_scores").$type<Record<string, ScoreWeights>>(), // userId -> scores
     compatibility: jsonb("compatibility").$type<{
