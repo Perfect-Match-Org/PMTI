@@ -198,6 +198,35 @@ export async function getInvitationById(invitationId: string): Promise<Invitatio
 }
 
 /**
+ * Get invitation by session ID
+ */
+export async function getInvitationBySessionId(sessionId: string): Promise<Invitation | null> {
+  const db = await dbConnect();
+
+  const [invitation] = await db
+    .select()
+    .from(invitations)
+    .where(eq(invitations.sessionId, sessionId))
+    .limit(1);
+
+  return invitation || null;
+}
+
+/**
+ * Validate if user has access to a survey session
+ */
+export async function validateSurveyAccess(sessionId: string, userEmail: string): Promise<boolean> {
+  const invitation = await getInvitationBySessionId(sessionId);
+
+  if (!invitation) {
+    return false;
+  }
+
+  // Check if user is either the sender or recipient of the invitation
+  return invitation.fromUserEmail === userEmail || invitation.toUserEmail === userEmail;
+}
+
+/**
  * Create a new invitation
  */
 export async function createInvitation(data: {
