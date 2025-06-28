@@ -4,7 +4,7 @@ import { validateSurveyAccess } from "@/db/services/invitationService";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -13,7 +13,8 @@ export async function GET(
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const hasAccess = await validateSurveyAccess(params.sessionId, session.user.email);
+    const resolvedParams = await params;
+    const hasAccess = await validateSurveyAccess(resolvedParams.sessionId, session.user.email);
     
     return Response.json({ hasAccess });
   } catch (error) {
