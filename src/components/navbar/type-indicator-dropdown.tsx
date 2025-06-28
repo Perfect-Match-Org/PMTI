@@ -3,30 +3,45 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { DropdownItem } from "./nav-config";
+import { COUPLE_TYPES } from "@/lib/constants/coupleTypes";
 
-interface TypeIndicatorDropdownProps {
-  dropdown: DropdownItem[];
+export interface DropdownItem {
+  label: string;
+  href: string;
 }
 
-export function TypeIndicatorDropdown({ dropdown }: TypeIndicatorDropdownProps) {
+// Generate dropdown items from couple types
+const generateTypeIndicatorDropdown = (): DropdownItem[] => {
+  return Object.values(COUPLE_TYPES)
+    .filter(coupleType => coupleType && coupleType.displayName && coupleType.code)
+    .map((coupleType) => ({
+      label: coupleType.displayName,
+      href: `/type-indicator/${coupleType.code.toLowerCase().replace(/_/g, '-')}`,
+    }));
+};
+
+interface TypeIndicatorDropdownProps {
+  dropdown?: DropdownItem[];
+}
+
+export function TypeIndicatorDropdown({ dropdown = generateTypeIndicatorDropdown() }: TypeIndicatorDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-            setTimeout(() => setIsOpen(false), 150);
-          }
-        }}
+    <div 
+      className="relative"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <Link
+        onClick={() => console.log("clicked changing href now")}
+        href="/type"
         className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50"
         data-state={isOpen ? "open" : "closed"}
       >
         Type Indicator
         <ChevronDown className="relative top-[1px] ml-1 h-3 w-3 transition duration-200 group-data-[state=open]:rotate-180" />
-      </button>
+      </Link>
       
       {isOpen && (
         <div 

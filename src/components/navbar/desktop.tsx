@@ -41,8 +41,8 @@ export function DesktopNavbar() {
             <NavigationMenuList>
               {filteredNavItems.map((item) => (
                 <NavigationMenuItem key={item.href}>
-                  {item.dropdown ? (
-                    <TypeIndicatorDropdown dropdown={item.dropdown} />
+                  {item.label === "Type Indicator" ? (
+                    <TypeIndicatorDropdown />
                   ) : (
                     <NavigationMenuLink asChild>
                       <Link
