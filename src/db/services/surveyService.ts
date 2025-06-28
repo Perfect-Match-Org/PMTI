@@ -1,6 +1,6 @@
 import { eq, and, count } from "drizzle-orm";
 import { dbConnect } from "@/lib/dbConnect";
-import { surveys, surveyResponses, type Survey } from "@/db/schema";
+import { surveys, surveyResponses, surveyHistory, type Survey } from "@/db/schema";
 import { CoupleTypeCode, type ScoreWeights } from "@/lib/constants/coupleTypes";
 import { SurveyStatus } from "@/db/schema/survey";
 
@@ -149,4 +149,101 @@ export async function getLatestUserResponses(surveyId: string, questionId: strin
     .where(and(eq(surveyResponses.surveyId, surveyId), eq(surveyResponses.questionId, questionId)))
     .orderBy(surveyResponses.respondedAt)
     .limit(limit);
+}
+
+/**
+ * Get survey by session ID with participant information
+ */
+export async function getSurveyBySessionId(sessionId: string, currentUserEmail: string) {
+  const db = await dbConnect();
+
+  // Get existing survey
+  const survey = await db
+    .select()
+    .from(surveys)
+    .where(eq(surveys.sessionId, sessionId))
+    .limit(1);
+
+  if (!survey.length) {
+    throw new Error("Survey not found");
+  }
+
+  // Get partner from history
+  const history = await db
+    .select({
+      user1Email: surveyHistory.user1Email,
+      user2Email: surveyHistory.user2Email,
+    })
+    .from(surveyHistory)
+    .where(eq(surveyHistory.surveyId, survey[0].id))
+    .limit(1);
+
+  if (!history.length) {
+    throw new Error("Survey data corrupted");
+  }
+
+  // Verify user has access
+  if (history[0].user1Email !== currentUserEmail && history[0].user2Email !== currentUserEmail) {
+    throw new Error("Access denied");
+  }
+
+  // Determine partner
+  const partnerId = history[0].user1Email === currentUserEmail 
+    ? history[0].user2Email 
+    : history[0].user1Email;
+
+  return {
+    survey: survey[0],
+    partnerId,
+  };
+}
+
+/**
+ * Update participant status for real-time collaboration
+ */
+export async function updateParticipantStatus(
+  sessionId: string, 
+  userEmail: string, 
+  updates: {
+    currentSelection?: string;
+    hasSubmitted?: boolean;
+  }
+) {
+  const db = await dbConnect();
+
+  // Get current survey state
+  const existingSurvey = await db
+    .select()
+    .from(surveys)
+    .where(eq(surveys.sessionId, sessionId))
+    .limit(1);
+
+  if (!existingSurvey.length) {
+    throw new Error("Survey not found");
+  }
+
+  const currentParticipantStatus = existingSurvey[0].participantStatus || {};
+  const now = new Date();
+
+  // Update participant status
+  const updatedStatus = {
+    ...currentParticipantStatus,
+    [userEmail]: {
+      isOnline: true,
+      currentSelection: updates.currentSelection,
+      hasSubmitted: updates.hasSubmitted || false,
+      lastSeen: now,
+    },
+  };
+
+  // Update survey
+  await db
+    .update(surveys)
+    .set({
+      participantStatus: updatedStatus,
+      lastActivityAt: now,
+    })
+    .where(eq(surveys.sessionId, sessionId));
+
+  return updatedStatus;
 }

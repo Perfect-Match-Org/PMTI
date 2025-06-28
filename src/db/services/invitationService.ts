@@ -1,6 +1,6 @@
 import { eq, and, desc, sql } from "drizzle-orm";
 import { dbConnect } from "@/lib/dbConnect";
-import { invitations, users, type Invitation, type NewInvitation } from "@/db/schema";
+import { invitations, users, surveys, surveyHistory, type Invitation, type NewInvitation } from "@/db/schema";
 import { randomUUID } from "crypto";
 import { RelationshipType } from "@/lib/constants/relationships";
 
@@ -27,25 +27,62 @@ export async function isExpired(invitationId: string): Promise<boolean> {
 }
 
 /**
- * Accept an invitation and generate a session ID
+ * Accept an invitation, generate a session ID, and create the survey
  */
 export async function acceptInvitation(invitationId: string): Promise<Invitation> {
   const db = await dbConnect();
+
+  // Get the invitation first to access user emails
+  const invitation = await getInvitationById(invitationId);
+  if (!invitation) {
+    throw new Error("Invitation not found");
+  }
 
   // Retry up to 3 times in case of UUID collision (extremely rare)
   for (let attempt = 0; attempt < 3; attempt++) {
     const sessionId = `session_${randomUUID()}`;
     try {
-      const [updatedInvitation] = await db
-        .update(invitations)
-        .set({
-          status: "accepted",
-          sessionId: sessionId,
-        })
-        .where(eq(invitations.id, invitationId))
-        .returning();
+      // Create survey and update invitation in a single transaction
+      const result = await db.transaction(async (tx) => {
+        // Update invitation with accepted status and sessionId
+        const [updatedInvitation] = await tx
+          .update(invitations)
+          .set({
+            status: "accepted",
+            sessionId: sessionId,
+          })
+          .where(eq(invitations.id, invitationId))
+          .returning();
 
-      return updatedInvitation;
+        // Create the survey immediately
+        const [newSurvey] = await tx.insert(surveys).values({
+          sessionId,
+          startedAt: new Date(),
+          status: "started",
+          currentQuestionIndex: 0,
+          participantStatus: {},
+        }).returning();
+
+        // Determine user order (lexicographic for consistency)
+        const user1Email = invitation.fromUserEmail < invitation.toUserEmail 
+          ? invitation.fromUserEmail 
+          : invitation.toUserEmail;
+        const user2Email = invitation.fromUserEmail < invitation.toUserEmail 
+          ? invitation.toUserEmail 
+          : invitation.fromUserEmail;
+
+        // Create survey history record
+        await tx.insert(surveyHistory).values({
+          surveyId: newSurvey.id,
+          user1Email,
+          user2Email,
+          relationship: invitation.relationship,
+        });
+
+        return updatedInvitation;
+      });
+
+      return result;
     } catch (error: any) {
       // Check if it's a duplicate key error on sessionId
       if (error.code === "23505" && error.constraint?.includes("session_id")) {
