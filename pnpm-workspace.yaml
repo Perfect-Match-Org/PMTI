@@ -1,2 +1,10 @@
 onlyBuiltDependencies:
   - supabase
+packages:
+  - "src/*"
+  - "src/app/*"
+  - "components"
+  - "data"
+  - "db"
+  - "hooks"
+  - "lib"
