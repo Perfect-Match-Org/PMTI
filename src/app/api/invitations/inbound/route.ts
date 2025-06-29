@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { getUserByEmail, getReceivedInvitations } from "@/db/services";
+import { PendingInvitation } from "@/types/invitation";
 
 export async function GET() {
   try {
@@ -15,7 +16,10 @@ export async function GET() {
     }
 
     // Get received invitations
-    const receivedInvitations = await getReceivedInvitations(session.user.email, 10);
+    const receivedInvitations: PendingInvitation[] = await getReceivedInvitations(
+      session.user.email,
+      10
+    );
 
     return NextResponse.json({
       inbound: receivedInvitations,

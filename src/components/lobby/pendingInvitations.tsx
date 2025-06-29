@@ -8,37 +8,15 @@ import { UserAvatar } from "@components/user-avatar";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { PendingInvitation } from "@/types/invitation";
+import { Invitation } from "@/db/schema";
 
-interface PendingInvitation {
-  id: string;
-  fromUser: {
-    email: string;
-    name: string;
-    avatar?: string | null;
-  };
-  status: string;
-  relationship: string;
-  sentAt: Date;
-  expiresAt: Date;
-  sessionId: string | null;
-}
 
 export function PendingInvitations() {
   const { data: session } = useSession();
   const router = useRouter();
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Centralized function to format invitation data from API
-  const formatInvitationData = (apiInvitation: any): PendingInvitation => ({
-    id: apiInvitation.id,
-    fromUser: apiInvitation.fromUser,
-    status: apiInvitation.status,
-    relationship: apiInvitation.relationship,
-    sentAt: new Date(apiInvitation.sentAt),
-    expiresAt: new Date(apiInvitation.expiresAt),
-    sessionId: apiInvitation.sessionId,
-  });
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -51,7 +29,12 @@ export function PendingInvitations() {
         }
 
         const data = await response.json();
-        const formattedInvitations = data.inbound.map(formatInvitationData);
+        // Ensure dates are converted to Date objects
+        const formattedInvitations = data.inbound.map((inv: any) => ({
+          ...inv,
+          sentAt: new Date(inv.sentAt),
+          expiresAt: new Date(inv.expiresAt)
+        }));
         setInvitations(formattedInvitations);
       } catch (error) {
         console.error("Failed to fetch invitations:", error);
@@ -73,34 +56,29 @@ export function PendingInvitations() {
           event: '*',
           schema: 'public',
           table: 'invitations',
-          filter: `to_user_email=eq.${session.user.email}`
+          filter: `toUserEmail=eq.${session.user.email}`
         },
         async (payload) => {
-          console.log('Real-time invitation update:', payload);
-          console.log('Event type:', payload.eventType);
-          console.log('Payload new:', payload.new);
-          console.log('Payload old:', payload.old);
-
           if (payload.eventType === 'INSERT') {
-            const newInvitation = payload.new as any;
-            if (newInvitation.status === 'pending' && new Date(newInvitation.expires_at) > new Date()) {
+            const newInvitation = payload.new as Invitation;
+            if (newInvitation.status === 'pending' && new Date(newInvitation.expiresAt) > new Date()) {
               try {
                 // Fetch user data to get the actual name
-                const userResponse = await fetch(`/api/users/${encodeURIComponent(newInvitation.from_user_email)}`);
+                const userResponse = await fetch(`/api/users/${encodeURIComponent(newInvitation.fromUserEmail)}`);
                 const userData = userResponse.ok ? await userResponse.json() : null;
 
                 const formattedInvitation: PendingInvitation = {
                   id: newInvitation.id,
                   fromUser: {
-                    email: newInvitation.from_user_email,
-                    name: userData?.name || newInvitation.from_user_email.split("@")[0],
+                    email: newInvitation.fromUserEmail,
+                    name: userData?.name || newInvitation.fromUserEmail.split("@")[0],
                     avatar: userData?.avatar || null,
                   },
                   status: newInvitation.status,
                   relationship: newInvitation.relationship,
-                  sentAt: new Date(newInvitation.sent_at),
-                  expiresAt: new Date(newInvitation.expires_at),
-                  sessionId: newInvitation.session_id,
+                  sentAt: new Date(newInvitation.sentAt),
+                  expiresAt: new Date(newInvitation.expiresAt),
+                  sessionId: newInvitation.sessionId,
                 };
                 setInvitations(prev => [formattedInvitation, ...prev]);
               } catch (error) {

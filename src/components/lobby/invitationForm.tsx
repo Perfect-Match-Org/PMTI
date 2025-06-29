@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { Invitation } from "@/db/schema";
 
 export function InvitationForm() {
   const { data: session } = useSession();
@@ -92,7 +93,7 @@ export function InvitationForm() {
           (payload) => {
             console.log('Real-time invitation status update:', payload);
 
-            const updatedInvitation = payload.new as any;
+            const updatedInvitation = payload.new as Invitation;
 
             // Double check for safety
             if (updatedInvitation.id === invitationId) {
@@ -100,10 +101,10 @@ export function InvitationForm() {
                 setInvitationDetails(prev => ({
                   ...prev,
                   status: 'accepted',
-                  sessionId: updatedInvitation.session_id
+                  ...(typeof updatedInvitation.sessionId === 'string' ? { sessionId: updatedInvitation.sessionId } : {})
                 }));
-                if (updatedInvitation.session_id) {
-                  router.push(`/survey/${updatedInvitation.session_id}`);
+                if (updatedInvitation.sessionId) {
+                  router.push(`/survey/${updatedInvitation.sessionId}`);
                 }
               } else if (updatedInvitation.status === 'declined') {
                 setInvitationDetails(prev => ({ ...prev, status: 'rejected' }));
@@ -222,7 +223,7 @@ export function InvitationForm() {
       <CardHeader>
         <CardTitle>Invite Your Partner</CardTitle>
         <CardDescription>
-          Enter your partner's NetID to send them a quiz invitation
+          Enter your partner&apos;s NetID to send them a quiz invitation
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -292,7 +293,7 @@ export function InvitationForm() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="netid">Partner's NetID</Label>
+            <Label htmlFor="netid">Partner&apos;s NetID</Label>
             <Input
               id="netid"
               type="text"
