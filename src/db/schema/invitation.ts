@@ -13,18 +13,18 @@ export const invitationStatusEnum = pgEnum("invitation_status", [
 export const invitations = pgTable(
   "invitations",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    fromUserEmail: text("from_user_email")
+    id: uuid().primaryKey().defaultRandom(),
+    fromUserEmail: text()
       .references(() => users.email)
       .notNull(),
-    toUserEmail: text("to_user_email")
+    toUserEmail: text()
       .references(() => users.email)
       .notNull(),
-    status: invitationStatusEnum("status").default("pending").notNull(),
+    status: invitationStatusEnum().default("pending").notNull(),
     relationship: relationshipTypeEnum("relationship").notNull(),
-    sessionId: text("session_id").unique(), // Set when accepted
-    sentAt: timestamp("sent_at").defaultNow().notNull(),
-    expiresAt: timestamp("expires_at")
+    sessionId: text().unique(), // Set when accepted
+    sentAt: timestamp().defaultNow().notNull(),
+    expiresAt: timestamp()
       .default(sql`NOW() + INTERVAL '30 minutes'`)
       .notNull(),
   },

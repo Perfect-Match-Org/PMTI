@@ -1,5 +1,5 @@
 {
-  "id": "bf6b5545-df52-4cee-b381-50b513a3f627",
+  "id": "266fe50b-68a7-40d8-964e-90ac8b866781",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -26,22 +26,22 @@
           "primaryKey": false,
           "notNull": false
         },
-        "total_surveys_taken": {
-          "name": "total_surveys_taken",
+        "totalSurveysTaken": {
+          "name": "totalSurveysTaken",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "email_notifications": {
-          "name": "email_notifications",
+        "emailNotifications": {
+          "name": "emailNotifications",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": true
         },
-        "has_registered": {
-          "name": "has_registered",
+        "hasRegistered": {
+          "name": "hasRegistered",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -72,20 +72,20 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "survey_id": {
-          "name": "survey_id",
+        "surveyId": {
+          "name": "surveyId",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "user1_email": {
-          "name": "user1_email",
+        "user1Email": {
+          "name": "user1Email",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "user2_email": {
-          "name": "user2_email",
+        "user2Email": {
+          "name": "user2Email",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -97,8 +97,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "participated_at": {
-          "name": "participated_at",
+        "participatedAt": {
+          "name": "participatedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
@@ -110,13 +110,13 @@
           "name": "survey_participants_users_idx",
           "columns": [
             {
-              "expression": "user1_email",
+              "expression": "user1Email",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
             {
-              "expression": "user2_email",
+              "expression": "user2Email",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -131,7 +131,7 @@
           "name": "survey_participants_user1_idx",
           "columns": [
             {
-              "expression": "user1_email",
+              "expression": "user1Email",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -146,7 +146,7 @@
           "name": "survey_participants_user2_idx",
           "columns": [
             {
-              "expression": "user2_email",
+              "expression": "user2Email",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -159,12 +159,12 @@
         }
       },
       "foreignKeys": {
-        "survey_participants_survey_id_surveys_id_fk": {
-          "name": "survey_participants_survey_id_surveys_id_fk",
+        "survey_participants_surveyId_surveys_id_fk": {
+          "name": "survey_participants_surveyId_surveys_id_fk",
           "tableFrom": "survey_participants",
           "tableTo": "surveys",
           "columnsFrom": [
-            "survey_id"
+            "surveyId"
           ],
           "columnsTo": [
             "id"
@@ -172,12 +172,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "survey_participants_user1_email_users_email_fk": {
-          "name": "survey_participants_user1_email_users_email_fk",
+        "survey_participants_user1Email_users_email_fk": {
+          "name": "survey_participants_user1Email_users_email_fk",
           "tableFrom": "survey_participants",
           "tableTo": "users",
           "columnsFrom": [
-            "user1_email"
+            "user1Email"
           ],
           "columnsTo": [
             "email"
@@ -185,12 +185,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "survey_participants_user2_email_users_email_fk": {
-          "name": "survey_participants_user2_email_users_email_fk",
+        "survey_participants_user2Email_users_email_fk": {
+          "name": "survey_participants_user2Email_users_email_fk",
           "tableFrom": "survey_participants",
           "tableTo": "users",
           "columnsFrom": [
-            "user2_email"
+            "user2Email"
           ],
           "columnsTo": [
             "email"
@@ -205,7 +205,7 @@
       "checkConstraints": {
         "email_order_check": {
           "name": "email_order_check",
-          "value": "\"survey_participants\".\"user1_email\" < \"survey_participants\".\"user2_email\""
+          "value": "\"survey_participants\".\"user1Email\" < \"survey_participants\".\"user2Email\""
         }
       },
       "isRLSEnabled": false
@@ -221,32 +221,32 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "survey_id": {
-          "name": "survey_id",
+        "surveyId": {
+          "name": "surveyId",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "user_email": {
-          "name": "user_email",
+        "userEmail": {
+          "name": "userEmail",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "question_id": {
-          "name": "question_id",
+        "questionId": {
+          "name": "questionId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "selected_option": {
-          "name": "selected_option",
+        "selectedOption": {
+          "name": "selectedOption",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "responded_at": {
-          "name": "responded_at",
+        "respondedAt": {
+          "name": "respondedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
@@ -258,7 +258,7 @@
           "name": "survey_responses_survey_idx",
           "columns": [
             {
-              "expression": "survey_id",
+              "expression": "surveyId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -273,13 +273,13 @@
           "name": "survey_responses_survey_question_idx",
           "columns": [
             {
-              "expression": "survey_id",
+              "expression": "surveyId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
             {
-              "expression": "question_id",
+              "expression": "questionId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -292,12 +292,12 @@
         }
       },
       "foreignKeys": {
-        "survey_responses_survey_id_surveys_id_fk": {
-          "name": "survey_responses_survey_id_surveys_id_fk",
+        "survey_responses_surveyId_surveys_id_fk": {
+          "name": "survey_responses_surveyId_surveys_id_fk",
           "tableFrom": "survey_responses",
           "tableTo": "surveys",
           "columnsFrom": [
-            "survey_id"
+            "surveyId"
           ],
           "columnsTo": [
             "id"
@@ -305,12 +305,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "survey_responses_user_email_users_email_fk": {
-          "name": "survey_responses_user_email_users_email_fk",
+        "survey_responses_userEmail_users_email_fk": {
+          "name": "survey_responses_userEmail_users_email_fk",
           "tableFrom": "survey_responses",
           "tableTo": "users",
           "columnsFrom": [
-            "user_email"
+            "userEmail"
           ],
           "columnsTo": [
             "email"
@@ -336,21 +336,21 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "session_id": {
-          "name": "session_id",
+        "sessionId": {
+          "name": "sessionId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "started_at": {
-          "name": "started_at",
+        "startedAt": {
+          "name": "startedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "completed_at": {
-          "name": "completed_at",
+        "completedAt": {
+          "name": "completedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
@@ -369,29 +369,29 @@
           "notNull": true,
           "default": "'started'"
         },
-        "survey_version": {
-          "name": "survey_version",
+        "surveyVersion": {
+          "name": "surveyVersion",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "default": "'1.0'"
         },
-        "current_question_index": {
-          "name": "current_question_index",
+        "currentQuestionIndex": {
+          "name": "currentQuestionIndex",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "last_activity_at": {
-          "name": "last_activity_at",
+        "lastActivityAt": {
+          "name": "lastActivityAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "participant_status": {
-          "name": "participant_status",
+        "participantStatus": {
+          "name": "participantStatus",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -436,7 +436,7 @@
           "name": "surveys_completed_at_idx",
           "columns": [
             {
-              "expression": "completed_at",
+              "expression": "completedAt",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -466,11 +466,11 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "surveys_session_id_unique": {
-          "name": "surveys_session_id_unique",
+        "surveys_sessionId_unique": {
+          "name": "surveys_sessionId_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "session_id"
+            "sessionId"
           ]
         }
       },
@@ -489,14 +489,14 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "from_user_email": {
-          "name": "from_user_email",
+        "fromUserEmail": {
+          "name": "fromUserEmail",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "to_user_email": {
-          "name": "to_user_email",
+        "toUserEmail": {
+          "name": "toUserEmail",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -516,21 +516,21 @@
           "primaryKey": false,
           "notNull": true
         },
-        "session_id": {
-          "name": "session_id",
+        "sessionId": {
+          "name": "sessionId",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "sent_at": {
-          "name": "sent_at",
+        "sentAt": {
+          "name": "sentAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "expires_at": {
-          "name": "expires_at",
+        "expiresAt": {
+          "name": "expiresAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
@@ -542,7 +542,7 @@
           "name": "invitations_from_user_idx",
           "columns": [
             {
-              "expression": "from_user_email",
+              "expression": "fromUserEmail",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -557,7 +557,7 @@
           "name": "invitations_to_user_status_idx",
           "columns": [
             {
-              "expression": "to_user_email",
+              "expression": "toUserEmail",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -578,7 +578,7 @@
           "name": "invitations_expires_at_idx",
           "columns": [
             {
-              "expression": "expires_at",
+              "expression": "expiresAt",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -591,12 +591,12 @@
         }
       },
       "foreignKeys": {
-        "invitations_from_user_email_users_email_fk": {
-          "name": "invitations_from_user_email_users_email_fk",
+        "invitations_fromUserEmail_users_email_fk": {
+          "name": "invitations_fromUserEmail_users_email_fk",
           "tableFrom": "invitations",
           "tableTo": "users",
           "columnsFrom": [
-            "from_user_email"
+            "fromUserEmail"
           ],
           "columnsTo": [
             "email"
@@ -604,12 +604,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "invitations_to_user_email_users_email_fk": {
-          "name": "invitations_to_user_email_users_email_fk",
+        "invitations_toUserEmail_users_email_fk": {
+          "name": "invitations_toUserEmail_users_email_fk",
           "tableFrom": "invitations",
           "tableTo": "users",
           "columnsFrom": [
-            "to_user_email"
+            "toUserEmail"
           ],
           "columnsTo": [
             "email"
@@ -620,11 +620,11 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "invitations_session_id_unique": {
-          "name": "invitations_session_id_unique",
+        "invitations_sessionId_unique": {
+          "name": "invitations_sessionId_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "session_id"
+            "sessionId"
           ]
         }
       },
@@ -632,11 +632,11 @@
       "checkConstraints": {
         "from_user_email_check": {
           "name": "from_user_email_check",
-          "value": "\"invitations\".\"from_user_email\" LIKE '%@cornell.edu' OR \"invitations\".\"from_user_email\" = 'cornell.perfectmatch@gmail.com'"
+          "value": "\"invitations\".\"fromUserEmail\" LIKE '%@cornell.edu' OR \"invitations\".\"fromUserEmail\" = 'cornell.perfectmatch@gmail.com'"
         },
         "to_user_email_check": {
           "name": "to_user_email_check",
-          "value": "\"invitations\".\"to_user_email\" LIKE '%@cornell.edu' OR \"invitations\".\"to_user_email\" = 'cornell.perfectmatch@gmail.com'"
+          "value": "\"invitations\".\"toUserEmail\" LIKE '%@cornell.edu' OR \"invitations\".\"toUserEmail\" = 'cornell.perfectmatch@gmail.com'"
         }
       },
       "isRLSEnabled": false
@@ -652,8 +652,8 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "type_code": {
-          "name": "type_code",
+        "typeCode": {
+          "name": "typeCode",
           "type": "couple_type_code",
           "typeSchema": "public",
           "primaryKey": false,
@@ -687,11 +687,11 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "couple_type_analytics_type_code_unique": {
-          "name": "couple_type_analytics_type_code_unique",
+        "couple_type_analytics_typeCode_unique": {
+          "name": "couple_type_analytics_typeCode_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "type_code"
+            "typeCode"
           ]
         }
       },
@@ -710,14 +710,14 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "question_id": {
-          "name": "question_id",
+        "questionId": {
+          "name": "questionId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "option_frequency": {
-          "name": "option_frequency",
+        "optionFrequency": {
+          "name": "optionFrequency",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
@@ -728,11 +728,11 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "question_analytics_question_id_unique": {
-          "name": "question_analytics_question_id_unique",
+        "question_analytics_questionId_unique": {
+          "name": "question_analytics_questionId_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "question_id"
+            "questionId"
           ]
         }
       },
@@ -751,14 +751,14 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "survey_id": {
-          "name": "survey_id",
+        "surveyId": {
+          "name": "surveyId",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "user_email": {
-          "name": "user_email",
+        "userEmail": {
+          "name": "userEmail",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -770,14 +770,14 @@
           "primaryKey": false,
           "notNull": true
         },
-        "accuracy_rating": {
-          "name": "accuracy_rating",
+        "accuracyRating": {
+          "name": "accuracyRating",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
-        "enjoyment_rating": {
-          "name": "enjoyment_rating",
+        "enjoymentRating": {
+          "name": "enjoymentRating",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -788,8 +788,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "submitted_at": {
-          "name": "submitted_at",
+        "submittedAt": {
+          "name": "submittedAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
@@ -798,12 +798,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "feedback_survey_id_surveys_id_fk": {
-          "name": "feedback_survey_id_surveys_id_fk",
+        "feedback_surveyId_surveys_id_fk": {
+          "name": "feedback_surveyId_surveys_id_fk",
           "tableFrom": "feedback",
           "tableTo": "surveys",
           "columnsFrom": [
-            "survey_id"
+            "surveyId"
           ],
           "columnsTo": [
             "id"
@@ -811,12 +811,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "feedback_user_email_users_email_fk": {
-          "name": "feedback_user_email_users_email_fk",
+        "feedback_userEmail_users_email_fk": {
+          "name": "feedback_userEmail_users_email_fk",
           "tableFrom": "feedback",
           "tableTo": "users",
           "columnsFrom": [
-            "user_email"
+            "userEmail"
           ],
           "columnsTo": [
             "email"

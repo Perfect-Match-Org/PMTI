@@ -6,17 +6,17 @@ export const feedbackRatingEnum = pgEnum("feedback_rating", ["positive", "negati
 
 export const feedback = pgTable("feedback", {
   id: uuid("id").primaryKey().defaultRandom(),
-  surveyId: uuid("survey_id")
+  surveyId: uuid()
     .references(() => surveys.id)
     .notNull(),
-  userEmail: text("user_email")
+  userEmail: text()
     .references(() => users.email)
     .notNull(),
-  rating: feedbackRatingEnum("rating").notNull(),
-  accuracyRating: integer("accuracy_rating"), // 1-5 scale
-  enjoymentRating: integer("enjoyment_rating"), // 1-5 scale
-  comments: text("comments"), // max 5000 chars enforced at app level
-  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+  rating: feedbackRatingEnum().notNull(),
+  accuracyRating: integer(), // 1-5 scale
+  enjoymentRating: integer(), // 1-5 scale
+  comments: text(), // max 5000 chars enforced at app level
+  submittedAt: timestamp().defaultNow().notNull(),
 });
 
 export type Feedback = typeof feedback.$inferSelect;
