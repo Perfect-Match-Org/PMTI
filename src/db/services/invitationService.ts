@@ -1,6 +1,6 @@
 import { eq, and, desc, sql } from "drizzle-orm";
 import { dbConnect } from "@/lib/dbConnect";
-import { invitations, users, surveys, surveyHistory, type Invitation, type NewInvitation } from "@/db/schema";
+import { invitations, users, surveys, surveyHistory, type Invitation } from "@/db/schema";
 import { randomUUID } from "crypto";
 import { RelationshipType } from "@/lib/constants/relationships";
 
@@ -55,21 +55,26 @@ export async function acceptInvitation(invitationId: string): Promise<Invitation
           .returning();
 
         // Create the survey immediately
-        const [newSurvey] = await tx.insert(surveys).values({
-          sessionId,
-          startedAt: new Date(),
-          status: "started",
-          currentQuestionIndex: 0,
-          participantStatus: {},
-        }).returning();
+        const [newSurvey] = await tx
+          .insert(surveys)
+          .values({
+            sessionId,
+            startedAt: new Date(),
+            status: "started",
+            currentQuestionIndex: 0,
+            participantStatus: {},
+          })
+          .returning();
 
         // Determine user order (lexicographic for consistency)
-        const user1Email = invitation.fromUserEmail < invitation.toUserEmail 
-          ? invitation.fromUserEmail 
-          : invitation.toUserEmail;
-        const user2Email = invitation.fromUserEmail < invitation.toUserEmail 
-          ? invitation.toUserEmail 
-          : invitation.fromUserEmail;
+        const user1Email =
+          invitation.fromUserEmail < invitation.toUserEmail
+            ? invitation.fromUserEmail
+            : invitation.toUserEmail;
+        const user2Email =
+          invitation.fromUserEmail < invitation.toUserEmail
+            ? invitation.toUserEmail
+            : invitation.fromUserEmail;
 
         // Create survey history record
         await tx.insert(surveyHistory).values({
@@ -83,13 +88,17 @@ export async function acceptInvitation(invitationId: string): Promise<Invitation
       });
 
       return result;
-    } catch (error: any) {
-      // Check if it's a duplicate key error on sessionId
-      if (error.code === "23505" && error.constraint?.includes("session_id")) {
-        if (attempt === 2) {
-          throw new Error("Failed to generate unique session ID after 3 attempts");
+    } catch (error: unknown) {
+      // This is extremely rare to trigger.
+      // It handles the case where a UUID collision occurs
+      if (error && typeof error === "object" && "code" in error && "constraint" in error) {
+        const dbError = error as { code: string; constraint?: string };
+        if (dbError.code === "23505" && dbError.constraint?.includes("session_id")) {
+          if (attempt === 2) {
+            throw new Error("Failed to generate unique session ID after 3 attempts");
+          }
+          continue;
         }
-        continue;
       }
       throw error;
     }
@@ -150,7 +159,7 @@ export async function getReceivedInvitations(email: string, limit: number = 10) 
       sessionId: invitations.sessionId,
     })
     .from(invitations)
-    .leftJoin(users, eq(invitations.fromUserEmail, users.email))
+    .innerJoin(users, eq(invitations.fromUserEmail, users.email))
     .where(
       and(
         eq(invitations.toUserEmail, email),
@@ -207,7 +216,7 @@ export async function getSentInvitations(email: string, limit: number = 1) {
       sessionId: invitations.sessionId,
     })
     .from(invitations)
-    .leftJoin(users, eq(invitations.toUserEmail, users.email))
+    .innerJoin(users, eq(invitations.toUserEmail, users.email))
     .where(
       and(
         eq(invitations.fromUserEmail, email),

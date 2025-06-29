@@ -39,7 +39,7 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
-    async redirect({ url, baseUrl }) {
+    async redirect({ baseUrl }) {
       return baseUrl;
     },
   },

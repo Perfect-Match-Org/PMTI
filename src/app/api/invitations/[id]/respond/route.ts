@@ -43,7 +43,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       status: updatedInvitation.status,
       sessionId: updatedInvitation.sessionId,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to respond to invitation" }, { status: 500 });
   }
 }
