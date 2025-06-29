@@ -10,13 +10,9 @@ import { SurveyStatus } from "@/db/schema/survey";
 export async function getSurveyCountByStatus(status?: SurveyStatus): Promise<number> {
   const db = await dbConnect();
 
-  let query = db.select({ count: count() }).from(surveys);
-
-  if (status) {
-    query.where(eq(surveys.status, status));
-  }
-
-  const [result] = await query;
+  const [result] = status
+    ? await db.select({ count: count() }).from(surveys).where(eq(surveys.status, status))
+    : await db.select({ count: count() }).from(surveys);
 
   if (!result) {
     return 0;
@@ -246,4 +242,128 @@ export async function updateParticipantStatus(
     .where(eq(surveys.sessionId, sessionId));
 
   return updatedStatus;
+}
+
+/**
+ * Advance survey to next question
+ */
+export async function advanceSurvey(sessionId: string, totalQuestions: number) {
+  const db = await dbConnect();
+
+  // Get current survey state
+  const existingSurvey = await db
+    .select()
+    .from(surveys)
+    .where(eq(surveys.sessionId, sessionId))
+    .limit(1);
+
+  if (!existingSurvey.length) {
+    throw new Error("Survey not found");
+  }
+
+  const survey = existingSurvey[0];
+  const nextQuestionIndex = survey.currentQuestionIndex + 1;
+
+  if (nextQuestionIndex >= totalQuestions) {
+    // Survey completed
+    await db
+      .update(surveys)
+      .set({
+        status: "completed",
+        completedAt: new Date(),
+        currentQuestionIndex: nextQuestionIndex,
+        participantStatus: {}, // Clear status
+      })
+      .where(eq(surveys.sessionId, sessionId));
+
+    return { 
+      success: true, 
+      completed: true,
+      currentQuestionIndex: nextQuestionIndex 
+    };
+  }
+
+  // Advance to next question
+  await db
+    .update(surveys)
+    .set({
+      currentQuestionIndex: nextQuestionIndex,
+      participantStatus: {}, // Reset participant status for new question
+      lastActivityAt: new Date(),
+    })
+    .where(eq(surveys.sessionId, sessionId));
+
+  return { 
+    success: true, 
+    completed: false,
+    currentQuestionIndex: nextQuestionIndex 
+  };
+}
+
+/**
+ * Save survey response and update participant status
+ */
+export async function saveSurveyResponse(
+  sessionId: string,
+  userEmail: string,
+  questionId: string,
+  selectedOption: string
+) {
+  const db = await dbConnect();
+  const now = new Date();
+
+  // Get survey
+  const existingSurvey = await db
+    .select()
+    .from(surveys)
+    .where(eq(surveys.sessionId, sessionId))
+    .limit(1);
+
+  if (!existingSurvey.length) {
+    throw new Error("Survey not found");
+  }
+
+  const survey = existingSurvey[0];
+
+  // Save response and update participant status in transaction
+  await db.transaction(async (tx) => {
+    // Save response
+    await tx.insert(surveyResponses).values({
+      surveyId: survey.id,
+      userEmail,
+      questionId,
+      selectedOption,
+      respondedAt: now,
+    });
+
+    // Update participant status to show submission
+    const currentParticipantStatus = survey.participantStatus || {};
+    const updatedStatus = {
+      ...currentParticipantStatus,
+      [userEmail]: {
+        ...currentParticipantStatus[userEmail],
+        isOnline: true,
+        currentSelection: selectedOption,
+        hasSubmitted: true,
+        lastSeen: now,
+      },
+    };
+
+    await tx
+      .update(surveys)
+      .set({
+        participantStatus: updatedStatus,
+        lastActivityAt: now,
+      })
+      .where(eq(surveys.sessionId, sessionId));
+  });
+
+  // Return updated status
+  const updatedSurvey = await db
+    .select({ participantStatus: surveys.participantStatus })
+    .from(surveys)
+    .where(eq(surveys.sessionId, sessionId))
+    .limit(1);
+
+  return updatedSurvey[0].participantStatus;
 }
