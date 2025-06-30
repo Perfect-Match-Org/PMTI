@@ -21,6 +21,6 @@ export const navigationItems: NavItem[] = [
   },
   {
     label: "Type Indicator",
-    href: "/coupleTypes",
+    href: "/type",
   }
 ];
