@@ -16,7 +16,7 @@ const generateTypeIndicatorDropdown = (): DropdownItem[] => {
     .filter(coupleType => coupleType && coupleType.displayName && coupleType.code)
     .map((coupleType) => ({
       label: coupleType.displayName,
-      href: `/type-indicator/${coupleType.code.toLowerCase().replace(/_/g, '-')}`,
+      href: `/type/${coupleType.code.toLowerCase().replace(/_/g, '-')}`,
     }));
 };
 
