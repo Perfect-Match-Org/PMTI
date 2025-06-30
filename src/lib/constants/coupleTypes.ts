@@ -141,7 +141,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       },
     },
     graphic: {
-      iconUrl: "/icons/adventure-planners.svg",
+      iconUrl: "/huajie.png",
       colorScheme: {
         primary: "#4F46E5",
         secondary: "#7C3AED",
@@ -182,7 +182,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       }
     },
     graphic: {
-      iconUrl: "/icons/cozy-homebodies.svg",
+      iconUrl: "/huajie.png",
       colorScheme: {
         primary: "#DC2626",
         secondary: "#F97316",
@@ -205,7 +205,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
         ],
       },
       graphic: {
-        iconUrl: "/icons/social-butterflies.svg",
+        iconUrl: "/huajie.png",
         colorScheme: { primary: "#059669", secondary: "#0891B2", accent: "#7C3AED" },
       },
     },
@@ -224,7 +224,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
         ],
       },
       graphic: {
-        iconUrl: "/icons/deep-thinkers.svg",
+        iconUrl: "/huajie.png",
         colorScheme: { primary: "#7C2D12", secondary: "#A21CAF", accent: "#1E40AF" },
       },
     },
@@ -240,7 +240,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
         strengths: ["Always up for new experiences", "Keep life exciting", "Adapt well to changes"],
       },
       graphic: {
-        iconUrl: "/icons/spontaneous-adventurers.svg",
+        iconUrl: "/cindy.jpg",
         colorScheme: { primary: "#EA580C", secondary: "#DC2626", accent: "#65A30D" },
       },
     },
@@ -259,7 +259,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
         ],
       },
       graphic: {
-        iconUrl: "/icons/balanced-partners.svg",
+        iconUrl: "/cindy.jpg",
         colorScheme: { primary: "#0F766E", secondary: "#7C3AED", accent: "#DB2777" },
       },
     },
@@ -271,7 +271,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Artistic souls who inspire and create together",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/creative-collaborators.svg",
+        iconUrl: "/cindy.jpg",
         colorScheme: { primary: "#7C3AED", secondary: "#DB2777", accent: "#F59E0B" },
       },
     },
@@ -282,7 +282,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Caring partners who prioritize emotional support and understanding",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/supportive-companions.svg",
+        iconUrl: "/cindy.jpg",
         colorScheme: { primary: "#059669", secondary: "#0891B2", accent: "#FACC15" },
       },
     },
@@ -293,7 +293,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Goal-oriented couples who motivate each other to succeed",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/ambitious-achievers.svg",
+        iconUrl: "/nick.jpg",
         colorScheme: { primary: "#1E40AF", secondary: "#DC2626", accent: "#F59E0B" },
       },
     },
@@ -304,7 +304,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Easy-going lovers who prioritize romance and connection",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/relaxed-romantics.svg",
+        iconUrl: "/nick.jpg",
         colorScheme: { primary: "#DB2777", secondary: "#F97316", accent: "#7C3AED" },
       },
     },
@@ -315,7 +315,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Curious minds who love learning and exploring ideas together",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/intellectual-explorers.svg",
+        iconUrl: "/nick.jpg",
         colorScheme: { primary: "#0F766E", secondary: "#1E40AF", accent: "#A21CAF" },
       },
     },
@@ -326,7 +326,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Down-to-earth couples who value stability and common sense",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/practical-partners.svg",
+        iconUrl: "/nick.jpg",
         colorScheme: { primary: "#7C2D12", secondary: "#059669", accent: "#F59E0B" },
       },
     },
@@ -337,7 +337,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Fun-loving pairs who keep life light and joyful",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/playful-companions.svg",
+        iconUrl: "/pratyush.jpg",
         colorScheme: { primary: "#FACC15", secondary: "#F97316", accent: "#7C3AED" },
       },
     },
@@ -348,7 +348,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Conscious couples who prioritize mindfulness and intentional living",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/mindful-matches.svg",
+        iconUrl: "/pratyush.jpg",
         colorScheme: { primary: "#65A30D", secondary: "#0F766E", accent: "#A21CAF" },
       },
     },
@@ -359,7 +359,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Self-reliant individuals who choose to share their lives",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/independent-together.svg",
+        iconUrl: "/pratyush.jpg",
         colorScheme: { primary: "#1E40AF", secondary: "#059669", accent: "#EA580C" },
       },
     },
@@ -370,7 +370,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       shortDescription: "Classic romantic partners who value timeless relationship values",
       description: { summary: "...", traits: [], strengths: [] },
       graphic: {
-        iconUrl: "/icons/traditional-sweethearts.svg",
+        iconUrl: "/pratyush.jpg",
         colorScheme: { primary: "#DB2777", secondary: "#7C2D12", accent: "#FACC15" },
       },
     },
