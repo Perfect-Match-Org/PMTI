@@ -124,6 +124,20 @@ export function TypeIndicatorDropdown({ dropdown = generateTypeIndicatorDropdown
           </div>
         </div>
       )}
+
+      {/*Keeps the container open when user moves mouse downwards away from Type Indicator button towards the container*/}
+      {isOpen && (
+        <div 
+          className="absolute pointer-events-auto"
+          style={{
+            top: '100%',
+            left: '-20px',
+            right: '-20px',
+            height: '2vh',
+            zIndex: 49
+          }}
+        />
+      )}
     </div>
   );
 }
