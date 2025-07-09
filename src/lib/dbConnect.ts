@@ -31,6 +31,8 @@ export async function dbConnect(): Promise<PostgresJsDatabase<typeof schema>> {
     cached.client = postgres(DATABASE_URL!, {
       prepare: false,
       max: 1,
+      idle_timeout: 20,
+      max_lifetime: 60 * 30,
     });
   }
 
