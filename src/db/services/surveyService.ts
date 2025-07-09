@@ -10,15 +10,20 @@ import { SurveyStatus } from "@/db/schema/survey";
 export async function getSurveyCountByStatus(status?: SurveyStatus): Promise<number> {
   const db = await dbConnect();
 
-  const [result] = status
-    ? await db.select({ count: count() }).from(surveys).where(eq(surveys.status, status))
-    : await db.select({ count: count() }).from(surveys);
+  try {
+    const [result] = status
+      ? await db.select({ count: count() }).from(surveys).where(eq(surveys.status, status)).limit(1)
+      : await db.select({ count: count() }).from(surveys).limit(1);
 
-  if (!result) {
-    return 0;
+    if (!result) {
+      return 0;
+    }
+
+    return result.count;
+  } catch (error) {
+    console.error('Error getting survey count:', error);
+    return 0; // Return 0 on timeout rather than throwing
   }
-
-  return result.count;
 }
 
 /**
