@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RelationshipType, RELATIONSHIP_LABELS, getAllRelationshipTypes } from "@/lib/constants/relationships";
-import { UserAvatar } from "@components/user-avatar";
+import { UserAvatar } from "@/components/user-avatar";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
