@@ -11,6 +11,19 @@ export interface QuestionOption {
 export enum QuestionType {
   Individual = "individual", // Each user answers separately in parallel
   Cooperative = "cooperative", // Both users must collaborate to select one answer together
+  CooperativeFlexible = "cooperative_flexible", // Both users can see each other's choices but can answer independently
+}
+
+export enum CooperativeMode {
+  RequireConsensus = "require_consensus", // Both must agree on the same answer
+  AllowIndependent = "allow_independent", // Can see partner's choice but submit independently
+}
+
+// This enum defines user roles. Currently plays in effect for perspective. Determined by email comparison
+// Could be extended in the future for like using gender for role determination
+export enum UserRole {
+  User1 = "user1",
+  User2 = "user2",
 }
 
 export interface Question {
@@ -18,6 +31,9 @@ export interface Question {
 
   // Question type determines completion behavior
   type: QuestionType;
+
+  // For cooperative questions, specify the interaction mode
+  cooperativeMode?: CooperativeMode;
 
   // Question content
   storyline: string; // The scenario text
@@ -44,7 +60,7 @@ export interface Question {
   options: QuestionOption[];
 
   // Visual elements
-  graphic: {
+  graphic?: {
     defaultUrl: string;
     optionUrls?: Record<string, string>; // Different graphics per option
   };
