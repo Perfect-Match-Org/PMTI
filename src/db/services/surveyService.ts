@@ -21,7 +21,7 @@ export async function getSurveyCountByStatus(status?: SurveyStatus): Promise<num
 
     return result.count;
   } catch (error) {
-    console.error('Error getting survey count:', error);
+    console.error("Error getting survey count:", error);
     return 0; // Return 0 on timeout rather than throwing
   }
 }
@@ -123,10 +123,14 @@ export async function updateCurrentProgress(
 /**
  * Get all responses for a survey grouped by user
  */
-export async function getSurveyResponses(surveyId: string, limit: number = 1000, userEmail?: string) {
+export async function getSurveyResponses(
+  surveyId: string,
+  limit: number = 1000,
+  userEmail?: string
+) {
   const db = await dbConnect();
 
-  const whereConditions = userEmail 
+  const whereConditions = userEmail
     ? and(eq(surveyResponses.surveyId, surveyId), eq(surveyResponses.userEmail, userEmail))
     : eq(surveyResponses.surveyId, surveyId);
 
@@ -141,7 +145,11 @@ export async function getSurveyResponses(surveyId: string, limit: number = 1000,
 /**
  * Get the latest response for each user for a specific question
  */
-export async function getLatestUserResponses(surveyId: string, questionId: string, limit: number = 100) {
+export async function getLatestUserResponses(
+  surveyId: string,
+  questionId: string,
+  limit: number = 100
+) {
   const db = await dbConnect();
 
   return await db
@@ -159,11 +167,7 @@ export async function getSurveyBySessionId(sessionId: string, currentUserEmail: 
   const db = await dbConnect();
 
   // Get existing survey
-  const survey = await db
-    .select()
-    .from(surveys)
-    .where(eq(surveys.sessionId, sessionId))
-    .limit(1);
+  const survey = await db.select().from(surveys).where(eq(surveys.sessionId, sessionId)).limit(1);
 
   if (!survey.length) {
     throw new Error("Survey not found");
@@ -189,9 +193,8 @@ export async function getSurveyBySessionId(sessionId: string, currentUserEmail: 
   }
 
   // Determine partner
-  const partnerId = history[0].user1Email === currentUserEmail 
-    ? history[0].user2Email 
-    : history[0].user1Email;
+  const partnerId =
+    history[0].user1Email === currentUserEmail ? history[0].user2Email : history[0].user1Email;
 
   return {
     survey: survey[0],
@@ -231,10 +234,10 @@ export async function advanceSurvey(sessionId: string, totalQuestions: number) {
       })
       .where(eq(surveys.sessionId, sessionId));
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       completed: true,
-      currentQuestionIndex: nextQuestionIndex 
+      currentQuestionIndex: nextQuestionIndex,
     };
   }
 
@@ -248,10 +251,10 @@ export async function advanceSurvey(sessionId: string, totalQuestions: number) {
     })
     .where(eq(surveys.sessionId, sessionId));
 
-  return { 
-    success: true, 
+  return {
+    success: true,
     completed: false,
-    currentQuestionIndex: nextQuestionIndex 
+    currentQuestionIndex: nextQuestionIndex,
   };
 }
 
