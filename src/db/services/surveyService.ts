@@ -200,56 +200,6 @@ export async function getSurveyBySessionId(sessionId: string, currentUserEmail: 
 }
 
 /**
- * Update participant status for real-time collaboration
- */
-export async function updateParticipantStatus(
-  sessionId: string, 
-  userEmail: string, 
-  updates: {
-    currentSelection?: string;
-    hasSubmitted?: boolean;
-  }
-) {
-  const db = await dbConnect();
-
-  // Get current survey state
-  const existingSurvey = await db
-    .select()
-    .from(surveys)
-    .where(eq(surveys.sessionId, sessionId))
-    .limit(1);
-
-  if (!existingSurvey.length) {
-    throw new Error("Survey not found");
-  }
-
-  const currentParticipantStatus = existingSurvey[0].participantStatus || {};
-  const now = new Date();
-
-  // Update participant status
-  const updatedStatus = {
-    ...currentParticipantStatus,
-    [userEmail]: {
-      isOnline: true,
-      currentSelection: updates.currentSelection,
-      hasSubmitted: updates.hasSubmitted || false,
-      lastSeen: now,
-    },
-  };
-
-  // Update survey
-  await db
-    .update(surveys)
-    .set({
-      participantStatus: updatedStatus,
-      lastActivityAt: now,
-    })
-    .where(eq(surveys.sessionId, sessionId));
-
-  return updatedStatus;
-}
-
-/**
  * Advance survey to next question
  */
 export async function advanceSurvey(sessionId: string, totalQuestions: number) {
