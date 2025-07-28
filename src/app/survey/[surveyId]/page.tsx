@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { validateSurveyAccess } from "@/db/services/invitationService";
-import { CollaborativeSurvey } from "@/components/survey/collaborative-survey";
+import { SurveyProvider, SurveyRenderer } from "@/components/survey";
 
 interface SurveyPageProps {
   params: Promise<{
@@ -29,8 +29,8 @@ export default async function SurveyPage({ params }: SurveyPageProps) {
   }
 
   return (
-    <CollaborativeSurvey
-      surveyId={resolvedParams.surveyId}
-    />
+    <SurveyProvider surveyId={resolvedParams.surveyId}>
+      <SurveyRenderer />
+    </SurveyProvider>
   );
 }
