@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/dbConnect";
 import { surveys, surveyResponses, surveyHistory, type Survey } from "@/db/schema";
 import { CoupleTypeCode, type ScoreWeights } from "@/lib/constants/coupleTypes";
 import { SurveyStatus } from "@/db/schema/survey";
+import { ParticipantStatus } from "@/types/survey";
 
 /**
  * Get survey count by status
@@ -296,14 +297,11 @@ export async function saveSurveyResponse(
 
     // Update participant status to show submission
     const currentParticipantStatus = survey.participantStatus || {};
-    const updatedStatus = {
+    const updatedStatus: Record<string, ParticipantStatus> = {
       ...currentParticipantStatus,
       [userEmail]: {
         ...currentParticipantStatus[userEmail],
-        isOnline: true,
-        currentSelection: selectedOption,
         hasSubmitted: true,
-        lastSeen: now,
       },
     };
 
