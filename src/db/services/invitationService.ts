@@ -3,6 +3,7 @@ import { dbConnect } from "@/lib/dbConnect";
 import { invitations, users, surveys, surveyHistory, type Invitation } from "@/db/schema";
 import { randomUUID } from "crypto";
 import { RelationshipType } from "@/lib/constants/relationships";
+import { OutboundInvitation } from "@/types/invitation";
 
 function isExpiredHelper(invitation: Invitation): boolean {
   return new Date() > invitation.expiresAt;
@@ -62,7 +63,10 @@ export async function acceptInvitation(invitationId: string): Promise<Invitation
             startedAt: new Date(),
             status: "started",
             currentQuestionIndex: 0,
-            participantStatus: {},
+            participantStatus: {
+              [invitation.fromUserEmail]: { hasSubmitted: false },
+              [invitation.toUserEmail]: { hasSubmitted: false },
+            },
           })
           .returning();
 
@@ -198,7 +202,10 @@ export async function getPendingInvitation(
 /**
  * Get sent invitations for a user by email (excludes expired)
  */
-export async function getSentInvitations(email: string, limit: number = 1) {
+export async function getSentInvitations(
+  email: string,
+  limit: number = 1
+): Promise<OutboundInvitation[]> {
   const db = await dbConnect();
 
   return await db
