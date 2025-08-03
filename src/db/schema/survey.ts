@@ -30,11 +30,11 @@ export const surveys = pgTable(
     surveyVersion: text().default("1.0").notNull(),
 
     // Current progress (for reconnection handling)
-    currentQuestionIndex: integer().default(0).notNull(),
-    lastActivityAt: timestamp().defaultNow().notNull(),
+    currentQuestionIndex: integer("current_question_index").default(0).notNull(),
+    lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
 
     // Real-time survey state for participant synchronization
-    participantStatus: jsonb().$type<Record<string, ParticipantStatus>>(),
+    participantStatus: jsonb("participant_status").$type<Record<string, ParticipantStatus>>(),
 
     coupleType: coupleTypeEnum("couple_type"),
     participantScores: jsonb("participant_scores").$type<Record<string, ScoreWeights>>(), // userId -> scores
