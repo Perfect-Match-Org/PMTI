@@ -41,7 +41,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({
       success: true,
       status: updatedInvitation.status,
-      sessionId: updatedInvitation.sessionId,
+      surveyId: updatedInvitation.surveyId,
     });
   } catch {
     return NextResponse.json({ error: "Failed to respond to invitation" }, { status: 500 });

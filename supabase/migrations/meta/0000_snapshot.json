@@ -1,5 +1,5 @@
 {
-  "id": "ccbb91d3-c48d-47f3-8a75-510dd6308f96",
+  "id": "383f1cd1-4658-4572-bc7a-1c1a2aa512b4",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -336,12 +336,6 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "sessionId": {
-          "name": "sessionId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "startedAt": {
           "name": "startedAt",
           "type": "timestamp",
@@ -465,15 +459,7 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "surveys_sessionId_unique": {
-          "name": "surveys_sessionId_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "sessionId"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -516,9 +502,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "sessionId": {
-          "name": "sessionId",
-          "type": "text",
+        "survey_id": {
+          "name": "survey_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -616,18 +602,23 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+        },
+        "invitations_survey_id_surveys_id_fk": {
+          "name": "invitations_survey_id_surveys_id_fk",
+          "tableFrom": "invitations",
+          "tableTo": "surveys",
+          "columnsFrom": [
+            "survey_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "invitations_sessionId_unique": {
-          "name": "invitations_sessionId_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "sessionId"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
         "from_user_email_check": {

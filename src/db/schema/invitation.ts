@@ -2,6 +2,7 @@ import { pgTable, uuid, text, timestamp, pgEnum, index, check } from "drizzle-or
 import { sql } from "drizzle-orm";
 import { users } from "./user";
 import { relationshipTypeEnum } from "@/lib/constants/relationships";
+import { surveys } from "./survey";
 
 export const invitationStatusEnum = pgEnum("invitation_status", [
   "pending",
@@ -22,7 +23,7 @@ export const invitations = pgTable(
       .notNull(),
     status: invitationStatusEnum().default("pending").notNull(),
     relationship: relationshipTypeEnum("relationship").notNull(),
-    sessionId: text().unique(), // Set when accepted
+    surveyId: uuid("survey_id").references(() => surveys.id),
     sentAt: timestamp().defaultNow().notNull(),
     expiresAt: timestamp()
       .default(sql`NOW() + INTERVAL '30 minutes'`)

@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { PendingInvitation } from "@/types/invitation";
 import { Invitation } from "@/db/schema";
 import { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import camelcaseKeys from "camelcase-keys";
 
 export function usePendingInvitations() {
   const { data: session } = useSession();
@@ -18,7 +19,7 @@ export function usePendingInvitations() {
   const handleRealtimeUpdate = useCallback(
     async (payload: RealtimePostgresChangesPayload<Invitation>) => {
       if (payload.eventType === "INSERT") {
-        const newInvitation = payload.new;
+        const newInvitation = camelcaseKeys(payload.new) as Invitation;
         if (newInvitation.status === "pending" && new Date(newInvitation.expiresAt) > new Date()) {
           try {
             // Fetch user data to get the actual name
@@ -38,7 +39,7 @@ export function usePendingInvitations() {
               relationship: newInvitation.relationship,
               sentAt: new Date(newInvitation.sentAt),
               expiresAt: new Date(newInvitation.expiresAt),
-              sessionId: newInvitation.sessionId,
+              surveyId: newInvitation.surveyId,
             };
             setInvitations((prev) => [formattedInvitation, ...prev]);
           } catch (error) {
@@ -139,8 +140,8 @@ export function usePendingInvitations() {
         // Remove invitation from list after accepting
         setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
 
-        // Navigate to survey page with sessionId
-        router.push(`/survey/${data.sessionId}`);
+        // Navigate to survey page with surveyId
+        router.push(`/survey/${data.surveyId}`);
       } catch (error) {
         console.error("PendingInvitations - Failed to accept invitation:", error);
       }

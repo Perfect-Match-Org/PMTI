@@ -34,7 +34,6 @@ CREATE TABLE "survey_responses" (
 --> statement-breakpoint
 CREATE TABLE "surveys" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"sessionId" text NOT NULL,
 	"startedAt" timestamp DEFAULT now() NOT NULL,
 	"completedAt" timestamp,
 	"duration" integer,
@@ -45,8 +44,7 @@ CREATE TABLE "surveys" (
 	"participant_status" jsonb,
 	"couple_type" "couple_type_code",
 	"participant_scores" jsonb,
-	"compatibility" jsonb,
-	CONSTRAINT "surveys_sessionId_unique" UNIQUE("sessionId")
+	"compatibility" jsonb
 );
 --> statement-breakpoint
 CREATE TABLE "invitations" (
@@ -55,10 +53,9 @@ CREATE TABLE "invitations" (
 	"toUserEmail" text NOT NULL,
 	"status" "invitation_status" DEFAULT 'pending' NOT NULL,
 	"relationship" "relationship_type" NOT NULL,
-	"sessionId" text,
+	"survey_id" uuid,
 	"sentAt" timestamp DEFAULT now() NOT NULL,
 	"expiresAt" timestamp DEFAULT NOW() + INTERVAL '30 minutes' NOT NULL,
-	CONSTRAINT "invitations_sessionId_unique" UNIQUE("sessionId"),
 	CONSTRAINT "from_user_email_check" CHECK ("invitations"."fromUserEmail" LIKE '%@cornell.edu' OR "invitations"."fromUserEmail" = 'cornell.perfectmatch@gmail.com'),
 	CONSTRAINT "to_user_email_check" CHECK ("invitations"."toUserEmail" LIKE '%@cornell.edu' OR "invitations"."toUserEmail" = 'cornell.perfectmatch@gmail.com')
 );
@@ -95,6 +92,7 @@ ALTER TABLE "survey_responses" ADD CONSTRAINT "survey_responses_surveyId_surveys
 ALTER TABLE "survey_responses" ADD CONSTRAINT "survey_responses_userEmail_users_email_fk" FOREIGN KEY ("userEmail") REFERENCES "public"."users"("email") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invitations" ADD CONSTRAINT "invitations_fromUserEmail_users_email_fk" FOREIGN KEY ("fromUserEmail") REFERENCES "public"."users"("email") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invitations" ADD CONSTRAINT "invitations_toUserEmail_users_email_fk" FOREIGN KEY ("toUserEmail") REFERENCES "public"."users"("email") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "invitations" ADD CONSTRAINT "invitations_survey_id_surveys_id_fk" FOREIGN KEY ("survey_id") REFERENCES "public"."surveys"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "feedback" ADD CONSTRAINT "feedback_surveyId_surveys_id_fk" FOREIGN KEY ("surveyId") REFERENCES "public"."surveys"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "feedback" ADD CONSTRAINT "feedback_userEmail_users_email_fk" FOREIGN KEY ("userEmail") REFERENCES "public"."users"("email") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "survey_participants_users_idx" ON "survey_participants" USING btree ("user1Email","user2Email");--> statement-breakpoint

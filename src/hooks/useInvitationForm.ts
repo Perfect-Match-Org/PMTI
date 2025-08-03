@@ -8,6 +8,7 @@ import { OutboundInvitation, InvitationFormState } from "@/types/invitation";
 import { Invitation } from "@/db/schema";
 import { RelationshipType } from "@/lib/constants/relationships";
 import { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import camelcaseKeys from "camelcase-keys";
 
 export function useInvitationForm() {
   const { data: session } = useSession();
@@ -25,18 +26,18 @@ export function useInvitationForm() {
       console.log("InvitationForm - Real-time invitation status update:", payload);
 
       if (payload.eventType === "UPDATE") {
-        const updatedInvitation = payload.new;
+        const updatedInvitation = camelcaseKeys(payload.new) as Invitation;
 
         if (updatedInvitation.status === "accepted") {
           setInvitationDetails((prev) => ({
             ...prev,
             status: "accepted",
-            ...(typeof updatedInvitation.sessionId === "string"
-              ? { sessionId: updatedInvitation.sessionId }
+            ...(typeof updatedInvitation.surveyId === "string"
+              ? { surveyId: updatedInvitation.surveyId }
               : {}),
           }));
-          if (updatedInvitation.sessionId) {
-            router.push(`/survey/${updatedInvitation.sessionId}`);
+          if (updatedInvitation.surveyId) {
+            router.push(`/survey/${updatedInvitation.surveyId}`);
           }
         } else if (updatedInvitation.status === "declined") {
           setInvitationDetails((prev) => ({ ...prev, status: "rejected" }));
@@ -79,7 +80,7 @@ export function useInvitationForm() {
           name: formattedInvitation.toUser.name,
           avatar: formattedInvitation.toUser.avatar || undefined,
           status: "pending",
-          sessionId: formattedInvitation.sessionId || undefined,
+          surveyId: formattedInvitation.surveyId || undefined,
         });
       }
     } catch (error) {

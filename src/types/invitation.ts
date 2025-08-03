@@ -9,7 +9,7 @@ export interface PendingInvitation {
   relationship: string;
   sentAt: Date;
   expiresAt: Date;
-  sessionId: string | null;
+  surveyId: string | null;
 }
 
 export interface OutboundInvitation {
@@ -23,7 +23,7 @@ export interface OutboundInvitation {
   relationship: string;
   sentAt: Date;
   expiresAt: Date;
-  sessionId: string | null;
+  surveyId: string | null;
 }
 
 export interface InvitationFormState {
@@ -31,5 +31,5 @@ export interface InvitationFormState {
   name?: string;
   avatar?: string;
   status: "empty" | "pending" | "accepted" | "rejected";
-  sessionId?: string;
+  surveyId?: string;
 }

@@ -22,7 +22,6 @@ export const surveys = pgTable(
   "surveys",
   {
     id: uuid().primaryKey().defaultRandom(),
-    sessionId: text().notNull().unique(),
     startedAt: timestamp().defaultNow().notNull(),
     completedAt: timestamp(),
     duration: integer(), // in seconds

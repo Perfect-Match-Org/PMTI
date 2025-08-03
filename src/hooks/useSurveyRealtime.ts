@@ -118,7 +118,7 @@ export function useSurveyRealtime({
           event: "UPDATE",
           schema: "public",
           table: "surveys",
-          filter: `sessionId=eq.${surveyId}`,
+          filter: `id=eq.${surveyId}`,
         },
         (payload) => {
           const updatedSurvey = camelcaseKeys(payload.new, { deep: true }) as Survey;

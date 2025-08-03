@@ -162,13 +162,13 @@ export async function getLatestUserResponses(
 }
 
 /**
- * Get survey by session ID with participant information
+ * Get survey by survey ID with participant information
  */
-export async function getSurveyBySessionId(sessionId: string, currentUserEmail: string) {
+export async function getSurveyById(surveyId: string, currentUserEmail: string) {
   const db = await dbConnect();
 
   // Get existing survey
-  const survey = await db.select().from(surveys).where(eq(surveys.sessionId, sessionId)).limit(1);
+  const survey = await db.select().from(surveys).where(eq(surveys.id, surveyId)).limit(1);
 
   if (!survey.length) {
     throw new Error("Survey not found");
@@ -206,15 +206,11 @@ export async function getSurveyBySessionId(sessionId: string, currentUserEmail: 
 /**
  * Advance survey to next question
  */
-export async function advanceSurvey(sessionId: string, totalQuestions: number) {
+export async function advanceSurvey(surveyId: string, totalQuestions: number) {
   const db = await dbConnect();
 
   // Get current survey state
-  const existingSurvey = await db
-    .select()
-    .from(surveys)
-    .where(eq(surveys.sessionId, sessionId))
-    .limit(1);
+  const existingSurvey = await db.select().from(surveys).where(eq(surveys.id, surveyId)).limit(1);
 
   if (!existingSurvey.length) {
     throw new Error("Survey not found");
@@ -233,7 +229,7 @@ export async function advanceSurvey(sessionId: string, totalQuestions: number) {
         currentQuestionIndex: nextQuestionIndex,
         participantStatus: {}, // Clear status
       })
-      .where(eq(surveys.sessionId, sessionId));
+      .where(eq(surveys.id, surveyId));
 
     return {
       success: true,
@@ -250,7 +246,7 @@ export async function advanceSurvey(sessionId: string, totalQuestions: number) {
       participantStatus: {}, // Reset participant status for new question
       lastActivityAt: new Date(),
     })
-    .where(eq(surveys.sessionId, sessionId));
+    .where(eq(surveys.id, surveyId));
 
   return {
     success: true,
@@ -263,7 +259,7 @@ export async function advanceSurvey(sessionId: string, totalQuestions: number) {
  * Save survey response and update participant status
  */
 export async function saveSurveyResponse(
-  sessionId: string,
+  surveyId: string,
   userEmail: string,
   questionId: string,
   selectedOption: string
@@ -272,11 +268,7 @@ export async function saveSurveyResponse(
   const now = new Date();
 
   // Get survey
-  const existingSurvey = await db
-    .select()
-    .from(surveys)
-    .where(eq(surveys.sessionId, sessionId))
-    .limit(1);
+  const existingSurvey = await db.select().from(surveys).where(eq(surveys.id, surveyId)).limit(1);
 
   if (!existingSurvey.length) {
     throw new Error("Survey not found");
@@ -311,14 +303,14 @@ export async function saveSurveyResponse(
         participantStatus: updatedStatus,
         lastActivityAt: now,
       })
-      .where(eq(surveys.sessionId, sessionId));
+      .where(eq(surveys.id, surveyId));
   });
 
   // Return updated status
   const updatedSurvey = await db
     .select({ participantStatus: surveys.participantStatus })
     .from(surveys)
-    .where(eq(surveys.sessionId, sessionId))
+    .where(eq(surveys.id, surveyId))
     .limit(1);
 
   return updatedSurvey[0].participantStatus;
