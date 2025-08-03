@@ -1,5 +1,5 @@
 {
-  "id": "266fe50b-68a7-40d8-964e-90ac8b866781",
+  "id": "ccbb91d3-c48d-47f3-8a75-510dd6308f96",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -376,22 +376,22 @@
           "notNull": true,
           "default": "'1.0'"
         },
-        "currentQuestionIndex": {
-          "name": "currentQuestionIndex",
+        "current_question_index": {
+          "name": "current_question_index",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "lastActivityAt": {
-          "name": "lastActivityAt",
+        "last_activity_at": {
+          "name": "last_activity_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
-        "participantStatus": {
-          "name": "participantStatus",
+        "participant_status": {
+          "name": "participant_status",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
