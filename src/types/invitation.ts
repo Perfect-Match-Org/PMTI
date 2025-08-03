@@ -11,3 +11,25 @@ export interface PendingInvitation {
   expiresAt: Date;
   sessionId: string | null;
 }
+
+export interface OutboundInvitation {
+  id: string;
+  toUser: {
+    email: string;
+    name: string;
+    avatar: string | null;
+  };
+  status: "pending" | "accepted" | "declined" | "cancelled";
+  relationship: string;
+  sentAt: Date;
+  expiresAt: Date;
+  sessionId: string | null;
+}
+
+export interface InvitationFormState {
+  id?: string;
+  name?: string;
+  avatar?: string;
+  status: "empty" | "pending" | "accepted" | "rejected";
+  sessionId?: string;
+}
