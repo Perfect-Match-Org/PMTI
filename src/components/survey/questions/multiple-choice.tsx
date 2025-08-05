@@ -38,6 +38,10 @@ export function MultipleChoice({
   const partnerStatus = surveyState.participantStatus[partner.id];
   const partnerHasSubmitted = partnerStatus?.hasSubmitted || false;
 
+  // Get partner's current selection only if it's for the current question
+  const partnerSelection =
+    partnerStatus?.questionId === question.questionId ? partnerStatus?.currentSelection : undefined;
+
   // Handle option selection
   const handleSelectionChange = async (optionId: string) => {
     if (disabled || hasSubmitted || isSubmitting) return;
@@ -94,7 +98,7 @@ export function MultipleChoice({
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           {question.options.map((option) => {
-            const isPartnerSelection = partnerStatus?.currentSelection === option.id;
+            const isPartnerSelection = partnerSelection === option.id;
 
             return (
               <div key={option.id}>
