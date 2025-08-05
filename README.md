@@ -18,7 +18,7 @@ pnpm dev
 **Next.js 15 App Router Structure**:
 - Uses App Router with TypeScript
 - Server-side authentication with NextAuth.js
-- MongoDB with Mongoose (connection ready, models not yet implemented)
+- Supabase PostgreSQL database with Drizzle ORM
 - shadcn/ui component library with Radix UI primitives
 - Tailwind CSS v4 with CSS variables for theming
 

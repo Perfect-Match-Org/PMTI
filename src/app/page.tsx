@@ -1,25 +1,45 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./api/auth/[...nextauth]/route";
-import { AuthButtons } from "@/components/authButtons";
+import { AuthButtons } from "@ui/authButtons";
 import { Button } from "@/components/ui/button";
 import { TypesGrid } from "@/components/typesGrid";
+import { config } from "@/lib/config";
+
+async function getSurveyCount() {
+  try {
+    const response = await fetch(`${config.apiBaseUrl}/surveys/count`, {
+      cache: "no-store",
+    });
+    if (!response.ok) return 0;
+    const data = await response.json();
+    return data.count || 0;
+  } catch {
+    return 0;
+  }
+}
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
+  const surveyCount = await getSurveyCount();
 
   return (
     <main>
       {/* Hero Section */}
-      <section className="min-h-[calc(100vh-4rem)]">
+      <section className="min-h-screen">
         <div className="container mx-auto px-12 h-[calc(100vh-4rem)] flex items-center">
           <div className="grid lg:grid-cols-2 gap-8 items-center w-full">
             {/* Left side - Text content */}
             <div className="space-y-8 pt-10 lg:pt-0">
               <div className="space-y-4">
                 <h1 className="text-5xl font-bold tracking-tight">Perfect Match Type Indicator</h1>
-                <p className="text-xl text-muted-foreground">
-                  Discover what type of couple you are and strengthen your relationship together
-                </p>
+                <div className="space-y-2">
+                  <p className="text-xl text-muted-foreground">
+                    Discover what type of couple you are and strengthen your relationship together
+                  </p>
+                  <p className="text-md text-muted-foreground">
+                    {surveyCount.toLocaleString()} couples have already taken the quiz
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">

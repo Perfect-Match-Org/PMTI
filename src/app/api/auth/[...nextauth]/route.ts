@@ -1,5 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { createOrUpdateUser } from "@/db/services/userService";
 
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error(
@@ -26,10 +27,32 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user }) {
-      if (user.email && isValidCornellEmail(user.email)) {
-        return true;
+      if (!user.email || !user.name || !isValidCornellEmail(user.email)) {
+        return false;
       }
-      return false;
+
+      try {
+        await createOrUpdateUser(user.email, user.name, user.image);
+        return true;
+      } catch (error) {
+        console.error("Error creating/updating user:", error);
+        return false;
+      }
+    },
+    async redirect({ url, baseUrl }) {
+      return baseUrl;
+    },
+  },
+  pages: { error: "/auth/error" },
+  cookies: {
+    pkceCodeVerifier: {
+      name: "next-auth.pkce.code_verifier",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production", // Use secure cookie only in production (avoid HTTP warnings in dev)
+      },
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
