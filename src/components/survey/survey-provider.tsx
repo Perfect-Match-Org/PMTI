@@ -44,7 +44,6 @@ export function SurveyProvider({ children, surveyId }: SurveyProviderProps) {
   const { broadcastSelection, isConnected, isLoading, error } = useSurveyRealtime({
     surveyId,
     userEmail,
-    currentQuestionId: currentQuestion?.questionId,
     setSurveyState,
   });
 

@@ -10,7 +10,6 @@ import camelcaseKeys from "camelcase-keys";
 interface UseSurveyRealtimeProps {
   surveyId: string;
   userEmail: string;
-  currentQuestionId?: string;
   setSurveyState: React.Dispatch<React.SetStateAction<SurveyState>>;
 }
 
@@ -25,7 +24,6 @@ interface UseSurveyRealtimeReturn {
 export function useSurveyRealtime({
   surveyId,
   userEmail,
-  currentQuestionId,
   setSurveyState,
 }: UseSurveyRealtimeProps): UseSurveyRealtimeReturn {
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -33,19 +31,17 @@ export function useSurveyRealtime({
   const [error, setError] = useState<string | null>(null);
 
   // Handle database updates (survey progression, status changes)
-  const handleSurveyUpdate = useCallback(
-    (updatedSurvey: Survey) => {
-      console.log("SurveyRealtime - Database update received:", updatedSurvey);
+  // More like a wrapper :(
+  const handleSurveyUpdate = useCallback((updatedSurvey: Survey) => {
+    console.log("SurveyRealtime - Database update received:", updatedSurvey);
 
-      setSurveyState((prev) => ({
-        currentQuestionIndex: updatedSurvey.currentQuestionIndex ?? prev.currentQuestionIndex,
-        participantStatus: updatedSurvey.participantStatus || {},
-        status: updatedSurvey.status || prev.status,
-        partnerId: prev.partnerId,
-      }));
-    },
-    [setSurveyState]
-  );
+    setSurveyState((prev) => ({
+      currentQuestionIndex: updatedSurvey.currentQuestionIndex ?? prev.currentQuestionIndex,
+      participantStatus: updatedSurvey.participantStatus || {},
+      status: updatedSurvey.status || prev.status,
+      partnerId: prev.partnerId,
+    }));
+  }, []);
 
   // Handle real-time selection broadcasts from partner
   const handleSelectionUpdate = useCallback(
@@ -53,8 +49,8 @@ export function useSurveyRealtime({
       console.log("SurveyRealtime - Selection broadcast received:", payload);
       const { userEmail: senderEmail, selection, questionId } = payload;
 
-      // Only update if it's from partner and for current question
-      if (senderEmail !== userEmail && questionId === currentQuestionId) {
+      // Only update if it's from partner
+      if (senderEmail !== userEmail) {
         setSurveyState((prev) => ({
           ...prev,
           participantStatus: {
@@ -63,12 +59,13 @@ export function useSurveyRealtime({
               ...prev.participantStatus[senderEmail],
               currentSelection: selection,
               hasSubmitted: false,
+              questionId,
             },
           },
         }));
       }
     },
-    [userEmail, currentQuestionId, setSurveyState]
+    [userEmail]
   );
 
   // Fetch initial survey state from API
@@ -101,7 +98,7 @@ export function useSurveyRealtime({
     } finally {
       setIsLoading(false);
     }
-  }, [surveyId, setSurveyState]);
+  }, [surveyId]);
 
   // Set up realtime subscription
   const setupSubscription = useCallback(() => {
@@ -157,7 +154,7 @@ export function useSurveyRealtime({
         }
       }
     };
-  }, [surveyId, userEmail, handleSurveyUpdate, handleSelectionUpdate, fetchInitialState]);
+  }, [surveyId, userEmail]);
 
   // Broadcast selection to partner
   const broadcastSelection = useCallback(
@@ -186,7 +183,7 @@ export function useSurveyRealtime({
         return false;
       }
     },
-    [userEmail]
+    []
   );
 
   // Initialize subscription
