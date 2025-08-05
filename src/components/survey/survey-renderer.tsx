@@ -76,7 +76,7 @@ export function SurveyRenderer() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[calc(100vh-6rem)] bg-background flex items-center justify-center p-4">
       <AnimatePresence mode="wait">
         <motion.div
           key={`question-${surveyState.currentQuestionIndex}`}
