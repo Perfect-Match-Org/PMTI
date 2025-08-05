@@ -2,6 +2,7 @@ import { UserRole, Question } from "@/lib/constants/questions";
 
 export interface ParticipantStatus {
   currentSelection?: string; // Use by frontend to track current selection via boardcast, not stored in DB
+  questionId?: string; // Use by frontend to track current question, not stored in DB
   hasSubmitted: boolean;
 }
 
