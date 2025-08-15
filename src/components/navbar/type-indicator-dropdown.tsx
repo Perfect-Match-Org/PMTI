@@ -36,16 +36,9 @@ export function TypeIndicatorDropdown({ dropdown = generateTypeIndicatorDropdown
       <NavigationMenuList>
         <NavigationMenuItem>
           <NavigationMenuTrigger>
-            Type Indicator
+            <Link href="/type">Type Indicator</Link>
           </NavigationMenuTrigger>
           <NavigationMenuContent className="min-w-[480px] p-4 !transform-none !translate-x-0 !translate-y-0 ![animation:none] data-[motion]:!transform-none !left-auto !right-0" style={{ marginTop: '2vh' }}>
-            <div className="mb-4 pb-3 border-b border-border">
-              <NavigationMenuLink asChild>
-                <Link href="/type" className="text-center block font-medium" onClick={() => console.log("clicked changing href now")}>
-                  View All Types
-                </Link>
-              </NavigationMenuLink>
-            </div>
             {/* Row 1 */}
             <div className="grid grid-cols-4 gap-2 mb-3">
               {dropdown.slice(0, 4).map((dropdownItem, index) => (
