@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { Survey } from "@/db/schema";
 import { SurveyState, SurveyBroadcastPayload } from "@/types/survey";
-import { RealtimeChannel } from "@supabase/supabase-js";
 import camelcaseKeys from "camelcase-keys";
 import { SURVEY_QUESTIONS } from "@/lib/constants/questions";
 
