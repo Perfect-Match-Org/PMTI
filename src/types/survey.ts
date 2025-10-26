@@ -36,7 +36,7 @@ export interface SurveyContextType {
     id: string;
     status?: ParticipantStatus;
   };
-  currentQuestion: Question;
+  currentQuestion: Question | null;
 }
 
 export interface SurveyBroadcastPayload {
