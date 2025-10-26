@@ -111,21 +111,22 @@ export function useInvitationForm() {
               filter,
             },
             handleRealtimeUpdate
-          )
-          .subscribe(async (status, error) => {
-            console.log("InvitationForm - Subscription status:", status);
-
-            if (status === "SUBSCRIBED") {
-              console.log("InvitationForm - Subscription active");
-              await fetchInitialInvitation();
-            }
-            if (error) {
-              console.error("InvitationForm - Subscription error:", error);
-              await fetchInitialInvitation();
-            }
-          });
+          );
 
         channelRef.current = channel;
+
+        channel.subscribe(async (status, error) => {
+          console.log("InvitationForm - Subscription status:", status);
+
+          if (status === "SUBSCRIBED") {
+            console.log("InvitationForm - Subscription active");
+            await fetchInitialInvitation();
+          }
+          if (error) {
+            console.error("InvitationForm - Subscription error:", error);
+            await fetchInitialInvitation();
+          }
+        });
       } catch (error) {
         console.error("InvitationForm - Failed to initialize invitation subscription:", error);
         // Fallback: try to fetch initial data even if subscription fails
@@ -220,11 +221,12 @@ export function useInvitationForm() {
 
     return () => {
       if (channelRef.current) {
-        console.log("InvitationForm - Unsubscribing from real-time channel");
-        channelRef.current.unsubscribe();
+        console.log("InvitationForm - Removing channel");
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
-  }, [session?.user?.email, setupSubscription, invitationDetails.id]);
+  }, [session?.user?.email, invitationDetails.id]);
 
   return {
     // State

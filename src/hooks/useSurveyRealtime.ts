@@ -33,16 +33,19 @@ export function useSurveyRealtime({
 
   // Handle database updates (survey progression, status changes)
   // More like a wrapper :(
-  const handleSurveyUpdate = useCallback((updatedSurvey: Survey) => {
-    console.log("SurveyRealtime - Database update received:", updatedSurvey);
+  const handleSurveyUpdate = useCallback(
+    (updatedSurvey: Survey) => {
+      console.log("SurveyRealtime - Database update received:", updatedSurvey);
 
-    setSurveyState((prev) => ({
-      currentQuestionIndex: updatedSurvey.currentQuestionIndex ?? prev.currentQuestionIndex,
-      participantStatus: updatedSurvey.participantStatus || {},
-      status: updatedSurvey.status || prev.status,
-      partnerId: prev.partnerId,
-    }));
-  }, [setSurveyState]);
+      setSurveyState((prev) => ({
+        currentQuestionIndex: updatedSurvey.currentQuestionIndex ?? prev.currentQuestionIndex,
+        participantStatus: updatedSurvey.participantStatus || {},
+        status: updatedSurvey.status || prev.status,
+        partnerId: prev.partnerId,
+      }));
+    },
+    [setSurveyState]
+  );
 
   // Handle real-time selection broadcasts from partner
   const handleSelectionUpdate = useCallback(
@@ -58,7 +61,12 @@ export function useSurveyRealtime({
 
           // Ignore broadcasts for different questions (stale broadcasts)
           if (!currentQuestion || questionId !== currentQuestion.questionId) {
-            console.warn("SurveyRealtime - Ignoring stale broadcast for question:", questionId, "current:", currentQuestion?.questionId);
+            console.warn(
+              "SurveyRealtime - Ignoring stale broadcast for question:",
+              questionId,
+              "current:",
+              currentQuestion?.questionId
+            );
             return prev;
           }
 
@@ -68,7 +76,12 @@ export function useSurveyRealtime({
           // Check if broadcast is outdated (older than last update for this user)
           const existingStatus = prev.participantStatus[senderEmail];
           if (existingStatus?.timestamp && incomingTimestamp < existingStatus.timestamp) {
-            console.warn("SurveyRealtime - Ignoring outdated broadcast from:", incomingTimestamp, "existing:", existingStatus.timestamp);
+            console.warn(
+              "SurveyRealtime - Ignoring outdated broadcast from:",
+              incomingTimestamp,
+              "existing:",
+              existingStatus.timestamp
+            );
             return prev;
           }
 
@@ -150,36 +163,38 @@ export function useSurveyRealtime({
       // Listen for real-time selection broadcasts
       .on("broadcast", { event: "selection_update" }, (payload) => {
         handleSelectionUpdate(payload.payload as SurveyBroadcastPayload);
-      })
-      .subscribe(async (status, error) => {
-        console.log("SurveyRealtime - Subscription status:", status);
-
-        if (status === "SUBSCRIBED") {
-          console.log("SurveyRealtime - Subscribed to survey updates:", surveyId);
-          channelRef.current = channel;
-          // Fetch initial state after successful subscription
-          await fetchInitialState();
-        }
-        if (error) {
-          console.error("SurveyRealtime - Subscription error:", error);
-          setError(error.message);
-          // Fallback: try to fetch initial data even if subscription fails
-          await fetchInitialState();
-        }
       });
+
+    channelRef.current = channel;
+
+    channel.subscribe(async (status, error) => {
+      console.log("SurveyRealtime - Subscription status:", status);
+
+      if (status === "SUBSCRIBED") {
+        console.log("SurveyRealtime - Subscribed to survey updates:", surveyId);
+        // Fetch initial state after successful subscription
+        await fetchInitialState();
+      }
+      if (error) {
+        console.error("SurveyRealtime - Subscription error:", error);
+        setError(error.message);
+        // Fallback: try to fetch initial data even if subscription fails
+        await fetchInitialState();
+      }
+    });
 
     return () => {
       if (channelRef.current) {
         try {
-          console.log("SurveyRealtime - Unsubscribing from survey updates:", surveyId);
-          channelRef.current.unsubscribe();
+          console.log("SurveyRealtime - Removing channel:", surveyId);
+          supabase.removeChannel(channelRef.current);
           channelRef.current = null;
         } catch (error) {
           console.warn("SurveyRealtime - Error during channel cleanup:", error);
         }
       }
     };
-  }, [surveyId, userEmail, handleSurveyUpdate, handleSelectionUpdate, fetchInitialState]);
+  }, [surveyId, userEmail, handleSurveyUpdate, handleSelectionUpdate]);
 
   // Broadcast selection to partner
   const broadcastSelection = useCallback(

@@ -87,30 +87,29 @@ export function usePendingInvitations() {
   const setupSubscription = useCallback(
     async (userEmail: string) => {
       try {
-        const channel = supabase
-          .channel(`user-invitations-${userEmail}`)
-          .on(
-            "postgres_changes",
-            {
-              event: "*",
-              schema: "public",
-              table: "invitations",
-              filter: `toUserEmail=eq.${userEmail}`,
-            },
-            handleRealtimeUpdate
-          )
-          .subscribe(async (status, error) => {
-            if (status === "SUBSCRIBED") {
-              console.log("PendingInvitations - Subscription active for:", userEmail);
-              await fetchInitialInvitations();
-            }
-            if (error) {
-              console.error("PendingInvitations - Subscription error:", error);
-              await fetchInitialInvitations();
-            }
-          });
+        const channel = supabase.channel(`user-invitations-${userEmail}`).on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "invitations",
+            filter: `toUserEmail=eq.${userEmail}`,
+          },
+          handleRealtimeUpdate
+        );
 
         channelRef.current = channel;
+
+        channel.subscribe(async (status, error) => {
+          if (status === "SUBSCRIBED") {
+            console.log("PendingInvitations - Subscription active for:", userEmail);
+            await fetchInitialInvitations();
+          }
+          if (error) {
+            console.error("PendingInvitations - Subscription error:", error);
+            await fetchInitialInvitations();
+          }
+        });
       } catch (error) {
         console.error("PendingInvitations - Failed to initialize invitations:", error);
         // Fallback: try to fetch initial data even if subscription fails
@@ -183,11 +182,12 @@ export function usePendingInvitations() {
 
     return () => {
       if (channelRef.current) {
-        console.log("PendingInvitations - Unsubscribing from real-time channel");
-        channelRef.current.unsubscribe();
+        console.log("PendingInvitations - Removing channel");
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
-  }, [session?.user?.email, setupSubscription]);
+  }, [session?.user?.email]);
 
   return {
     invitations,
