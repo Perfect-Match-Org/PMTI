@@ -206,7 +206,7 @@ export function useSurveyRealtime({
         return false;
       }
     },
-    []
+    [userEmail]
   );
 
   // Initialize subscription
