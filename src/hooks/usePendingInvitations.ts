@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { PendingInvitation } from "@/types/invitation";
 import { Invitation } from "@/db/schema";
-import { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import camelcaseKeys from "camelcase-keys";
 
 export function usePendingInvitations() {
@@ -14,7 +14,14 @@ export function usePendingInvitations() {
   const router = useRouter();
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const channelRef = useRef<RealtimeChannel | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  // Create stable channel reference using useMemo
+  const channel = useMemo(
+    () => session?.user?.email ? supabase.channel(`user-invitations-${session.user.email}`) : null,
+    [session?.user?.email]
+  );
 
   const handleRealtimeUpdate = useCallback(
     async (payload: RealtimePostgresChangesPayload<Invitation>) => {
@@ -65,9 +72,13 @@ export function usePendingInvitations() {
 
   const fetchInitialInvitations = useCallback(async () => {
     try {
+      setIsLoading(true);
+      setError(null);
+      console.log("PendingInvitations - Fetching initial invitations");
+
       const response = await fetch("/api/invitations/inbound");
       if (!response.ok) {
-        console.warn("PendingInvitations - Failed to fetch invitations");
+        throw new Error("Failed to fetch invitations");
       }
 
       const data: { inbound: PendingInvitation[] } = await response.json();
@@ -77,47 +88,16 @@ export function usePendingInvitations() {
         expiresAt: new Date(inv.expiresAt),
       }));
       setInvitations(formattedInvitations);
-    } catch (error) {
-      console.error("PendingInvitations - Failed to fetch invitations:", error);
+      console.log("PendingInvitations - Initial invitations loaded:", formattedInvitations.length);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      console.error("PendingInvitations - Failed to fetch invitations:", errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const setupSubscription = useCallback(
-    async (userEmail: string) => {
-      try {
-        const channel = supabase.channel(`user-invitations-${userEmail}`).on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "invitations",
-            filter: `toUserEmail=eq.${userEmail}`,
-          },
-          handleRealtimeUpdate
-        );
-
-        channelRef.current = channel;
-
-        channel.subscribe(async (status, error) => {
-          if (status === "SUBSCRIBED") {
-            console.log("PendingInvitations - Subscription active for:", userEmail);
-            await fetchInitialInvitations();
-          }
-          if (error) {
-            console.error("PendingInvitations - Subscription error:", error);
-            await fetchInitialInvitations();
-          }
-        });
-      } catch (error) {
-        console.error("PendingInvitations - Failed to initialize invitations:", error);
-        // Fallback: try to fetch initial data even if subscription fails
-        await fetchInitialInvitations();
-      }
-    },
-    [handleRealtimeUpdate, fetchInitialInvitations]
-  );
 
   const handleAccept = useCallback(
     async (invitationId: string) => {
@@ -171,27 +151,58 @@ export function usePendingInvitations() {
     }
   }, []);
 
-  // Initialize invitations with proper sequencing
+  // Initialize subscription
   useEffect(() => {
-    if (!session?.user?.email) {
+    if (!session?.user?.email || !channel) {
       setIsLoading(false);
       return;
     }
 
-    setupSubscription(session.user.email);
+    console.log("PendingInvitations - Setting up subscription for:", session.user.email);
+
+    channel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "invitations",
+          filter: `toUserEmail=eq.${session.user.email}`,
+        },
+        handleRealtimeUpdate
+      );
+
+    channel.subscribe(async (status, error) => {
+      console.log("PendingInvitations - Subscription status:", status);
+
+      if (status === "SUBSCRIBED") {
+        console.log("PendingInvitations - Subscribed to invitation updates");
+        setIsConnected(true);
+        await fetchInitialInvitations();
+      }
+      if (error) {
+        console.error("PendingInvitations - Subscription error:", error);
+        setError(error.message);
+        setIsConnected(false);
+        // Fallback: try to fetch initial data even if subscription fails
+        await fetchInitialInvitations();
+      }
+    });
 
     return () => {
-      if (channelRef.current) {
-        console.log("PendingInvitations - Removing channel");
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      console.log("PendingInvitations - Unsubscribing channel");
+      setIsConnected(false);
+      channel.unsubscribe().catch((error) => {
+        console.warn("PendingInvitations - Error during channel cleanup:", error);
+      });
     };
-  }, [session?.user?.email, setupSubscription]);
+  }, [session?.user?.email, channel, handleRealtimeUpdate, fetchInitialInvitations]);
 
   return {
     invitations,
     isLoading,
+    error,
+    isConnected,
     handleAccept,
     handleDecline,
   };

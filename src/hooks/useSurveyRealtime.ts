@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useEffect, useState } from "react";
+import { useCallback, useRef, useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { Survey } from "@/db/schema";
 import { SurveyState, SurveyBroadcastPayload } from "@/types/survey";
@@ -27,9 +27,10 @@ export function useSurveyRealtime({
   userEmail,
   setSurveyState,
 }: UseSurveyRealtimeProps): UseSurveyRealtimeReturn {
-  const channelRef = useRef<RealtimeChannel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const channel = useMemo(() => supabase.channel(`survey-${surveyId}`), [surveyId]);
 
   // Handle database updates (survey progression, status changes)
   // More like a wrapper :(
@@ -138,14 +139,45 @@ export function useSurveyRealtime({
     }
   }, [surveyId, setSurveyState]);
 
-  // Set up realtime subscription
-  const setupSubscription = useCallback(() => {
-    if (!surveyId || !userEmail) return;
+  // Broadcast selection to partner
+  const broadcastSelection = useCallback(
+    async (selection: string, questionId: string): Promise<boolean> => {
+      try {
+        if (channel) {
+          const payload: SurveyBroadcastPayload = {
+            userEmail,
+            selection,
+            questionId,
+            timestamp: new Date().toISOString(),
+          };
+
+          await channel.send({
+            type: "broadcast",
+            event: "selection_update",
+            payload,
+          });
+          console.log("SurveyRealtime - Selection broadcasted:", payload);
+          return true;
+        }
+        console.warn("SurveyRealtime - No active channel for broadcasting");
+        return false;
+      } catch (error) {
+        console.error("SurveyRealtime - Error broadcasting selection:", error);
+        return false;
+      }
+    },
+    [userEmail, channel]
+  );
+
+  // Initialize subscription
+  useEffect(() => {
+    if (!surveyId || !userEmail) {
+      return;
+    }
 
     console.log("SurveyRealtime - Setting up subscription for:", surveyId);
 
-    const channel = supabase
-      .channel(`survey-${surveyId}`)
+    channel
       // Listen for database updates (submissions, question advancement)
       .on(
         "postgres_changes",
@@ -165,77 +197,37 @@ export function useSurveyRealtime({
         handleSelectionUpdate(payload.payload as SurveyBroadcastPayload);
       });
 
-    channelRef.current = channel;
-
     channel.subscribe(async (status, error) => {
       console.log("SurveyRealtime - Subscription status:", status);
 
       if (status === "SUBSCRIBED") {
         console.log("SurveyRealtime - Subscribed to survey updates:", surveyId);
+        setIsConnected(true);
         // Fetch initial state after successful subscription
         await fetchInitialState();
       }
       if (error) {
         console.error("SurveyRealtime - Subscription error:", error);
         setError(error.message);
+        setIsConnected(false);
         // Fallback: try to fetch initial data even if subscription fails
         await fetchInitialState();
       }
     });
 
     return () => {
-      if (channelRef.current) {
-        try {
-          console.log("SurveyRealtime - Removing channel:", surveyId);
-          supabase.removeChannel(channelRef.current);
-          channelRef.current = null;
-        } catch (error) {
-          console.warn("SurveyRealtime - Error during channel cleanup:", error);
-        }
-      }
+      console.log("SurveyRealtime - Unsubscribing channel:", surveyId);
+      setIsConnected(false);
+      channel.unsubscribe().catch((error) => {
+        console.warn("SurveyRealtime - Error during channel cleanup:", error);
+      });
     };
-  }, [surveyId, userEmail, handleSurveyUpdate, handleSelectionUpdate, fetchInitialState]);
-
-  // Broadcast selection to partner
-  const broadcastSelection = useCallback(
-    async (selection: string, questionId: string): Promise<boolean> => {
-      try {
-        if (channelRef.current) {
-          const payload: SurveyBroadcastPayload = {
-            userEmail,
-            selection,
-            questionId,
-            timestamp: new Date().toISOString(),
-          };
-
-          await channelRef.current.send({
-            type: "broadcast",
-            event: "selection_update",
-            payload,
-          });
-          console.log("SurveyRealtime - Selection broadcasted:", payload);
-          return true;
-        }
-        console.warn("SurveyRealtime - No active channel for broadcasting");
-        return false;
-      } catch (error) {
-        console.error("SurveyRealtime - Error broadcasting selection:", error);
-        return false;
-      }
-    },
-    [userEmail]
-  );
-
-  // Initialize subscription
-  useEffect(() => {
-    const cleanup = setupSubscription();
-    return cleanup;
-  }, [setupSubscription]);
+  }, [surveyId, userEmail, channel, handleSurveyUpdate, handleSelectionUpdate, fetchInitialState]);
 
   return {
     broadcastSelection,
     fetchInitialState,
-    isConnected: !!channelRef.current,
+    isConnected,
     isLoading,
     error,
   };

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { OutboundInvitation, InvitationFormState } from "@/types/invitation";
 import { Invitation } from "@/db/schema";
 import { RelationshipType } from "@/lib/constants/relationships";
-import { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import camelcaseKeys from "camelcase-keys";
 
 export function useInvitationForm() {
@@ -16,10 +16,17 @@ export function useInvitationForm() {
   const [netid, setNetid] = useState("");
   const [relationship, setRelationship] = useState<RelationshipType>(RelationshipType.COUPLE);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
   const [invitationDetails, setInvitationDetails] = useState<InvitationFormState>({
     status: "empty",
   });
-  const channelRef = useRef<RealtimeChannel | null>(null);
+
+  // Create stable channel reference using useMemo
+  const channel = useMemo(
+    () => session?.user?.email ? supabase.channel(`user-outbound-invitations-${session.user.email}`) : null,
+    [session?.user?.email]
+  );
 
   const handleRealtimeUpdate = useCallback(
     async (payload: RealtimePostgresChangesPayload<Invitation>) => {
@@ -57,9 +64,14 @@ export function useInvitationForm() {
 
   const fetchInitialInvitation = useCallback(async () => {
     try {
+      setError(null);
+      console.log("InvitationForm - Fetching initial invitation");
+
       const response = await fetch("/api/invitations/outbound");
       if (!response.ok) {
-        return; // Silently fail if no sent invitations
+        // Silently handle if no sent invitations
+        console.log("InvitationForm - No outbound invitations found");
+        return;
       }
 
       const data: { outbound: OutboundInvitation } = await response.json();
@@ -82,59 +94,15 @@ export function useInvitationForm() {
           status: "pending",
           surveyId: formattedInvitation.surveyId || undefined,
         });
+        console.log("InvitationForm - Initial invitation loaded");
       }
-    } catch (error) {
-      console.error("InvitationForm - Failed to fetch sent invitations:", error);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      console.error("InvitationForm - Failed to fetch sent invitations:", errorMessage);
+      setError(errorMessage);
     }
   }, []);
 
-  const setupSubscription = useCallback(
-    async (userEmail: string, invitationId?: string) => {
-      console.log(
-        "InvitationForm - Setting up invitation subscription for:",
-        userEmail,
-        "invitation:",
-        invitationId
-      );
-
-      try {
-        const filter = invitationId ? `id=eq.${invitationId}` : `fromUserEmail=eq.${userEmail}`;
-
-        const channel = supabase
-          .channel(`user-outbound-invitations-${userEmail}`)
-          .on(
-            "postgres_changes",
-            {
-              event: "*",
-              schema: "public",
-              table: "invitations",
-              filter,
-            },
-            handleRealtimeUpdate
-          );
-
-        channelRef.current = channel;
-
-        channel.subscribe(async (status, error) => {
-          console.log("InvitationForm - Subscription status:", status);
-
-          if (status === "SUBSCRIBED") {
-            console.log("InvitationForm - Subscription active");
-            await fetchInitialInvitation();
-          }
-          if (error) {
-            console.error("InvitationForm - Subscription error:", error);
-            await fetchInitialInvitation();
-          }
-        });
-      } catch (error) {
-        console.error("InvitationForm - Failed to initialize invitation subscription:", error);
-        // Fallback: try to fetch initial data even if subscription fails
-        await fetchInitialInvitation();
-      }
-    },
-    [handleRealtimeUpdate, fetchInitialInvitation]
-  );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -211,28 +179,59 @@ export function useInvitationForm() {
     }
   }, [invitationDetails.id]);
 
-  // Initialize invitation form with proper sequencing
+  // Initialize subscription
   useEffect(() => {
-    if (!session?.user?.email) {
+    if (!session?.user?.email || !channel) {
       return;
     }
 
-    setupSubscription(session.user.email, invitationDetails.id);
+    console.log("InvitationForm - Setting up subscription for:", session.user.email);
+
+    channel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "invitations",
+          filter: `fromUserEmail=eq.${session.user.email}`,
+        },
+        handleRealtimeUpdate
+      );
+
+    channel.subscribe(async (status, error) => {
+      console.log("InvitationForm - Subscription status:", status);
+
+      if (status === "SUBSCRIBED") {
+        console.log("InvitationForm - Subscribed to invitation updates");
+        setIsConnected(true);
+        await fetchInitialInvitation();
+      }
+      if (error) {
+        console.error("InvitationForm - Subscription error:", error);
+        setError(error.message);
+        setIsConnected(false);
+        // Fallback: try to fetch initial data even if subscription fails
+        await fetchInitialInvitation();
+      }
+    });
 
     return () => {
-      if (channelRef.current) {
-        console.log("InvitationForm - Removing channel");
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      console.log("InvitationForm - Unsubscribing channel");
+      setIsConnected(false);
+      channel.unsubscribe().catch((error) => {
+        console.warn("InvitationForm - Error during channel cleanup:", error);
+      });
     };
-  }, [session?.user?.email, invitationDetails.id, setupSubscription]);
+  }, [session?.user?.email, channel, handleRealtimeUpdate, fetchInitialInvitation]);
 
   return {
     // State
     netid,
     relationship,
     isLoading,
+    error,
+    isConnected,
     invitationDetails,
     session,
 
