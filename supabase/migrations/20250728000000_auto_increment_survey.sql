@@ -9,30 +9,42 @@ CREATE OR REPLACE FUNCTION auto_increment_question_index()
 RETURNS TRIGGER AS $$
 DECLARE
     submitted_count INTEGER;
+    total_participants INTEGER;
 BEGIN
-    -- Only count submitted participants (assuming exactly 2 participants)
+    -- Count total participants in participant_status
+    SELECT COUNT(*) INTO total_participants
+    FROM jsonb_each(NEW.participant_status);
+
+    -- Validate exactly 2 participants (fail-fast with clear error)
+    IF total_participants != 2 THEN
+        RAISE EXCEPTION 'Survey participant_status corrupted: expected exactly 2 participants but found %', total_participants
+            USING HINT = 'Check survey initialization logic',
+                  ERRCODE = 'check_violation';
+    END IF;
+
+    -- Count submitted participants
     SELECT COUNT(*) INTO submitted_count
-    FROM jsonb_each(NEW.participant_status) 
+    FROM jsonb_each(NEW.participant_status)
     WHERE (value->>'hasSubmitted')::BOOLEAN = TRUE;
-    
+
     -- Early exit if both haven't submitted
     IF submitted_count != 2 THEN
         RETURN NEW;
     END IF;
-    
+
     -- Increment question index and update timestamp
     NEW.current_question_index := NEW.current_question_index + 1;
     NEW.last_activity_at := NOW();
-    
+
     -- Reset hasSubmitted to false for all participants
     NEW.participant_status := (
         SELECT jsonb_object_agg(
-            key, 
+            key,
             jsonb_set(value, '{hasSubmitted}', 'false'::jsonb)
         )
         FROM jsonb_each(NEW.participant_status)
     );
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -48,5 +60,5 @@ CREATE TRIGGER auto_increment_question_trigger
     EXECUTE FUNCTION auto_increment_question_index();
 
 -- Add comment for documentation
-COMMENT ON FUNCTION auto_increment_question_index() IS 
-'auto-increments currentQuestionIndex when both participants have hasSubmitted: true. Uses JSONB operators for efficiency and resets hasSubmitted to false after incrementing.';
+COMMENT ON FUNCTION auto_increment_question_index() IS
+'Auto-increments currentQuestionIndex when both participants have hasSubmitted: true. Validates exactly 2 participants to prevent race conditions. Uses JSONB operators for efficiency and resets hasSubmitted to false after incrementing.';
