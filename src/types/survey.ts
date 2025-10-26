@@ -25,9 +25,15 @@ export interface SurveyState {
   partnerId?: string;
 }
 
+export interface SurveySubmitResponse {
+  success: boolean;
+  participantStatus?: Record<string, ParticipantStatus>;
+  error?: string;
+}
+
 export interface SurveyActions {
   updateSelection: (selection: string) => Promise<boolean>;
-  submitResponse: (questionId: string, selectedOption: string) => Promise<any>;
+  submitResponse: (questionId: string, selectedOption: string) => Promise<SurveySubmitResponse>;
   clearSubmitError: () => void;
   clearSelections: () => void;
 }
