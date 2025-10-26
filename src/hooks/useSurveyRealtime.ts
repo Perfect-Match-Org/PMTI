@@ -188,7 +188,7 @@ export function useSurveyRealtime({
           filter: `id=eq.${surveyId}`,
         },
         (payload) => {
-          const updatedSurvey = camelcaseKeys(payload.new, { deep: true }) as Survey;
+          const updatedSurvey = camelcaseKeys(payload.new, { deep: false }) as Survey;
           handleSurveyUpdate(updatedSurvey);
         }
       )

@@ -10,8 +10,8 @@ export interface QuestionOption {
 
 export enum QuestionType {
   Individual = "individual", // Each user answers separately in parallel
-  Cooperative = "cooperative", // Both users must collaborate to select one answer together
   CooperativeFlexible = "cooperative_flexible", // Both users can see each other's choices but can answer independently
+  // Cooperative = "cooperative", // Both users must collaborate to select one answer together
 }
 
 export enum CooperativeMode {
@@ -170,62 +170,6 @@ export const SURVEY_QUESTIONS: Question[] = [
     order: 2,
     category: "adventure",
   },
-
-  {
-    questionId: "Q003",
-    type: QuestionType.Cooperative,
-    storyline:
-      "You're having a disagreement about something important to both of you. The conversation is getting a bit heated.",
-    perspectives: {
-      user1: {
-        question: "How do you typically handle conflicts in relationships?",
-        context: "Think about your natural instinct when tensions rise",
-      },
-      user2: {
-        question: "What's your approach when you disagree with someone you care about?",
-        context: "Consider what helps you resolve differences constructively",
-      },
-      shared: {
-        question: "How should you both handle this disagreement together?",
-        context: "Discuss and agree on the best approach for both of you",
-        instructions: "Talk it through and select the option you both feel comfortable with",
-      },
-    },
-    options: [
-      {
-        id: "A",
-        text: "Take a break to cool down, then come back to discuss calmly",
-        scores: { communication: 8, adventure: 2, values: 7 },
-      },
-      {
-        id: "B",
-        text: "Talk it through immediately until we reach understanding",
-        scores: { communication: 10, adventure: 4, values: 6 },
-      },
-      {
-        id: "C",
-        text: "Try to find a compromise that works for both of us",
-        scores: { communication: 7, adventure: 3, values: 9 },
-      },
-      {
-        id: "D",
-        text: "Agree to disagree and focus on what we have in common",
-        scores: { communication: 5, adventure: 5, values: 8 },
-      },
-    ],
-    graphic: {
-      defaultUrl: "/graphics/conflict-resolution.svg",
-      optionUrls: {
-        A: "/graphics/take-break.svg",
-        B: "/graphics/deep-discussion.svg",
-        C: "/graphics/compromise.svg",
-        D: "/graphics/common-ground.svg",
-      },
-    },
-    order: 3,
-    category: "conflict",
-  },
-
   {
     questionId: "Q004",
     type: QuestionType.Individual,
@@ -274,61 +218,6 @@ export const SURVEY_QUESTIONS: Question[] = [
     },
     order: 4,
     category: "leisure",
-  },
-
-  {
-    questionId: "Q005",
-    type: QuestionType.Cooperative,
-    storyline:
-      "You're talking about your future together and what you want your life to look like in 5-10 years.",
-    perspectives: {
-      user1: {
-        question: "What's most important to you in your future vision?",
-        context: "Think about what would make you feel most fulfilled long-term",
-      },
-      user2: {
-        question: "What aspects of your future together excite you most?",
-        context: "Consider what success looks like to you as a couple",
-      },
-      shared: {
-        question: "What's most important for your future together?",
-        context: "Discuss your individual visions and find common ground",
-        instructions: "Share your thoughts and agree on what represents both of your priorities",
-      },
-    },
-    options: [
-      {
-        id: "A",
-        text: "Building a stable, comfortable home and family life",
-        scores: { communication: 6, adventure: 2, values: 10 },
-      },
-      {
-        id: "B",
-        text: "Traveling the world and having diverse experiences together",
-        scores: { communication: 5, adventure: 10, values: 5 },
-      },
-      {
-        id: "C",
-        text: "Growing personally and supporting each other's individual goals",
-        scores: { communication: 9, adventure: 4, values: 8 },
-      },
-      {
-        id: "D",
-        text: "Making a positive impact on your community and causes you care about",
-        scores: { communication: 7, adventure: 6, values: 9 },
-      },
-    ],
-    graphic: {
-      defaultUrl: "/graphics/future-planning.svg",
-      optionUrls: {
-        A: "/graphics/family-home.svg",
-        B: "/graphics/world-travel.svg",
-        C: "/graphics/personal-growth.svg",
-        D: "/graphics/community-impact.svg",
-      },
-    },
-    order: 5,
-    category: "future",
   },
 ];
 

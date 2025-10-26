@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSurvey } from "./survey-provider";
 import { QuestionType } from "@/lib/constants/questions";
 import { MultipleChoice } from "./questions/multiple-choice";
-import { CooperativeMultipleChoice } from "./questions/cooperative-multiple-choice";
 
 export function SurveyRenderer() {
   const { currentQuestion, surveyState, isLoading, error, actions } = useSurvey();
@@ -51,15 +50,6 @@ export function SurveyRenderer() {
       case QuestionType.Individual:
         return (
           <MultipleChoice
-            question={currentQuestion}
-            onSubmit={(optionId) => actions.submitResponse(currentQuestion.questionId, optionId)}
-            onSelectionChange={(optionId) => actions.updateSelection(optionId)}
-          />
-        );
-      case QuestionType.Cooperative:
-      case QuestionType.CooperativeFlexible:
-        return (
-          <CooperativeMultipleChoice
             question={currentQuestion}
             onSubmit={(optionId) => actions.submitResponse(currentQuestion.questionId, optionId)}
             onSelectionChange={(optionId) => actions.updateSelection(optionId)}
