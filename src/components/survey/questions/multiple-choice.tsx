@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
+import Image from "next/image";
 import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -81,9 +82,11 @@ export function MultipleChoice({
       {/* Question Image */}
       {question.graphic?.defaultUrl && (
         <div className="flex justify-center">
-          <img
+          <Image
             src={question.graphic.defaultUrl}
             alt="Question illustration"
+            width={448}
+            height={256}
             className="max-w-md max-h-64 object-contain rounded-lg"
           />
         </div>
@@ -128,7 +131,7 @@ export function MultipleChoice({
                   {/* Partner indicator */}
                   {isPartnerSelection && localSelection !== option.id && (
                     <CardDescription className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded mt-2">
-                      Partner's choice
+                      Partner&apos;s choice
                     </CardDescription>
                   )}
                 </Label>

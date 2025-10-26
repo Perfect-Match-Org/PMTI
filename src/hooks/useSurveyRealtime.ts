@@ -42,7 +42,7 @@ export function useSurveyRealtime({
       status: updatedSurvey.status || prev.status,
       partnerId: prev.partnerId,
     }));
-  }, []);
+  }, [setSurveyState]);
 
   // Handle real-time selection broadcasts from partner
   const handleSelectionUpdate = useCallback(
@@ -88,7 +88,7 @@ export function useSurveyRealtime({
         });
       }
     },
-    [userEmail]
+    [userEmail, setSurveyState]
   );
 
   // Fetch initial survey state from API
@@ -106,12 +106,14 @@ export function useSurveyRealtime({
       }
 
       const data = await response.json();
-      setSurveyState({
-        currentQuestionIndex: data.currentQuestionIndex || 0,
-        participantStatus: data.participantStatus || {},
-        status: data.status || "started",
-        partnerId: data.partnerId,
-      });
+      // Use functional update to preserve any subscription updates that arrived during fetch
+      setSurveyState((prev) => ({
+        ...prev,
+        currentQuestionIndex: data.currentQuestionIndex ?? prev.currentQuestionIndex ?? 0,
+        participantStatus: data.participantStatus || prev.participantStatus || {},
+        status: data.status || prev.status || "started",
+        partnerId: data.partnerId || prev.partnerId,
+      }));
 
       console.log("SurveyRealtime - Initial state loaded:", data);
     } catch (err) {
@@ -121,7 +123,7 @@ export function useSurveyRealtime({
     } finally {
       setIsLoading(false);
     }
-  }, [surveyId]);
+  }, [surveyId, setSurveyState]);
 
   // Set up realtime subscription
   const setupSubscription = useCallback(() => {
@@ -177,7 +179,7 @@ export function useSurveyRealtime({
         }
       }
     };
-  }, [surveyId, userEmail]);
+  }, [surveyId, userEmail, handleSurveyUpdate, handleSelectionUpdate, fetchInitialState]);
 
   // Broadcast selection to partner
   const broadcastSelection = useCallback(

@@ -140,7 +140,7 @@ export function SurveyProvider({ children, surveyId }: SurveyProviderProps) {
         setIsSubmitting(false);
       }
     },
-    [surveyId, surveyState.currentQuestionIndex, router]
+    [surveyId]
   );
 
   const clearSubmitError = useCallback(() => {
