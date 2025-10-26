@@ -38,7 +38,7 @@ export function SurveyProvider({ children, surveyId }: SurveyProviderProps) {
 
   const userEmail = session?.user?.email || "";
   const partnerId = surveyState.partnerId || "";
-  const currentQuestion = SURVEY_QUESTIONS[surveyState.currentQuestionIndex];
+  const currentQuestion = SURVEY_QUESTIONS[surveyState.currentQuestionIndex] || null;
 
   // Initialize realtime hook
   const { broadcastSelection, isConnected, isLoading, error } = useSurveyRealtime({
@@ -54,6 +54,17 @@ export function SurveyProvider({ children, surveyId }: SurveyProviderProps) {
       setUserRole(role);
     }
   }, [userEmail, partnerId]);
+
+  // Check for survey completion when websocket updates currentQuestionIndex
+  useEffect(() => {
+    const totalQuestions = getTotalQuestions();
+    // When both users submit the last question, the database trigger increments
+    // currentQuestionIndex to totalQuestions, and websocket broadcasts this update
+    if (surveyState.currentQuestionIndex >= totalQuestions) {
+      console.log("Survey completed (via websocket update), redirecting to results");
+      router.push(`/survey/${surveyId}/results`);
+    }
+  }, [surveyState.currentQuestionIndex, surveyId, router]);
 
   // Actions
   const updateSelection = useCallback(
@@ -118,17 +129,6 @@ export function SurveyProvider({ children, surveyId }: SurveyProviderProps) {
             participantStatus: result.participantStatus,
           }));
           console.log("Updated participant status:", result.participantStatus);
-        }
-
-        // Check if survey is completed after successful submission
-        if (result.success) {
-          const totalQuestions = getTotalQuestions();
-          const isCompleted = surveyState.currentQuestionIndex >= totalQuestions - 1; // -1 because we're still on current question
-
-          if (isCompleted) {
-            console.log("Survey completed, redirecting to results");
-            router.push(`/survey/${surveyId}/results`);
-          }
         }
 
         return result;
