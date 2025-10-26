@@ -148,13 +148,16 @@ export function SurveyProvider({ children, surveyId }: SurveyProviderProps) {
   }, []);
 
   // Clear selections when question changes (for clean state)
+  // Reset all ephemeral fields to ensure clean state for next question
   const clearSelections = useCallback(() => {
     setSurveyState((prev) => ({
       ...prev,
       participantStatus: Object.keys(prev.participantStatus).reduce((acc, email) => {
         acc[email] = {
-          ...prev.participantStatus[email],
           hasSubmitted: false,
+          currentSelection: undefined,
+          questionId: undefined,
+          timestamp: undefined,
         };
         return acc;
       }, {} as typeof prev.participantStatus),
