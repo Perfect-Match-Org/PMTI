@@ -204,58 +204,6 @@ export async function getSurveyById(surveyId: string, currentUserEmail: string) 
 }
 
 /**
- * Advance survey to next question
- */
-export async function advanceSurvey(surveyId: string, totalQuestions: number) {
-  const db = await dbConnect();
-
-  // Get current survey state
-  const existingSurvey = await db.select().from(surveys).where(eq(surveys.id, surveyId)).limit(1);
-
-  if (!existingSurvey.length) {
-    throw new Error("Survey not found");
-  }
-
-  const survey = existingSurvey[0];
-  const nextQuestionIndex = survey.currentQuestionIndex + 1;
-
-  if (nextQuestionIndex >= totalQuestions) {
-    // Survey completed
-    await db
-      .update(surveys)
-      .set({
-        status: "completed",
-        completedAt: new Date(),
-        currentQuestionIndex: nextQuestionIndex,
-        participantStatus: {}, // Clear status
-      })
-      .where(eq(surveys.id, surveyId));
-
-    return {
-      success: true,
-      completed: true,
-      currentQuestionIndex: nextQuestionIndex,
-    };
-  }
-
-  // Advance to next question
-  await db
-    .update(surveys)
-    .set({
-      currentQuestionIndex: nextQuestionIndex,
-      participantStatus: {}, // Reset participant status for new question
-      lastActivityAt: new Date(),
-    })
-    .where(eq(surveys.id, surveyId));
-
-  return {
-    success: true,
-    completed: false,
-    currentQuestionIndex: nextQuestionIndex,
-  };
-}
-
-/**
  * Save survey response and update participant status
  */
 export async function saveSurveyResponse(
