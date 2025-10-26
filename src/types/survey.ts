@@ -1,9 +1,21 @@
 import { UserRole, Question } from "@/lib/constants/questions";
 
-export interface ParticipantStatus {
-  currentSelection?: string; // Use by frontend to track current selection via boardcast, not stored in DB
-  questionId?: string; // Use by frontend to track current question, not stored in DB
+/**
+ * Database-persisted participant state
+ * Only contains fields that should be stored in the database
+ */
+export interface ParticipantSubmissionState {
   hasSubmitted: boolean;
+}
+
+/**
+ * Composite participant status used in frontend
+ * Combines database-persisted state with ephemeral real-time state
+ */
+export interface ParticipantStatus extends ParticipantSubmissionState {
+  currentSelection?: string;  // Ephemeral - managed by websocket broadcasts
+  questionId?: string;         // Ephemeral - tracks current question
+  timestamp?: Date;            // Ephemeral - prevents stale broadcasts
 }
 
 export interface SurveyState {

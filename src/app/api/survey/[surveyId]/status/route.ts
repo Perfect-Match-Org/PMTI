@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getSurveyById } from "@/db/services/surveyService";
+import { ParticipantStatus } from "@/types/survey";
 
 export async function GET(
   request: NextRequest,
@@ -17,9 +18,22 @@ export async function GET(
 
     const { survey, partnerId } = await getSurveyById(surveyId, session.user.email);
 
+    // Transform database state (ParticipantSubmissionState) to client state (ParticipantStatus)
+    // Database only contains hasSubmitted; ephemeral state managed client-side
+    const participantStatus: Record<string, ParticipantStatus> = {};
+    if (survey.participantStatus) {
+      for (const [email, submissionState] of Object.entries(survey.participantStatus)) {
+        participantStatus[email] = {
+          hasSubmitted: submissionState.hasSubmitted,
+          // Ephemeral fields (currentSelection, questionId, timestamp) not included
+          // These will be populated by real-time broadcasts on the client
+        };
+      }
+    }
+
     return NextResponse.json({
       currentQuestionIndex: survey.currentQuestionIndex,
-      participantStatus: survey.participantStatus || {},
+      participantStatus,
       status: survey.status,
       partnerId,
     });

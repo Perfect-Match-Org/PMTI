@@ -78,9 +78,9 @@ export function SurveyProvider({ children, surveyId }: SurveyProviderProps) {
             [userEmail]: {
               ...prev.participantStatus[userEmail],
               currentSelection: selection,
-              isOnline: true,
-              lastSeen: new Date(),
               hasSubmitted: false,
+              questionId: currentQuestion?.questionId,
+              timestamp: new Date(), // Use Date object for ephemeral timestamp
             },
           },
         }));

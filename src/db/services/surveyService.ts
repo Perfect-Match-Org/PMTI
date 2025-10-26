@@ -3,7 +3,7 @@ import { dbConnect } from "@/lib/dbConnect";
 import { surveys, surveyResponses, surveyHistory, type Survey } from "@/db/schema";
 import { CoupleTypeCode, type ScoreWeights } from "@/lib/constants/coupleTypes";
 import { SurveyStatus } from "@/db/schema/survey";
-import { ParticipantStatus } from "@/types/survey";
+import { ParticipantSubmissionState } from "@/types/survey";
 
 /**
  * Get survey count by status
@@ -236,11 +236,11 @@ export async function saveSurveyResponse(
     });
 
     // Update participant status to show submission
+    // Only persist hasSubmitted flag (ephemeral state managed client-side)
     const currentParticipantStatus = survey.participantStatus || {};
-    const updatedStatus: Record<string, ParticipantStatus> = {
+    const updatedStatus: Record<string, ParticipantSubmissionState> = {
       ...currentParticipantStatus,
       [userEmail]: {
-        ...currentParticipantStatus[userEmail],
         hasSubmitted: true,
       },
     };

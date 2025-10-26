@@ -6,6 +6,7 @@ import { Survey } from "@/db/schema";
 import { SurveyState, SurveyBroadcastPayload } from "@/types/survey";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import camelcaseKeys from "camelcase-keys";
+import { SURVEY_QUESTIONS } from "@/lib/constants/questions";
 
 interface UseSurveyRealtimeProps {
   surveyId: string;
@@ -47,22 +48,44 @@ export function useSurveyRealtime({
   const handleSelectionUpdate = useCallback(
     (payload: SurveyBroadcastPayload) => {
       console.log("SurveyRealtime - Selection broadcast received:", payload);
-      const { userEmail: senderEmail, selection, questionId } = payload;
+      const { userEmail: senderEmail, selection, questionId, timestamp } = payload;
 
       // Only update if it's from partner
       if (senderEmail !== userEmail) {
-        setSurveyState((prev) => ({
-          ...prev,
-          participantStatus: {
-            ...prev.participantStatus,
-            [senderEmail]: {
-              ...prev.participantStatus[senderEmail],
-              currentSelection: selection,
-              hasSubmitted: false,
-              questionId,
+        setSurveyState((prev) => {
+          // Get current question ID from survey state
+          const currentQuestion = SURVEY_QUESTIONS[prev.currentQuestionIndex];
+
+          // Ignore broadcasts for different questions (stale broadcasts)
+          if (!currentQuestion || questionId !== currentQuestion.questionId) {
+            console.warn("SurveyRealtime - Ignoring stale broadcast for question:", questionId, "current:", currentQuestion?.questionId);
+            return prev;
+          }
+
+          // Convert ISO string timestamp to Date object for comparison
+          const incomingTimestamp = new Date(timestamp);
+
+          // Check if broadcast is outdated (older than last update for this user)
+          const existingStatus = prev.participantStatus[senderEmail];
+          if (existingStatus?.timestamp && incomingTimestamp < existingStatus.timestamp) {
+            console.warn("SurveyRealtime - Ignoring outdated broadcast from:", incomingTimestamp, "existing:", existingStatus.timestamp);
+            return prev;
+          }
+
+          return {
+            ...prev,
+            participantStatus: {
+              ...prev.participantStatus,
+              [senderEmail]: {
+                ...prev.participantStatus[senderEmail],
+                currentSelection: selection,
+                hasSubmitted: false,
+                questionId,
+                timestamp: incomingTimestamp, // Store as Date object
+              },
             },
-          },
-        }));
+          };
+        });
       }
     },
     [userEmail]
