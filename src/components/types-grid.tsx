@@ -1,6 +1,6 @@
 "use client";
 
-import { TypeCard } from "./typeCard";
+import { TypeCard } from "./type-card";
 import { RELATIONSHIP_TYPES } from "@/data/relationTypes";
 import { Button } from "@ui/button";
 

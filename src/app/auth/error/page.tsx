@@ -1,5 +1,5 @@
 import { NextPage } from "next";
-import { AuthButtons } from "@/components/ui/authButtons";
+import { AuthButtons } from "@/components/ui/auth-buttons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 

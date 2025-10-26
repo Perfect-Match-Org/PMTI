@@ -2,17 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { acceptInvitation, declineInvitation, getInvitationById } from "@/db/services";
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const resolvedParams = await params;
     const { action } = await request.json(); // 'accept' or 'decline'
 
     // Get the invitation
-    const invitation = await getInvitationById(params.id);
+    const invitation = await getInvitationById(resolvedParams.id);
     if (!invitation) {
       return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
     }
@@ -32,17 +33,17 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     let updatedInvitation;
     if (action === "accept") {
-      updatedInvitation = await acceptInvitation(params.id);
+      updatedInvitation = await acceptInvitation(resolvedParams.id);
     } else {
-      updatedInvitation = await declineInvitation(params.id);
+      updatedInvitation = await declineInvitation(resolvedParams.id);
     }
 
     return NextResponse.json({
       success: true,
       status: updatedInvitation.status,
-      sessionId: updatedInvitation.sessionId,
+      surveyId: updatedInvitation.surveyId,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to respond to invitation" }, { status: 500 });
   }
 }

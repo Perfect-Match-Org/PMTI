@@ -5,7 +5,7 @@ export const coupleTypeAnalytics = pgTable(
   "couple_type_analytics",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    typeCode: coupleTypeEnum("type_code").notNull().unique(),
+    typeCode: coupleTypeEnum().notNull().unique(),
     frequency: integer("frequency").default(0).notNull(),
   },
   (table) => [
@@ -16,8 +16,8 @@ export const coupleTypeAnalytics = pgTable(
 
 export const questionAnalytics = pgTable("question_analytics", {
   id: uuid("id").primaryKey().defaultRandom(),
-  questionId: text("question_id").notNull().unique(),
-  optionFrequency: jsonb("option_frequency").$type<Record<string, number>>().default({}).notNull(),
+  questionId: text().notNull().unique(),
+  optionFrequency: jsonb().$type<Record<string, number>>().default({}).notNull(),
 });
 
 export type CoupleTypeAnalytic = typeof coupleTypeAnalytics.$inferSelect;

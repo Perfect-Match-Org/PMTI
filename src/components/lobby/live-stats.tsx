@@ -71,7 +71,7 @@ export function LiveStats() {
         <CardContent className="p-1">
           <div className="text-center">
             <div className="text-2xl font-bold text-primary">{totalSurveys.toLocaleString()}</div>
-            <p className="text-sm text-muted-foreground">Total couples who've taken the quiz</p>
+            <p className="text-sm text-muted-foreground">Total couples who&apos;ve taken the quiz</p>
           </div>
         </CardContent>
       </Card>

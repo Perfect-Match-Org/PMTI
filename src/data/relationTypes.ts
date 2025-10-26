@@ -1,4 +1,4 @@
-import { TypeData } from "@/components/typeCard";
+import { TypeData } from "@/components/type-card";
 
 export const RELATIONSHIP_TYPES: TypeData[] = [
   {

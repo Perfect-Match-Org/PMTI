@@ -1,8 +1,9 @@
 import { eq, and, count } from "drizzle-orm";
 import { dbConnect } from "@/lib/dbConnect";
-import { surveys, surveyResponses, type Survey } from "@/db/schema";
+import { surveys, surveyResponses, surveyHistory, type Survey } from "@/db/schema";
 import { CoupleTypeCode, type ScoreWeights } from "@/lib/constants/coupleTypes";
 import { SurveyStatus } from "@/db/schema/survey";
+import { ParticipantSubmissionState } from "@/types/survey";
 
 /**
  * Get survey count by status
@@ -10,19 +11,20 @@ import { SurveyStatus } from "@/db/schema/survey";
 export async function getSurveyCountByStatus(status?: SurveyStatus): Promise<number> {
   const db = await dbConnect();
 
-  let query = db.select({ count: count() }).from(surveys);
+  try {
+    const [result] = status
+      ? await db.select({ count: count() }).from(surveys).where(eq(surveys.status, status)).limit(1)
+      : await db.select({ count: count() }).from(surveys).limit(1);
 
-  if (status) {
-    query.where(eq(surveys.status, status));
+    if (!result) {
+      return 0;
+    }
+
+    return result.count;
+  } catch (error) {
+    console.error("Error getting survey count:", error);
+    return 0; // Return 0 on timeout rather than throwing
   }
-
-  const [result] = await query;
-
-  if (!result) {
-    return 0;
-  }
-
-  return result.count;
 }
 
 /**
@@ -122,10 +124,14 @@ export async function updateCurrentProgress(
 /**
  * Get all responses for a survey grouped by user
  */
-export async function getSurveyResponses(surveyId: string, limit: number = 1000, userEmail?: string) {
+export async function getSurveyResponses(
+  surveyId: string,
+  limit: number = 1000,
+  userEmail?: string
+) {
   const db = await dbConnect();
 
-  const whereConditions = userEmail 
+  const whereConditions = userEmail
     ? and(eq(surveyResponses.surveyId, surveyId), eq(surveyResponses.userEmail, userEmail))
     : eq(surveyResponses.surveyId, surveyId);
 
@@ -140,7 +146,11 @@ export async function getSurveyResponses(surveyId: string, limit: number = 1000,
 /**
  * Get the latest response for each user for a specific question
  */
-export async function getLatestUserResponses(surveyId: string, questionId: string, limit: number = 100) {
+export async function getLatestUserResponses(
+  surveyId: string,
+  questionId: string,
+  limit: number = 100
+) {
   const db = await dbConnect();
 
   return await db
@@ -149,4 +159,107 @@ export async function getLatestUserResponses(surveyId: string, questionId: strin
     .where(and(eq(surveyResponses.surveyId, surveyId), eq(surveyResponses.questionId, questionId)))
     .orderBy(surveyResponses.respondedAt)
     .limit(limit);
+}
+
+/**
+ * Get survey by survey ID with participant information
+ */
+export async function getSurveyById(surveyId: string, currentUserEmail: string) {
+  const db = await dbConnect();
+
+  // Get existing survey
+  const survey = await db.select().from(surveys).where(eq(surveys.id, surveyId)).limit(1);
+
+  if (!survey.length) {
+    throw new Error("Survey not found");
+  }
+
+  // Get partner from history
+  const history = await db
+    .select({
+      user1Email: surveyHistory.user1Email,
+      user2Email: surveyHistory.user2Email,
+    })
+    .from(surveyHistory)
+    .where(eq(surveyHistory.surveyId, survey[0].id))
+    .limit(1);
+
+  if (!history.length) {
+    throw new Error("Survey data corrupted");
+  }
+
+  // Verify user has access
+  if (history[0].user1Email !== currentUserEmail && history[0].user2Email !== currentUserEmail) {
+    throw new Error("Access denied");
+  }
+
+  // Determine partner
+  const partnerId =
+    history[0].user1Email === currentUserEmail ? history[0].user2Email : history[0].user1Email;
+
+  return {
+    survey: survey[0],
+    partnerId,
+  };
+}
+
+/**
+ * Save survey response and update participant status
+ */
+export async function saveSurveyResponse(
+  surveyId: string,
+  userEmail: string,
+  questionId: string,
+  selectedOption: string
+) {
+  const db = await dbConnect();
+  const now = new Date();
+
+  // Get survey
+  const existingSurvey = await db.select().from(surveys).where(eq(surveys.id, surveyId)).limit(1);
+
+  if (!existingSurvey.length) {
+    throw new Error("Survey not found");
+  }
+
+  const survey = existingSurvey[0];
+
+  // Save response and update participant status in transaction
+  await db.transaction(async (tx) => {
+    // Save response
+    await tx.insert(surveyResponses).values({
+      surveyId: survey.id,
+      userEmail,
+      questionId,
+      selectedOption,
+      respondedAt: now,
+    });
+
+    // Update participant status to show submission
+    // Only persist hasSubmitted flag (ephemeral state managed client-side)
+    const currentParticipantStatus = survey.participantStatus || {};
+    const updatedStatus: Record<string, ParticipantSubmissionState> = {
+      ...currentParticipantStatus,
+      [userEmail]: {
+        hasSubmitted: true,
+      },
+    };
+
+    await tx
+      .update(surveys)
+      .set({
+        participantStatus: updatedStatus,
+        lastActivityAt: now,
+      })
+      .where(eq(surveys.id, surveyId));
+  });
+
+  // Return updated status
+  const updatedSurvey = await db
+    .select({ participantStatus: surveys.participantStatus })
+    .from(surveys)
+    .where(eq(surveys.id, surveyId))
+    .limit(1);
+
+  return updatedSurvey[0].participantStatus;
 }

@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "./api/auth/[...nextauth]/route";
-import { AuthButtons } from "@ui/authButtons";
+import { authOptions } from "@/lib/auth";
+import { AuthButtons } from "@ui/auth-buttons";
 import { Button } from "@/components/ui/button";
-import { TypesGrid } from "@/components/typesGrid";
+import { TypesGrid } from "@/components/types-grid";
 import { config } from "@/lib/config";
 
 async function getSurveyCount() {
@@ -31,7 +31,9 @@ export default async function Home() {
             {/* Left side - Text content */}
             <div className="space-y-8 pt-10 lg:pt-0">
               <div className="space-y-4">
-                <h1 className="text-5xl font-bold tracking-tight">Perfect Match Type Indicator</h1>
+                <h1 className="text-5xl font-bold tracking-tight text-primary">
+                  Perfect Match Type Indicator
+                </h1>
                 <div className="space-y-2">
                   <p className="text-xl text-muted-foreground">
                     Discover what type of couple you are and strengthen your relationship together

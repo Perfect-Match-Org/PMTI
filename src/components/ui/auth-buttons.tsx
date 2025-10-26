@@ -2,7 +2,7 @@
 
 import { signIn, signOut, useSession } from "next-auth/react";
 import { Button } from "./button";
-import { LogIn, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 export function AuthButtons() {
   const { data: session } = useSession();

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         expiresAt: invitation.expiresAt,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to send invitation" }, { status: 500 });
   }
 }

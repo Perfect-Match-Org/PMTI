@@ -1,4 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
+declare global {
+  var supabase: SupabaseClient | undefined;
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -8,7 +12,7 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 // Client-side Supabase instance (safe for browser)
-export const supabase = createClient(supabaseUrl, supabaseKey, {
+export const supabase = global.supabase || createClient(supabaseUrl, supabaseKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -20,3 +24,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     }
   }
 })
+
+if (process.env.NODE_ENV !== 'production') {
+  global.supabase = supabase
+}

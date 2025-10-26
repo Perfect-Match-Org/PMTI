@@ -13,6 +13,7 @@ import { sql } from "drizzle-orm";
 import { users } from "./user";
 import { relationshipTypeEnum } from "@/lib/constants/relationships";
 import { coupleTypeEnum, type ScoreWeights } from "@/lib/constants/coupleTypes";
+import { ParticipantSubmissionState } from "@/types/survey";
 
 export const surveyStatusEnum = pgEnum("survey_status", ["started", "completed", "abandoned"]);
 export type SurveyStatus = (typeof surveyStatusEnum.enumValues)[number];
@@ -20,17 +21,20 @@ export type SurveyStatus = (typeof surveyStatusEnum.enumValues)[number];
 export const surveys = pgTable(
   "surveys",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    sessionId: text("session_id").notNull().unique(),
-    startedAt: timestamp("started_at").defaultNow().notNull(),
-    completedAt: timestamp("completed_at"),
-    duration: integer("duration"), // in seconds
-    status: surveyStatusEnum("status").default("started").notNull(),
-    surveyVersion: text("survey_version").default("1.0").notNull(),
+    id: uuid().primaryKey().defaultRandom(),
+    startedAt: timestamp().defaultNow().notNull(),
+    completedAt: timestamp(),
+    duration: integer(), // in seconds
+    status: surveyStatusEnum().default("started").notNull(),
+    surveyVersion: text().default("1.0").notNull(),
 
     // Current progress (for reconnection handling)
     currentQuestionIndex: integer("current_question_index").default(0).notNull(),
     lastActivityAt: timestamp("last_activity_at").defaultNow().notNull(),
+
+    // Participant submission state (only hasSubmitted flag)
+    // Ephemeral state (currentSelection, questionId, timestamp) is managed client-side only
+    participantStatus: jsonb("participant_status").$type<Record<string, ParticipantSubmissionState>>(),
 
     coupleType: coupleTypeEnum("couple_type"),
     participantScores: jsonb("participant_scores").$type<Record<string, ScoreWeights>>(), // userId -> scores
@@ -54,17 +58,17 @@ export const surveyHistory = pgTable(
   "survey_participants",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    surveyId: uuid("survey_id")
+    surveyId: uuid()
       .references(() => surveys.id)
       .notNull(),
-    user1Email: text("user1_email")
+    user1Email: text()
       .references(() => users.email)
       .notNull(), // Always the lexicographically smaller email
-    user2Email: text("user2_email")
+    user2Email: text()
       .references(() => users.email)
       .notNull(), // Always the lexicographically larger email
-    relationship: relationshipTypeEnum("relationship").notNull(),
-    participatedAt: timestamp("participated_at").defaultNow().notNull(),
+    relationship: relationshipTypeEnum().notNull(),
+    participatedAt: timestamp().defaultNow().notNull(),
   },
   (table) => [
     // Database-level constraint to enforce user1Email < user2Email
@@ -81,15 +85,15 @@ export const surveyResponses = pgTable(
   "survey_responses",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    surveyId: uuid("survey_id")
+    surveyId: uuid()
       .references(() => surveys.id)
       .notNull(),
-    userEmail: text("user_email")
+    userEmail: text()
       .references(() => users.email)
       .notNull(),
-    questionId: text("question_id").notNull(),
-    selectedOption: text("selected_option").notNull(),
-    respondedAt: timestamp("responded_at").defaultNow().notNull(),
+    questionId: text().notNull(),
+    selectedOption: text().notNull(),
+    respondedAt: timestamp().defaultNow().notNull(),
   },
   (table) => [
     // Index for getting all responses for a survey (most common query)

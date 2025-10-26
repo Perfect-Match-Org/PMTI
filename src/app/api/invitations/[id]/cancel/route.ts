@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { cancelInvitation, getInvitationById } from "@/db/services";
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const resolvedParams = await params;
+    
     // Get the invitation
-    const invitation = await getInvitationById(params.id);
+    const invitation = await getInvitationById(resolvedParams.id);
     if (!invitation) {
       return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
     }
@@ -30,7 +32,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: "Cannot cancel expired invitation" }, { status: 400 });
     }
 
-    const updatedInvitation = await cancelInvitation(params.id);
+    const updatedInvitation = await cancelInvitation(resolvedParams.id);
 
     return NextResponse.json({
       success: true,

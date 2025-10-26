@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { InvitationForm } from "@/components/lobby/invitationForm";
-import { PendingInvitations } from "@/components/lobby/pendingInvitations";
-import { LiveStats } from "@/components/lobby/liveStats";
+import { InvitationForm } from "@/components/lobby/invitation-form";
+import { PendingInvitations } from "@/components/lobby/pending-invitations";
+import { LiveStats } from "@/components/lobby/live-stats";
 
 export default async function LobbyPage() {
   const session = await getServerSession(authOptions);

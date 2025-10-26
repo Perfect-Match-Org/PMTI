@@ -1,8 +1,8 @@
 import { eq, and, desc, sql } from "drizzle-orm";
 import { dbConnect } from "@/lib/dbConnect";
-import { invitations, users, type Invitation, type NewInvitation } from "@/db/schema";
-import { randomUUID } from "crypto";
+import { invitations, users, surveys, surveyHistory, type Invitation } from "@/db/schema";
 import { RelationshipType } from "@/lib/constants/relationships";
+import { OutboundInvitation } from "@/types/invitation";
 
 function isExpiredHelper(invitation: Invitation): boolean {
   return new Date() > invitation.expiresAt;
@@ -27,38 +27,64 @@ export async function isExpired(invitationId: string): Promise<boolean> {
 }
 
 /**
- * Accept an invitation and generate a session ID
+ * Accept an invitation, generate a survey ID, and create the survey
  */
 export async function acceptInvitation(invitationId: string): Promise<Invitation> {
   const db = await dbConnect();
 
-  // Retry up to 3 times in case of UUID collision (extremely rare)
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const sessionId = `session_${randomUUID()}`;
-    try {
-      const [updatedInvitation] = await db
-        .update(invitations)
-        .set({
-          status: "accepted",
-          sessionId: sessionId,
-        })
-        .where(eq(invitations.id, invitationId))
-        .returning();
-
-      return updatedInvitation;
-    } catch (error: any) {
-      // Check if it's a duplicate key error on sessionId
-      if (error.code === "23505" && error.constraint?.includes("session_id")) {
-        if (attempt === 2) {
-          throw new Error("Failed to generate unique session ID after 3 attempts");
-        }
-        continue;
-      }
-      throw error;
-    }
+  // Get the invitation first to access user emails
+  const invitation = await getInvitationById(invitationId);
+  if (!invitation) {
+    throw new Error("Invitation not found");
   }
 
-  throw new Error("Failed to accept invitation");
+  // Create survey and update invitation in a single transaction
+  const result = await db.transaction(async (tx) => {
+    const [newSurvey] = await tx
+      .insert(surveys)
+      .values({
+        startedAt: new Date(),
+        status: "started",
+        currentQuestionIndex: 0,
+        participantStatus: {
+          [invitation.fromUserEmail]: { hasSubmitted: false },
+          [invitation.toUserEmail]: { hasSubmitted: false },
+        },
+      })
+      .returning();
+
+    // Update invitation with accepted status and the generated surveyId
+    const [updatedInvitation] = await tx
+      .update(invitations)
+      .set({
+        status: "accepted",
+        surveyId: newSurvey.id,
+      })
+      .where(eq(invitations.id, invitationId))
+      .returning();
+
+    // Determine user order (lexicographic for consistency)
+    const user1Email =
+      invitation.fromUserEmail < invitation.toUserEmail
+        ? invitation.fromUserEmail
+        : invitation.toUserEmail;
+    const user2Email =
+      invitation.fromUserEmail < invitation.toUserEmail
+        ? invitation.toUserEmail
+        : invitation.fromUserEmail;
+
+    // Create survey history record
+    await tx.insert(surveyHistory).values({
+      surveyId: newSurvey.id,
+      user1Email,
+      user2Email,
+      relationship: invitation.relationship,
+    });
+
+    return updatedInvitation;
+  });
+
+  return result;
 }
 
 /**
@@ -110,10 +136,10 @@ export async function getReceivedInvitations(email: string, limit: number = 10) 
       relationship: invitations.relationship,
       sentAt: invitations.sentAt,
       expiresAt: invitations.expiresAt,
-      sessionId: invitations.sessionId,
+      surveyId: invitations.surveyId,
     })
     .from(invitations)
-    .leftJoin(users, eq(invitations.fromUserEmail, users.email))
+    .innerJoin(users, eq(invitations.fromUserEmail, users.email))
     .where(
       and(
         eq(invitations.toUserEmail, email),
@@ -152,7 +178,10 @@ export async function getPendingInvitation(
 /**
  * Get sent invitations for a user by email (excludes expired)
  */
-export async function getSentInvitations(email: string, limit: number = 1) {
+export async function getSentInvitations(
+  email: string,
+  limit: number = 1
+): Promise<OutboundInvitation[]> {
   const db = await dbConnect();
 
   return await db
@@ -167,10 +196,10 @@ export async function getSentInvitations(email: string, limit: number = 1) {
       relationship: invitations.relationship,
       sentAt: invitations.sentAt,
       expiresAt: invitations.expiresAt,
-      sessionId: invitations.sessionId,
+      surveyId: invitations.surveyId,
     })
     .from(invitations)
-    .leftJoin(users, eq(invitations.toUserEmail, users.email))
+    .innerJoin(users, eq(invitations.toUserEmail, users.email))
     .where(
       and(
         eq(invitations.fromUserEmail, email),
@@ -195,6 +224,35 @@ export async function getInvitationById(invitationId: string): Promise<Invitatio
     .limit(1);
 
   return invitation || null;
+}
+
+/**
+ * Get invitation by survey ID
+ */
+export async function getInvitationBySurveyId(surveyId: string): Promise<Invitation | null> {
+  const db = await dbConnect();
+
+  const [invitation] = await db
+    .select()
+    .from(invitations)
+    .where(eq(invitations.surveyId, surveyId))
+    .limit(1);
+
+  return invitation || null;
+}
+
+/**
+ * Validate if user has access to a survey session
+ */
+export async function validateSurveyAccess(surveyId: string, userEmail: string): Promise<boolean> {
+  const invitation = await getInvitationBySurveyId(surveyId);
+
+  if (!invitation) {
+    return false;
+  }
+
+  // Check if user is either the sender or recipient of the invitation
+  return invitation.fromUserEmail === userEmail || invitation.toUserEmail === userEmail;
 }
 
 /**
