@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack -H localhost -p 3000 && supabase start",
+    "dev": "next dev --turbopack && supabase start",
     "build": "next build",
     "start": "next start",
     "generate": "drizzle-kit generate",
