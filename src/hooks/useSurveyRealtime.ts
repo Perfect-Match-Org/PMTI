@@ -194,7 +194,7 @@ export function useSurveyRealtime({
         }
       }
     };
-  }, [surveyId, userEmail, handleSurveyUpdate, handleSelectionUpdate]);
+  }, [surveyId, userEmail, handleSurveyUpdate, handleSelectionUpdate, fetchInitialState]);
 
   // Broadcast selection to partner
   const broadcastSelection = useCallback(

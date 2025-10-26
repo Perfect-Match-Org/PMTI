@@ -187,7 +187,7 @@ export function usePendingInvitations() {
         channelRef.current = null;
       }
     };
-  }, [session?.user?.email]);
+  }, [session?.user?.email, setupSubscription]);
 
   return {
     invitations,

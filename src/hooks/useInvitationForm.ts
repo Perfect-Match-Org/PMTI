@@ -226,7 +226,7 @@ export function useInvitationForm() {
         channelRef.current = null;
       }
     };
-  }, [session?.user?.email, invitationDetails.id]);
+  }, [session?.user?.email, invitationDetails.id, setupSubscription]);
 
   return {
     // State
