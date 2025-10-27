@@ -39,6 +39,12 @@ export interface CoupleTypeDefinition {
       primary: string[];
       secondary: string[];
     };
+    dateIdeas?: string[];
+    descriptorWords?: {
+      "s&p": string;
+      "p&e": string;
+      "a&r": string;
+    };
   };
   graphic: {
     iconUrl: string;
@@ -135,7 +141,7 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       },
     },
     graphic: {
-      iconUrl: "/icons/adventure-planners.svg",
+      iconUrl: "/huajie.png",
       colorScheme: {
         primary: "#4F46E5",
         secondary: "#7C3AED",
@@ -169,9 +175,19 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
         primary: ["Physical Touch", "Quality Time"],
         secondary: ["Acts of Service", "Words of Affirmation"],
       },
+      dateIdeas: [
+        "Cat cafe meetup",
+        "Super Smash Brothers Ultimate Tournament",
+        "Organic Chem Tutor Watch Party",
+      ],
+      descriptorWords: {
+        "s&p": "You value routine and comfort in familiar patterns",
+        "p&e": "You cherish intimate moments away from the outside world",
+        "a&r": "You prefer contemplating life's simple pleasures together",
+      },
     },
     graphic: {
-      iconUrl: "/icons/cozy-homebodies.svg",
+      iconUrl: "/huajie.png",
       colorScheme: {
         primary: "#DC2626",
         secondary: "#F97316",
@@ -179,7 +195,6 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
       },
     },
   },
-
   // Add placeholders for other types - you can fill these in later
   [CoupleTypeCode.SOCIAL_BUTTERFLIES]: {
     code: CoupleTypeCode.SOCIAL_BUTTERFLIES,
