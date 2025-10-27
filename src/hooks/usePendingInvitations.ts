@@ -19,7 +19,8 @@ export function usePendingInvitations() {
 
   // Create stable channel reference using useMemo
   const channel = useMemo(
-    () => session?.user?.email ? supabase.channel(`user-invitations-${session.user.email}`) : null,
+    () =>
+      session?.user?.email ? supabase.channel(`user-invitations-${session.user.email}`) : null,
     [session?.user?.email]
   );
 
@@ -98,7 +99,6 @@ export function usePendingInvitations() {
     }
   }, []);
 
-
   const handleAccept = useCallback(
     async (invitationId: string) => {
       try {
@@ -160,17 +160,16 @@ export function usePendingInvitations() {
 
     console.log("PendingInvitations - Setting up subscription for:", session.user.email);
 
-    channel
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "invitations",
-          filter: `toUserEmail=eq.${session.user.email}`,
-        },
-        handleRealtimeUpdate
-      );
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "invitations",
+        filter: `toUserEmail=eq.${session.user.email}`,
+      },
+      handleRealtimeUpdate
+    );
 
     channel.subscribe(async (status, error) => {
       console.log("PendingInvitations - Subscription status:", status);
