@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { createOrUpdateUser } from "@/db/services/userService";
+import { isAdminEmail } from "./admin";
 
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error(
@@ -28,6 +29,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user }) {
       if (!user.email || !user.name || !isValidCornellEmail(user.email)) {
+        return false;
+      }
+
+      if (process.env.VERCEL_ENV === "preview" && !isAdminEmail(user.email)) {
         return false;
       }
 
