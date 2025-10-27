@@ -17,9 +17,10 @@ export async function GET() {
   const secret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
 
   const token = await new jose.SignJWT({
-    sub: session.user.email,
+    email: session.user.email, // Custom claim for RLS policies
     role: "authenticated",
     aud: "authenticated",
+    iss: "supabase",
   })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setIssuedAt()
