@@ -2,6 +2,11 @@
 ALTER TABLE invitations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE surveys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE survey_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE survey_responses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE question_analytics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE couple_type_analytics ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy for invitations table
 -- Users can see invitations they sent or received
