@@ -113,7 +113,7 @@ export function useSurveyRealtime({
       setError(null);
       console.log("SurveyRealtime - Fetching initial state for:", surveyId);
 
-      const response = await fetch(`/api/survey/${surveyId}/status`);
+      const response = await fetch(`/api/surveys/${surveyId}/status`);
       if (!response.ok) {
         throw new Error("Failed to fetch survey state");
       }

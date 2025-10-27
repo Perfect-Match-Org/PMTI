@@ -105,7 +105,7 @@ export function SurveyProvider({ children, surveyId }: SurveyProviderProps) {
       setSubmitError(null);
 
       try {
-        const response = await fetch(`/api/survey/${surveyId}/submit`, {
+        const response = await fetch(`/api/surveys/${surveyId}/submit`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
