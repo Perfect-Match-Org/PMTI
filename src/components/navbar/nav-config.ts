@@ -19,4 +19,8 @@ export const navigationItems: NavItem[] = [
     label: "About",
     href: "/about",
   },
+  {
+    label: "Type Indicator",
+    href: "/type",
+  }
 ];
