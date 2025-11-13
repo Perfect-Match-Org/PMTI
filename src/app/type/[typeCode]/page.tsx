@@ -35,38 +35,33 @@ export default async function TypePage({ params }: TypePageProps) {
         <main className="min-h-screen bg-background snap-y snap-mandatory overflow-y-scroll h-screen">
             {/* You are... Section */}
             <section className="relative snap-start snap-always h-screen overflow-hidden">
+                {/* All Images positioned relative to section for maximum flexibility */}
 
-                {/*Stick Figure Couple positioned to overlap divider */}
-                <div className="relative">
-                    <div className="absolute right-[0%] -top-[2%] hidden lg:block z-30">
-                        <Image
-                            src="/78b9c467d431b1ea975b0c881790b959230030ca.png"
-                            alt="Couple illustration"
-                            width={1000}
-                            height={800}
-                            className="relative"
-                        />
-                    </div>
+                {/* Faint PER background text */}
+                <div className="absolute left-[12%] top-[2%] opacity-20 select-none pointer-events-none overflow-hidden z-5">
+                    <p className="text-[5.04rem] sm:text-[7.56rem] md:text-[12.6rem] lg:text-[15.12rem] font-black text-pink-100 whitespace-nowrap tracking-wider font-[family-name:var(--font-family-press-start)]">PER</p>
                 </div>
+
+                {/* Scattered Hearts */}
+                <Image src="/image.png" alt="" width={50} height={50} className="absolute top-[20%] left-[6%] opacity-60 rotate-8 w-30 h-30 md:w-30 md:h-30 z-10" />
+                <Image src="/image.png" alt="" width={70} height={70} className="absolute top-[22%] right-[50%] opacity-65 rotate-350 w-14 h-14 md:w-18 md:h-18 z-10" />
+                <Image src="/image.png" alt="" width={60} height={60} className="absolute top-[28%] right-[38%] opacity-70 -rotate-12 w-14 h-14 md:w-16 md:h-16 z-10" />
+
+                {/* Big Heart Background - Right Side */}
+                <Image src="/bigHeart.png" alt="" width={800} height={800} className="hidden md:block absolute top-[15%] right-[-5%] opacity-80 z-5 w-[600px] h-auto" />
+
+                {/* Stick Figure Couple */}
+                <Image
+                    src="/stick_couple.png"
+                    alt="Couple illustration"
+                    width={1000}
+                    height={800}
+                    className="absolute right-[5%] top-[25%] hidden lg:block z-30 w-[700px] h-auto"
+                />
 
                 {/* Top Div - Pink Background with Content */}
                 <div className="relative bg-pmpink2-500 min-h-[65vh] py-8 md:py-0 md:h-[65vh]">
-                    <div className="container mx-auto px-4 sm:px-6 md:px-12 py-8 md:py-16 relative z-10">
-                        {/* Faint PER background text */}
-                        <div className="absolute left-[1%] top-[5%] opacity-35 select-none pointer-events-none overflow-hidden">
-                            <p className="text-[6rem] sm:text-[10rem] md:text-[18rem] font-black text-pink-200 whitespace-nowrap tracking-widest font-[family-name:var(--font-family-press-start)]">PER</p>
-                        </div>
-
-                        {/* Scattered Hearts - Left Side */}
-                        <Image src="/image.png" alt="" width={80} height={80} className="absolute top-[35%] left-[2%] md:left-[0%] opacity-80 -rotate-12 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20" />
-                        <Image src="/image.png" alt="" width={50} height={50} className="absolute top-[25%] left-[0%] md:left-[-4%] opacity-70 rotate-6 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12" />
-                        <Image src="/image.png" alt="" width={60} height={60} className="hidden md:block absolute top-[8%] left-[-10%] opacity-75 rotate-20" />
-
-                        {/* Scattered Hearts - Right Side */}
-                        <Image src="/image.png" alt="" width={120} height={120} className="absolute top-[8%] right-[5%] md:right-[15%] opacity-70 -rotate-6 w-16 h-16 sm:w-20 sm:h-20 md:w-28 md:h-28" />
-                        <Image src="/image.png" alt="" width={50} height={50} className="absolute top-[25%] right-[2%] md:right-[8%] opacity-80 rotate-45 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12" />
-                        <Image src="/image.png" alt="" width={65} height={65} className="hidden md:block absolute top-[40%] right-[25%] opacity-75 -rotate-15" />
-
+                    <div className="container mx-auto px-4 sm:px-6 md:px-12 py-8 md:py-16 relative z-20">
                         {/* Main Content - Left Side */}
                         <div className="relative z-20">
                             <div className="max-w-2xl">
