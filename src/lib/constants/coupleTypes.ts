@@ -107,7 +107,7 @@ export const calculateCoupleType = (
 export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
   [CoupleTypeCode.ADVENTUROUS_PLANNERS]: {
     code: CoupleTypeCode.ADVENTUROUS_PLANNERS,
-    displayName: "The Adventure Planners",
+    displayName: "Stewart Park & Cascadilla Falls",
     shortDescription: "Organized explorers who love planning their next big adventure",
     description: {
       summary:
