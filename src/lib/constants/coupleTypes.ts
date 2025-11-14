@@ -4,7 +4,7 @@ import { pgEnum } from "drizzle-orm/pg-core";
 // This file should be imported by both frontend components and backend API routes
 
 export enum CoupleTypeCode {
-  ADVENTUROUS_PLANNERS = "ADVENTUROUS_PLANNERS",
+  OLIN_AND_URIS = "OLIN_AND_URIS",
   COZY_HOMEBODIES = "COZY_HOMEBODIES",
   SOCIAL_BUTTERFLIES = "SOCIAL_BUTTERFLIES",
   THOUGHTFUL_DEEP_THINKERS = "THOUGHTFUL_DEEP_THINKERS",
@@ -48,6 +48,15 @@ export interface CoupleTypeDefinition {
       accent: string;
     };
   };
+  // New fields for detailed type page
+  dimensions?: {
+    planned: number; // 0-100, percentage for Planned (opposite is Spontaneous)
+    physical: number; // 0-100, percentage for Physical (opposite is Emotional)
+    reflective: number; // 0-100, percentage for Reflective (opposite is Active)
+  };
+  dateIdeas?: string[];
+  conflictResolutionText?: string;
+  loveLanguages?: string[];
 }
 
 // Utility functions for working with couple types
@@ -89,7 +98,7 @@ export const calculateCoupleType = (
 
   // Simple algorithm - you can make this more sophisticated
   if (combinedScores.adventure > 7 && combinedScores.communication > 6) {
-    return CoupleTypeCode.ADVENTUROUS_PLANNERS;
+    return CoupleTypeCode.OLIN_AND_URIS;
   } else if (combinedScores.adventure < 4 && combinedScores.values > 7) {
     return CoupleTypeCode.COZY_HOMEBODIES;
   } else if (combinedScores.communication > 8) {
@@ -105,13 +114,13 @@ export const calculateCoupleType = (
 
 // Example couple type definitions (you can expand these)
 export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
-  [CoupleTypeCode.ADVENTUROUS_PLANNERS]: {
-    code: CoupleTypeCode.ADVENTUROUS_PLANNERS,
-    displayName: "Stewart Park & Cascadilla Falls",
+  [CoupleTypeCode.OLIN_AND_URIS]: {
+    code: CoupleTypeCode.OLIN_AND_URIS,
+    displayName: "Olin & Uris",
     shortDescription: "Organized explorers who love planning their next big adventure",
     description: {
       summary:
-        "You both love exploring new places and making detailed plans for your adventures. You're the couple with the shared Pinterest board full of travel destinations and the Google Sheets itinerary for every trip.",
+        "Iris & Uris couples are the planners who still leave space for feelings the ones who color-code their calendars and check in on how you're doing. Thoughtful and intentional, they balance logic with empathy, creating steady, nurturing relationships that grow through reflection and honest connection. Whether mapping out their next adventure or simply enjoying quiet time together, Iris & Uris couples make love feel calm, considered, and kind.",
       traits: ["Organized", "Adventurous", "Future-focused", "Detail-oriented"],
       strengths: [
         "Great at planning trips",
@@ -142,6 +151,27 @@ export const COUPLE_TYPES: Record<CoupleTypeCode, CoupleTypeDefinition> = {
         accent: "#F59E0B",
       },
     },
+    dimensions: {
+      planned: 68,
+      physical: 39,
+      reflective: 88,
+    },
+    dateIdeas: [
+      "Cozy coffee shop study dates",
+      "Museum strolls with shared playlists",
+      "Cozy coffee shop study dates",
+      "Museum strolls with shared playlists",
+      "Cozy coffee shop study dates",
+    ],
+    conflictResolutionText:
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+    loveLanguages: [
+      "Quality time",
+      "Words of affirmation",
+      "Thoughtful gestures that say 'I remembered'",
+      "Museum strolls with shared playlists",
+      "Cozy coffee shop study dates",
+    ],
   },
 
   [CoupleTypeCode.COZY_HOMEBODIES]: {

@@ -87,20 +87,159 @@ export default async function TypePage({ params }: TypePageProps) {
                         ></path>
                     </svg>
                 </div>
-                {/* Bottom Section - Light Pink Background */}
+                {/* Bottom Section*/}
                 <div className="h-[35vh]" style={{ backgroundColor: 'rgb(251, 233, 233)' }}>
                 </div>
             </section>
 
-            {/* New Section - Scrollable Content */}
-            <section className="relative snap-start snap-always min-h-screen bg-background pt-20">
-                <div className="container mx-auto px-4 sm:px-6 md:px-12 py-12">
-                    <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Your Type Details</h2>
-                    <div className="space-y-6">
-                        <p className="text-lg text-foreground/80">
-                            This is your new section. Add content here about the couple type details, compatibility, or other information.
-                        </p>
-                        {/* Add your content here */}
+            {/* Section 2 */}
+            <section className="relative snap-start snap-always min-h-screen bg-background pt-24 overflow-hidden">
+                {/* Stick Figure Couple */}
+                <Image
+                    src="/stick_couple_mirrored.png"
+                    alt="Couple illustration"
+                    width={600}
+                    height={460}
+                    className="absolute left-[70%] bottom-[0%] hidden lg:block z-30 w-[400px] h-auto opacity-80"
+                />
+                <Image
+                    src="/stick_couple_mirrored.png"
+                    alt="Couple illustration"
+                    width={600}
+                    height={460}
+                    className="absolute left-[4%] bottom-[77%] hidden lg:block z-0 w-[300px] h-auto opacity-80"
+                />
+
+                <div className="container mx-auto px-4 sm:px-6 md:px-12 py-6 max-w-7xl">
+                    {/* Top Section: Description + Stick Figure + Personality Bars */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-4">
+                        {/* Left: Type Description Box */}
+                        <div className="bg-pink-50 rounded-3xl p-5 relative" style={{ boxShadow: '4px 4px 0px rgb(241, 168, 176)' }}>
+                            <h3 className="text-xl md:text-2xl font-bold text-primary mb-2.5 text-right">
+                                {coupleType.displayName} - PER
+                            </h3>
+                            <p className="text-foreground/80 leading-relaxed text-sm">
+                                {coupleType.description.summary}
+                            </p>
+                        </div>
+
+                        {/* Right: Personality Bars */}
+                        <div className="space-y-3.5">
+                            {/* Planned vs Spontaneous */}
+                            <div>
+                                <div className="flex justify-between mb-1">
+                                    <span className="text-base font-semibold text-blue-900">Planned</span>
+                                    <span className="text-base font-semibold text-pink-500">Spontaneous</span>
+                                </div>
+                                <div className="relative h-10 bg-pink-100 rounded-full overflow-hidden" style={{ boxShadow: '3px 3px 0px rgb(241, 168, 176)' }}>
+                                    <div
+                                        className="absolute left-0 top-0 h-full bg-blue-900 flex items-center justify-start px-3"
+                                        style={{ width: `${coupleType.dimensions?.planned || 50}%` }}
+                                    >
+                                        <span className="text-white font-bold text-base">{coupleType.dimensions?.planned || 50}%</span>
+                                    </div>
+                                    <div
+                                        className="absolute right-0 top-0 h-full flex items-center justify-end px-3"
+                                        style={{ width: `${100 - (coupleType.dimensions?.planned || 50)}%` }}
+                                    >
+                                        <span className="text-pink-500 font-bold text-base">{100 - (coupleType.dimensions?.planned || 50)}%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Physical vs Emotional */}
+                            <div>
+                                <div className="flex justify-between mb-1">
+                                    <span className="text-base font-semibold text-pink-500">Physical</span>
+                                    <span className="text-base font-semibold text-blue-900">Emotional</span>
+                                </div>
+                                <div className="relative h-10 bg-blue-100 rounded-full overflow-hidden" style={{ boxShadow: '3px 3px 0px rgb(241, 168, 176)' }}>
+                                    <div
+                                        className="absolute left-0 top-0 h-full bg-pink-100 flex items-center justify-start px-3"
+                                        style={{ width: `${coupleType.dimensions?.physical || 50}%` }}
+                                    >
+                                        <span className="text-pink-500 font-bold text-base">{coupleType.dimensions?.physical || 50}%</span>
+                                    </div>
+                                    <div
+                                        className="absolute right-0 top-0 h-full bg-blue-900 flex items-center justify-end px-3"
+                                        style={{ width: `${100 - (coupleType.dimensions?.physical || 50)}%` }}
+                                    >
+                                        <span className="text-white font-bold text-base">{100 - (coupleType.dimensions?.physical || 50)}%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Reflective vs Active */}
+                            <div>
+                                <div className="flex justify-between mb-1">
+                                    <span className="text-base font-semibold text-blue-900">Reflective</span>
+                                    <span className="text-base font-semibold text-pink-500">Active</span>
+                                </div>
+                                <div className="relative h-10 bg-pink-100 rounded-full overflow-hidden" style={{ boxShadow: '3px 3px 0px rgb(241, 168, 176)' }}>
+                                    <div
+                                        className="absolute left-0 top-0 h-full bg-blue-900 flex items-center justify-start px-3"
+                                        style={{ width: `${coupleType.dimensions?.reflective || 50}%` }}
+                                    >
+                                        <span className="text-white font-bold text-base">{coupleType.dimensions?.reflective || 50}%</span>
+                                    </div>
+                                    <div
+                                        className="absolute right-0 top-0 h-full flex items-center justify-end px-3"
+                                        style={{ width: `${100 - (coupleType.dimensions?.reflective || 50)}%` }}
+                                    >
+                                        <span className="text-pink-500 font-bold text-base">{100 - (coupleType.dimensions?.reflective || 50)}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Middle Row: Date Ideas and Conflict Resolution (Full Width) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                        {/* Date Ideas */}
+                        <div className="bg-pink-50 rounded-3xl p-4 relative" style={{ boxShadow: '4px 4px 0px rgb(241, 168, 176)' }}>
+                            <div className="absolute -top-4 -right-4 w-14 h-14">
+                                <Image src="/image.png" alt="" width={56} height={56} className="w-full h-full rotate-12" />
+                            </div>
+                            <h4 className="text-lg font-bold text-primary mb-2.5 flex items-center gap-2">
+                                <span className="text-xl">💝</span> Date Ideas
+                            </h4>
+                            <ul className="space-y-1.5">
+                                {coupleType.dateIdeas?.map((idea, index) => (
+                                    <li key={index} className="flex items-center gap-2">
+                                        <span className="text-pink-500">○</span>
+                                        <span className="text-foreground/80 text-sm">{idea}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* How They Resolve Conflict */}
+                        <div className="bg-pink-50 rounded-3xl p-4" style={{ boxShadow: '4px 4px 0px rgb(241, 168, 176)' }}>
+                            <h4 className="text-lg font-bold text-primary mb-2.5 flex items-center gap-2">
+                                <span className="text-xl">❤️‍🩹</span> How They Resolve Conflict
+                            </h4>
+                            <p className="text-foreground/80 leading-relaxed text-sm">
+                                {coupleType.conflictResolutionText || coupleType.description.conflictResolution?.style}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Bottom Row: Love Language (Full Width) */}
+                    <div className="grid grid-cols-1 gap-5">
+                        {/* Love Language */}
+                        <div className="bg-pink-50 rounded-3xl p-4" style={{ boxShadow: '4px 4px 0px rgb(241, 168, 176)' }}>
+                            <h4 className="text-lg font-bold text-primary mb-2.5 flex items-center gap-2">
+                                <span className="text-xl">💖</span> Love Language
+                            </h4>
+                            <ul className="space-y-1.5">
+                                {coupleType.loveLanguages?.map((language, index) => (
+                                    <li key={index} className="flex items-center gap-2">
+                                        <span className="text-pink-500">○</span>
+                                        <span className="text-foreground/80 text-sm">{language}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </section>
