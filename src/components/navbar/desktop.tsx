@@ -17,7 +17,6 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { navigationItems, type NavItem } from "./nav-config";
-import { TypeIndicatorDropdown } from "./type-indicator-dropdown";
 
 export function DesktopNavbar() {
   const { data: session } = useSession();
@@ -55,8 +54,6 @@ export function DesktopNavbar() {
                 ))}
             </NavigationMenuList>
           </NavigationMenu>
-
-          <TypeIndicatorDropdown />
 
           {session ? (
             <DropdownMenu modal={false}>

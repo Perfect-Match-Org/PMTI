@@ -26,9 +26,7 @@ export default async function TypePage({ params }: TypePageProps) {
         <main className="min-h-screen bg-background snap-y snap-mandatory overflow-y-scroll h-screen">
             {/* You are... Section */}
             <section className="relative snap-start snap-always h-screen overflow-hidden">
-                {/* All Images positioned relative to section for maximum flexibility */}
-
-                {/* Faint RER background text */}
+                {/* Faint PER background text */}
                 <div className="absolute left-[12%] top-[15%] opacity-20 select-none pointer-events-none overflow-hidden z-5">
                     <p className="text-[3.326rem] sm:text-[4.990rem] md:text-[8.316rem] lg:text-[9.979rem] font-black text-pink-100 whitespace-nowrap tracking-wider" style={{ fontFamily: 'var(--font-press-start)' }}>RER</p>
                 </div>
