@@ -1,8 +1,9 @@
 import { COUPLE_TYPES, CoupleTypeCode } from "@/lib/constants/coupleTypes";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import dynamic from "next/dynamic";
 import { ShareButton } from "@/components/ShareButton";
+import { PersonalityBar } from "@/components/PersonalityBar";
+import { Footer } from "@/components/footer";
 
 interface TypePageProps {
     params: Promise<{
@@ -10,6 +11,7 @@ interface TypePageProps {
     }>;
 }
 
+//http://localhost:3000/type/olin-and-uris
 export default async function TypePage({ params }: TypePageProps) {
     const { typeCode } = await params;
 
@@ -32,9 +34,9 @@ export default async function TypePage({ params }: TypePageProps) {
                 </div>
 
                 {/* Scattered Hearts */}
-                <Image src="/image.png" alt="" width={50} height={50} className="absolute top-[20%] left-[6%] opacity-60 rotate-8 w-30 h-30 md:w-30 md:h-30 z-10" />
-                <Image src="/image.png" alt="" width={70} height={70} className="absolute top-[22%] right-[50%] opacity-65 rotate-89 w-14 h-14 md:w-18 md:h-18 z-10" />
-                <Image src="/image.png" alt="" width={60} height={60} className="absolute top-[28%] right-[38%] opacity-70 -rotate-12 w-14 h-14 md:w-16 md:h-16 z-10" />
+                <Image src="/image.png" alt="" width={50} height={50} className="absolute top-[20%] left-[6%] opacity-60 rotate-8 md:w-30 md:h-30 z-10" />
+                <Image src="/image.png" alt="" width={70} height={70} className="absolute top-[22%] right-[50%] opacity-65 rotate-89 md:w-18 md:h-18 z-10" />
+                <Image src="/image.png" alt="" width={60} height={60} className="absolute top-[28%] right-[38%] opacity-70 -rotate-12 md:w-16 md:h-16 z-10" />
 
                 {/* Big Heart Background - Right Side */}
                 <Image src="/bigHeart.png" alt="" width={558} height={389} className="hidden md:block absolute top-[5%] right-[-2%] opacity-80 z-5 w-[450px] h-[313.5px]" />
@@ -98,14 +100,14 @@ export default async function TypePage({ params }: TypePageProps) {
                     alt="Couple illustration"
                     width={600}
                     height={460}
-                    className="absolute left-[70%] bottom-[0%] hidden lg:block z-30 w-[400px] h-auto opacity-80"
+                    className="absolute left-[70%] bottom-[20%] hidden lg:block z-30 w-[400px] h-auto opacity-80"
                 />
                 <Image
                     src="/stick_couple_mirrored.png"
                     alt="Couple illustration"
                     width={600}
                     height={460}
-                    className="absolute left-[4%] bottom-[77%] hidden lg:block z-0 w-[300px] h-auto opacity-80"
+                    className="absolute left-[4%] bottom-[81%] hidden lg:block z-0 w-[300px] h-auto opacity-80"
                 />
 
                 <div className="container mx-auto px-4 sm:px-6 md:px-12 py-6 max-w-7xl">
@@ -121,77 +123,41 @@ export default async function TypePage({ params }: TypePageProps) {
                             </p>
                         </div>
 
-                        {/* Right: Personality Bars */}
+                        {/*Personality Bars */}
                         <div className="space-y-3.5">
                             {/* Planned vs Spontaneous */}
-                            <div>
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-base font-semibold text-blue-900">Planned</span>
-                                    <span className="text-base font-semibold text-pink-500">Spontaneous</span>
-                                </div>
-                                <div className="relative h-10 bg-pink-100 rounded-full overflow-hidden" style={{ boxShadow: '3px 3px 0px rgb(241, 168, 176)' }}>
-                                    <div
-                                        className="absolute left-0 top-0 h-full bg-blue-900 flex items-center justify-start px-3"
-                                        style={{ width: `${coupleType.dimensions?.planned || 50}%` }}
-                                    >
-                                        <span className="text-white font-bold text-base">{coupleType.dimensions?.planned || 50}%</span>
-                                    </div>
-                                    <div
-                                        className="absolute right-0 top-0 h-full flex items-center justify-end px-3"
-                                        style={{ width: `${100 - (coupleType.dimensions?.planned || 50)}%` }}
-                                    >
-                                        <span className="text-pink-500 font-bold text-base">{100 - (coupleType.dimensions?.planned || 50)}%</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <PersonalityBar
+                                leftLabel="Planned"
+                                rightLabel="Spontaneous"
+                                leftPercentage={coupleType.dimensions?.planned || 50}
+                                leftColor="blue"
+                                rightColor="pink"
+                                backgroundColor="pink"
+                            />
 
                             {/* Physical vs Emotional */}
-                            <div>
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-base font-semibold text-pink-500">Physical</span>
-                                    <span className="text-base font-semibold text-blue-900">Emotional</span>
-                                </div>
-                                <div className="relative h-10 bg-blue-100 rounded-full overflow-hidden" style={{ boxShadow: '3px 3px 0px rgb(241, 168, 176)' }}>
-                                    <div
-                                        className="absolute left-0 top-0 h-full bg-pink-100 flex items-center justify-start px-3"
-                                        style={{ width: `${coupleType.dimensions?.physical || 50}%` }}
-                                    >
-                                        <span className="text-pink-500 font-bold text-base">{coupleType.dimensions?.physical || 50}%</span>
-                                    </div>
-                                    <div
-                                        className="absolute right-0 top-0 h-full bg-blue-900 flex items-center justify-end px-3"
-                                        style={{ width: `${100 - (coupleType.dimensions?.physical || 50)}%` }}
-                                    >
-                                        <span className="text-white font-bold text-base">{100 - (coupleType.dimensions?.physical || 50)}%</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <PersonalityBar
+                                leftLabel="Physical"
+                                rightLabel="Emotional"
+                                leftPercentage={coupleType.dimensions?.physical || 50}
+                                leftColor="pink"
+                                rightColor="blue"
+                                backgroundColor="blue"
+                            />
 
                             {/* Reflective vs Active */}
-                            <div>
-                                <div className="flex justify-between mb-1">
-                                    <span className="text-base font-semibold text-blue-900">Reflective</span>
-                                    <span className="text-base font-semibold text-pink-500">Active</span>
-                                </div>
-                                <div className="relative h-10 bg-pink-100 rounded-full overflow-hidden" style={{ boxShadow: '3px 3px 0px rgb(241, 168, 176)' }}>
-                                    <div
-                                        className="absolute left-0 top-0 h-full bg-blue-900 flex items-center justify-start px-3"
-                                        style={{ width: `${coupleType.dimensions?.reflective || 50}%` }}
-                                    >
-                                        <span className="text-white font-bold text-base">{coupleType.dimensions?.reflective || 50}%</span>
-                                    </div>
-                                    <div
-                                        className="absolute right-0 top-0 h-full flex items-center justify-end px-3"
-                                        style={{ width: `${100 - (coupleType.dimensions?.reflective || 50)}%` }}
-                                    >
-                                        <span className="text-pink-500 font-bold text-base">{100 - (coupleType.dimensions?.reflective || 50)}%</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <PersonalityBar
+                                leftLabel="Reflective"
+                                rightLabel="Active"
+                                leftPercentage={coupleType.dimensions?.reflective || 50}
+                                leftColor="blue"
+                                rightColor="pink"
+                                backgroundColor="pink"
+                            />
                         </div>
                     </div>
 
-                    {/* Middle Row: Date Ideas and Conflict Resolution (Full Width) */}
+                    {/*Date Ideas and Conflict Resolution*/}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                         {/* Date Ideas */}
                         <div className="bg-pink-50 rounded-3xl p-4 relative" style={{ boxShadow: '4px 4px 0px rgb(241, 168, 176)' }}>
@@ -240,6 +206,27 @@ export default async function TypePage({ params }: TypePageProps) {
                         </div>
                     </div>
                 </div>
+
+                {/* Wavy Divider */}
+                <div className="w-full overflow-hidden bg-background mt-[-1px]">
+                    <svg className="w-full h-[60px] md:hidden block"
+                        viewBox="0 0 1200 120"
+                        preserveAspectRatio="none">
+                        <path
+                            d="M0,60 C40,40 80,80 120,60 C160,40 200,80 240,60 C280,40 320,80 360,60 C400,40 440,80 480,60 C520,40 560,80 600,60 C640,40 680,80 720,60 C760,40 800,80 840,60 C880,40 920,80 960,60 C1000,40 1040,80 1080,60 C1120,40 1160,80 1200,60 V120 H0 Z"
+                        ></path>
+                    </svg>
+                    <svg className="hidden w-full h-[60px] md:block"
+                        viewBox="0 0 1200 120"
+                        preserveAspectRatio="none">
+                        <path
+                            d="M0,60 C16.67,40 33.33,40 50,60 C66.67,80 83.33,80 100,60 C116.67,40 133.33,40 150,60 C166.67,80 183.33,80 200,60 C216.67,40 233.33,40 250,60 C266.67,80 283.33,80 300,60 C316.67,40 333.33,40 350,60 C366.67,80 383.33,80 400,60 C416.67,40 433.33,40 450,60 C466.67,80 483.33,80 500,60 C516.67,40 533.33,40 550,60 C566.67,80 583.33,80 600,60 C616.67,40 633.33,40 650,60 C666.67,80 683.33,80 700,60 C716.67,40 733.33,40 750,60 C766.67,80 783.33,80 800,60 C816.67,40 833.33,40 850,60 C866.67,80 883.33,80 900,60 C916.67,40 933.33,40 950,60 C966.67,80 983.33,80 1000,60 C1016.67,40 1033.33,40 1050,60 C1066.67,80 1083.33,80 1100,60 C1116.67,40 1133.33,40 1150,60 C1166.67,80 1183.33,80 1200,60 V120 H0 Z"
+                            fill="rgb(240, 168, 176)"
+                        ></path>
+                    </svg>
+                </div>
+
+                <Footer />
             </section>
 
         </main>
