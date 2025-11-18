@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Press+Start+2P&family=Work+Sans&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -53,7 +54,7 @@
   --card: oklch(0.9867 0.0064 17.27); /* White cards */
   --card-foreground: oklch(0.3939 0.1367 256.43); /* Navy blue text on cards */
 
-  --popover: oklch(1 0 0);
+  --popover: oklch(15.951% 0.00691 17.756);
   --popover-foreground: oklch(0.3939 0.1367 256.43);
 
   /* Coral red primary color - used for headings, hearts, CTAs */
@@ -149,5 +150,14 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .press-start {
+    font-family: 'Press Start 2P', sans-serif;
+  }
+  .dela-gothic-one {
+    font-family: 'Dela Gothic One', sans-serif;
+  }
+  .work-sans {
+    font-family: 'Work Sans', sans-serif;
   }
 }

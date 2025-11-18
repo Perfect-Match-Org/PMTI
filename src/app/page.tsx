@@ -25,21 +25,21 @@ export default async function Home() {
   return (
     <main>
       {/* Hero Section */}
-      <section className="min-h-screen">
+      <section className="min-h-screen work-sans">
         <div className="container mx-auto px-12 h-[calc(100vh-4rem)] flex items-center">
           <div className="grid lg:grid-cols-2 gap-8 items-center w-full">
             {/* Left side - Text content */}
             <div className="space-y-8 pt-10 lg:pt-0">
-              <div className="space-y-4">
-                <h1 className="text-5xl font-bold tracking-tight text-primary">
-                  Perfect Match Type Indicator
+              <div className="space-y-6">
+                <h1 className="text-6xl font-bold tracking-wider text-primary press-start">
+                  PERFECT MATCH TYPE INDICATOR
                 </h1>
-                <div className="space-y-2">
-                  <p className="text-xl text-muted-foreground">
-                    Discover what type of couple you are and strengthen your relationship together
+                <div className="space-y-8">
+                  <p className="text-2xl text-foreground dela-gothic-one">
+                    Discover what type of couple you are
                   </p>
-                  <p className="text-md text-muted-foreground">
-                    {surveyCount.toLocaleString()} couples have already taken the quiz
+                  <p className="text-md font-medium text-foreground work-sans">
+                    {surveyCount.toLocaleString()} couples took this quiz
                   </p>
                 </div>
               </div>
@@ -50,15 +50,15 @@ export default async function Home() {
                     <p className="text-lg font-semibold">
                       Welcome back, {session.user?.name?.split(" ")[0]}!
                     </p>
-                    <Button size="lg" className="w-full sm:w-auto">
-                      Take the Quiz
+                    <Button className="w-full sm:w-auto">
+                      Take the quiz
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <AuthButtons />
-                    <p className="text-sm text-muted-foreground">
-                      Sign in with your Cornell email to get started
+                    <p className="text-sm text-foreground">
+                      ^Sign in with your Cornell email to get started
                     </p>
                   </div>
                 )}

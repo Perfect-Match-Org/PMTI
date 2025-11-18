@@ -17,7 +17,7 @@ export function AuthButtons() {
       ) : (
         <Button onClick={() => signIn("google")}>
           <svg
-            className="w-4 h-4 mr-2"
+            className="w-4 h-4 mr-1"
             aria-hidden="true"
             focusable="false"
             data-prefix="fab"

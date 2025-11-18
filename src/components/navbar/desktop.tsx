@@ -2,6 +2,7 @@
 
 import { useSession, signOut, signIn } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -27,13 +28,18 @@ export function DesktopNavbar() {
   });
 
   return (
-    <nav className="hidden md:flex border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="hidden md:flex border-none bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
       <div className="flex h-16 items-center px-12 w-full">
-        <div className="flex items-center space-x-4">
-          <Link href="/" className="font-bold text-xl">
-            PMTI
-          </Link>
-        </div>
+        <Link href="/" className="flex items-center space-x-4">
+          <Image
+            src="/pmti-logo.svg"
+            alt="PMTI logo"
+            width={36}
+            height={36}
+            className="h-10 w-auto"
+            priority
+          />
+        </Link>
 
         <div className="ml-auto flex items-center space-x-4">
           <NavigationMenu>
