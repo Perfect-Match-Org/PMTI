@@ -11,7 +11,7 @@ export function Hero({ title, compact = false, children }: { title: React.ReactN
     ? "text-[clamp(3rem,15vw,4.25rem)] lg:text-[clamp(3.25rem,4.5vw,4.5rem)]"
     : "text-[clamp(3.25rem,17vw,5rem)] lg:text-[clamp(4rem,6vw,6rem)]";
   return (
-    <section className="overflow-x-clip bg-navy text-white">
+    <section id="top" className="overflow-x-clip bg-navy text-white">
       <div className="frame flex flex-col pt-5 pb-14 lg:pt-8 lg:pb-24">
         <header className="flex items-center gap-3">
           <PmLogo gap="var(--color-navy)" className="h-9 w-auto text-white lg:h-10" />

@@ -1,7 +1,9 @@
 import { DUO_TYPES } from "@/game/types";
-import { Heart } from "./heart";
 
-/** Every duo type the game can end on, set as one run of names: what you two could turn out to be. */
+/**
+ * Every duo type the game can end on: its two places, one per line, with the nickname under them.
+ * The last slot sends you back up to start a game.
+ */
 export function TypeWall() {
   return (
     <section className="bg-pink text-ink">
@@ -10,23 +12,33 @@ export function TypeWall() {
         <p className="mt-4 max-w-xl text-xl leading-snug lg:text-2xl">
           By the end of the day, your answers make you a pair of Cornell places, one for each of you.
         </p>
-        <p className="mt-10 text-[1.625rem] leading-[1.2] font-black tracking-[-0.02em] lg:mt-16 lg:text-[3rem] lg:leading-[1.12]">
-          {DUO_TYPES.map((type, i) => {
-            const words = type.name.split(" ");
-            const last = words.pop();
+        <ul className="mt-10 grid grid-cols-2 gap-x-5 gap-y-7 lg:mt-16 lg:grid-cols-3 lg:gap-x-12 lg:gap-y-10">
+          {DUO_TYPES.map((type) => {
+            const [first, joiner, second] = type.name.split(/ (&|vs\.) /);
             return (
-              <span key={type.id}>
-                {words.length > 0 && `${words.join(" ")} `}
-                {/* The name's last word, the nickname and the heart wrap as one, so no line starts with a nickname or a heart. */}
-                <span className="whitespace-nowrap">
-                  {last}
-                  <span className="ml-2 text-base font-semibold tracking-normal text-ink/60 lg:ml-3 lg:text-xl">{type.nickname}</span>
-                  {i < DUO_TYPES.length - 1 && <Heart className="mx-2.5 inline-block size-[0.6em] align-[0.05em] text-red lg:mx-4" />}
-                </span>{" "}
-              </span>
+              <li key={type.id} className="border-t-2 border-ink/15 pt-3 lg:pt-4">
+                <p className="text-[1.0625rem] leading-[1.15] font-black lg:text-[1.75rem] lg:leading-[1.1] lg:tracking-[-0.015em]">
+                  {second ? (
+                    <>
+                      {first}
+                      <span className="block">
+                        {joiner} {second}
+                      </span>
+                    </>
+                  ) : (
+                    type.name
+                  )}
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-ink/60 lg:mt-2 lg:text-lg">{type.nickname}</p>
+              </li>
             );
           })}
-        </p>
+          <li className="col-span-2 border-t-2 border-ink/15 pt-4 lg:col-span-1">
+            <a href="#top" className="btn btn-primary w-full lg:w-auto">
+              Find out which two you are
+            </a>
+          </li>
+        </ul>
       </div>
     </section>
   );
