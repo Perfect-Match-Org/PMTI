@@ -30,13 +30,13 @@ async function player(browser: Browser, email: string, url = "/"): Promise<Page>
 const shot = async (page: Page, name: string) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow, `${name} scrolls sideways`).toBeLessThanOrEqual(0);
-  if (process.env.SHOTS) await page.screenshot({ path: `test-results/shots/${name}.png`, fullPage: true });
+  if (process.env.SHOTS) await page.screenshot({ path: `test-results/shots/${test.info().project.name}/${name}.png`, fullPage: true });
 };
 
-async function answerRound(page: Page, text: string) {
+async function answerRound(page: Page, text: string, choice: "first" | "last" = "first") {
   const groups = page.getByRole("radiogroup");
   for (let i = 0; i < (await groups.count()); i++) {
-    await groups.nth(i).getByRole("radio").first().click();
+    await groups.nth(i).getByRole("radio")[choice]().click();
   }
   const inputs = page.locator("main input:not([readonly])");
   for (let i = 0; i < (await inputs.count()); i++) await inputs.nth(i).fill(text);
@@ -83,7 +83,8 @@ test("two players play a full game in sync", async ({ browser }) => {
     await expect(alice.getByRole("button", { name: "Waiting for Bob" })).toBeDisabled();
     await expect(bob.getByText("Alice locked in")).toBeVisible({ timeout: REALTIME_MS });
 
-    await answerRound(bob, "a late night bagel run");
+    // In screenshot runs Bob disagrees once, so a mismatched reveal gets captured too.
+    await answerRound(bob, "a late night bagel run", process.env.SHOTS && rounds === 1 ? "last" : "first");
     await expect(bob.getByRole("button", { name: "Next", exact: true })).toBeVisible();
     await expect(alice.getByRole("button", { name: "Next", exact: true })).toBeVisible({ timeout: REALTIME_MS });
     vibeVerdicts += await alice.getByText(/^\d+% vibe match$/).count();
@@ -93,6 +94,15 @@ test("two players play a full game in sync", async ({ browser }) => {
       await alice.waitForTimeout(1600);
     }
     await shot(alice, `r${n}-c-reveal`);
+    if (process.env.SHOTS && rounds === 0) {
+      for (const [name, times] of [["love", 3], ["laugh", 2], ["shock", 2], ["side-eye", 2]] as const) {
+        for (let i = 0; i < times; i++) await alice.getByRole("button", { name: `Send ${name}` }).click();
+      }
+      for (let i = 0; i < 6; i++) await bob.getByRole("button", { name: "Send boo" }).click();
+      await alice.waitForTimeout(350);
+      await shot(alice, `r${n}-d-reactions`);
+      await shot(bob, `r${n}-d-reactions-bob`);
+    }
 
     await bob.getByRole("button", { name: "Next", exact: true }).click();
     await alice.getByRole("button", { name: "Next", exact: true }).click();

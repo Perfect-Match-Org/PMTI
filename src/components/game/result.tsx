@@ -2,7 +2,7 @@
 
 import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Axis } from "@/game/deck";
 import { getDeck } from "@/game/decks";
 
@@ -161,16 +161,29 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
   ];
 
   const last = slides.length - 1;
+  const next = useCallback(() => (index >= last ? onDone() : setIndex(index + 1)), [index, last, onDone]);
+  const back = useCallback(() => setIndex(Math.max(0, index - 1)), [index]);
   useEffect(() => {
-    const id = setTimeout(() => (index >= last ? onDone() : setIndex(index + 1)), SLIDE_MS);
+    const id = setTimeout(next, SLIDE_MS);
     return () => clearTimeout(id);
-  }, [index, last, onDone]);
+  }, [next]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") next();
+      else if (e.key === "ArrowLeft") back();
+      else if (e.key === "Escape") onDone();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [next, back, onDone]);
 
   const slide = slides[index]!;
   return (
     <Portal>
-      <div className={`fixed inset-0 z-30 overflow-hidden transition-colors duration-300 ${slide.tone}`} aria-live="polite">
-        <div className="mx-auto flex h-full max-w-md flex-col px-5 pt-4 pb-10">
+      <div className={`fixed inset-0 z-30 overflow-hidden transition-colors duration-300 md:grid md:place-items-center ${slide.tone} md:bg-tile`} aria-live="polite">
+        <div
+          className={`relative mx-auto flex h-full max-w-md flex-col px-5 pt-4 pb-10 transition-colors duration-300 md:aspect-[9/16] md:h-[min(calc(100dvh-3rem),56rem)] md:max-w-none md:overflow-hidden md:rounded-[2rem] ${slide.tone}`}
+        >
           <div className="flex items-center gap-3">
             <div className="grid flex-1 gap-1" style={{ gridTemplateColumns: `repeat(${slides.length}, 1fr)` }}>
               {slides.map((_, i) => (
@@ -192,13 +205,8 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
                 {slide.body}
               </motion.div>
             </AnimatePresence>
-            <button type="button" aria-label="Previous slide" className="absolute inset-y-0 left-0 w-1/3" onClick={() => setIndex(Math.max(0, index - 1))} />
-            <button
-              type="button"
-              aria-label="Next slide"
-              className="absolute inset-y-0 right-0 w-2/3"
-              onClick={() => (index >= last ? onDone() : setIndex(index + 1))}
-            />
+            <button type="button" aria-label="Previous slide" className="absolute inset-y-0 left-0 w-1/3" onClick={back} />
+            <button type="button" aria-label="Next slide" className="absolute inset-y-0 right-0 w-2/3" onClick={next} />
           </div>
         </div>
       </div>

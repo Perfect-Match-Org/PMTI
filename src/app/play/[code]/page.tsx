@@ -6,6 +6,7 @@ import { GoogleButton } from "@/components/auth/google-button";
 import { DevLogin } from "@/components/auth/dev-login";
 import { Game } from "@/components/game/game";
 import { JoinGate } from "@/components/game/join-gate";
+import { Hero } from "@/components/ui/hero";
 
 export default async function PlayPage({ params }: { params: Promise<{ code: string }> }) {
   const code = (await params).code.toUpperCase();
@@ -13,17 +14,11 @@ export default async function PlayPage({ params }: { params: Promise<{ code: str
 
   if (!user) {
     return (
-      <main className="min-h-dvh bg-navy text-white">
-        <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-end gap-6 px-5 pb-12">
-          <p className="text-xl font-black text-pink">PMTI</p>
-          <h1 className="text-[clamp(3rem,15vw,4.25rem)] leading-[0.92] font-black tracking-[-0.035em]">
-            You&apos;re invited to a Cornell day for two.
-          </h1>
-          <p className="text-xl text-white/85">Sign in with your Cornell account to join game {code}.</p>
-          <GoogleButton />
-          <DevLogin />
-        </div>
-      </main>
+      <Hero compact title="You’re invited to a Cornell day for two.">
+        <p className="text-xl text-white/85">Sign in with your Cornell account to join game {code}.</p>
+        <GoogleButton />
+        <DevLogin />
+      </Hero>
     );
   }
 

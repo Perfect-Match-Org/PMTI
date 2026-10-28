@@ -80,7 +80,7 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
       <RoomProvider value={ctx}>
         <main className="min-h-dvh overflow-x-clip bg-white">
           {overlay(partner)}
-          <div className="mx-auto flex max-w-md flex-col px-5 pt-4 pb-44">
+          <div className="mx-auto flex max-w-md flex-col px-5 pt-4 pb-44 md:pt-8">
             {inRound && <Segments step={progress.step} total={view.totalSteps} />}
             {partner && (progress.phase === "answer" || presence?.online === false) && progress.phase !== "done" && (
               <LiveLine

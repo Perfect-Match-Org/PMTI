@@ -16,8 +16,8 @@ type Action = { label: string; onClick?: () => void; disabled?: boolean };
 export function ActionBar({ primary, secondary, reactions = true }: { primary: Action; secondary?: Action; reactions?: boolean }) {
   return (
     <Portal>
-      <div className="fixed inset-x-0 bottom-0 z-20 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-md flex-col gap-3 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      <div className="fixed inset-x-0 bottom-0 z-20 bg-white/95 backdrop-blur-sm md:border-t-2 md:border-line">
+        <div className="mx-auto flex max-w-md flex-col gap-3 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:pt-3">
           {reactions && (
             <div role="toolbar" aria-label="Reactions" className="grid grid-cols-5 place-items-center">
               {REACTIONS.map((emoji) => (
