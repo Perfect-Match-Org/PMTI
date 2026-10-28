@@ -2,7 +2,7 @@ import { whoFor } from "./copy";
 import type { Copy, Deck } from "./deck";
 import type { Pair, Seat } from "./engine";
 import type { Moment } from "./scoring";
-import { vibeWord } from "./verdicts";
+import { VIBE, vibeWord } from "./verdicts";
 
 type Context = { deck: Deck; names: Pair<string>; viewer: Seat; t: (copy: Copy) => string };
 
@@ -48,5 +48,28 @@ export function momentText(m: Moment, { deck, names, viewer, t }: Context): stri
     }
     case "reactions":
       return `${who(m.who, true)} sent ${m.count} ${m.emoji} during “${scene}”.`;
+  }
+}
+
+export type Mood = "hit" | "miss" | "reaction";
+
+/** Whether a moment is a win for the two of you, a funny miss, or a reaction streak. */
+export function momentMood(m: Moment): Mood {
+  switch (m.kind) {
+    case "same-pick":
+    case "undisputed":
+    case "close-call":
+      return "hit";
+    case "denial":
+    case "both-claim":
+      return "miss";
+    case "mind":
+      return m.hit ? "hit" : "miss";
+    case "dinner":
+      return m.failed ? "miss" : "hit";
+    case "mirror":
+      return m.pct >= VIBE.close ? "hit" : "miss";
+    case "reactions":
+      return "reaction";
   }
 }

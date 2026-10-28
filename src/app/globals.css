@@ -33,6 +33,13 @@ body {
   outline-offset: 3px;
 }
 
+/* Tailwind's preflight gives buttons the default arrow; on a desktop, clickable things should say so. */
+button:not(:disabled),
+[role="button"],
+a[href] {
+  cursor: pointer;
+}
+
 @layer components {
   /* Tactile controls: a solid lip under the control that collapses when pressed. */
   .btn {
@@ -109,6 +116,22 @@ body {
     background: #fafbfd;
     box-shadow: 0 4px 0 0 #eef0f6;
     border-color: #eef0f6;
+  }
+  @media (hover: hover) {
+    .btn-primary:hover:not(:disabled) {
+      background: #2b4f9e;
+    }
+    .btn-pink:hover:not(:disabled) {
+      background: #ffd5ea;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      border-color: #cdd3e4;
+      box-shadow: 0 5px 0 0 #cdd3e4;
+    }
+    .tile:hover:not(:disabled):not([aria-checked="true"]) {
+      border-color: #cdd3e4;
+      box-shadow: 0 4px 0 0 #cdd3e4;
+    }
   }
   .tile-dot {
     aspect-ratio: 1;

@@ -9,10 +9,13 @@ type Reveal = Pair<Answer> & { texts: ViewText[] };
 
 const other = (seat: Seat): Seat => (seat === "host" ? "guest" : "host");
 
+/** Vibe-match tiers: at or above `same` reads as a match, below `close` as a miss. */
+export const VIBE = { same: 75, close: 45 };
+
 /** Free-text similarity as words: the number is a rough signal, not something to argue over. */
 export function vibeWord(pct: number | null | undefined): string | null {
   if (pct == null) return null;
-  return pct >= 75 ? "Same wavelength." : pct >= 45 ? "Close enough." : "Different planets.";
+  return pct >= VIBE.same ? "Same wavelength." : pct >= VIBE.close ? "Close enough." : "Different planets.";
 }
 
 export function averagePct(pcts: (number | null | undefined)[]): number | null {
@@ -66,7 +69,7 @@ export function verdictFor(round: Round, reveal: Reveal, viewer: Seat, who: Who,
       const pct = averagePct(reveal.texts.filter((t) => t.slot !== "self").map((t) => t.matchPct));
       const word = vibeWord(pct);
       if (!word) return { text: "Two takes.", tone: "navy" };
-      return { text: word, tone: pct! >= 75 ? "pink" : pct! >= 45 ? "navy" : "red" };
+      return { text: word, tone: pct! >= VIBE.same ? "pink" : pct! >= VIBE.close ? "navy" : "red" };
     }
   }
 }

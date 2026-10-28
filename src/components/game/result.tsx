@@ -6,11 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 import type { Axis } from "@/game/deck";
 import { getDeck } from "@/game/decks";
 
-import { momentText } from "@/game/moments";
+import { momentMood, momentText } from "@/game/moments";
 import type { Moment, Result } from "@/game/scoring";
 import { duoType, type DuoType } from "@/game/types";
 import { Avatar } from "@/components/ui/avatar";
-import { Heart } from "@/components/ui/heart";
+import { BrokenHeart, Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
 import { ActionBar } from "./action-bar";
 import { useRoomContext } from "./room-context";
@@ -97,7 +97,7 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
         tone: MOMENT_TONES[i % MOMENT_TONES.length]!,
         body: (
           <>
-            <Heart size={40} className="text-red" />
+            <MomentIcon moment={m} size={40} />
             <Rise delay={0.15} className="mt-5 text-[clamp(2rem,9vw,2.75rem)] leading-[1.05] font-black tracking-[-0.02em] text-balance">
               {say(m)}
             </Rise>
@@ -281,7 +281,7 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
         <ul className="mt-8 flex flex-col gap-3">
           {result.moments.map((m, i) => (
             <li key={i} className="flex gap-3 text-lg leading-snug">
-              <Heart size={18} className="mt-1 flex-none text-red" />
+              <MomentIcon moment={m} size={18} className="mt-1" />
               {momentText(m, { deck, names, viewer: seat, t })}
             </li>
           ))}
@@ -353,4 +353,16 @@ function CountUp({ to }: { to: number }) {
     return () => controls.stop();
   }, [to, value]);
   return <motion.span>{text}</motion.span>;
+}
+
+function MomentIcon({ moment, size, className = "" }: { moment: Moment; size: number; className?: string }) {
+  if (moment.kind === "reactions") {
+    return (
+      <span className={`block flex-none leading-none ${className}`} style={{ fontSize: size }}>
+        {moment.emoji}
+      </span>
+    );
+  }
+  const Icon = momentMood(moment) === "hit" ? Heart : BrokenHeart;
+  return <Icon size={size} className={`flex-none text-red ${className}`} />;
 }
