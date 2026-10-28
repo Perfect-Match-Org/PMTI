@@ -8,13 +8,15 @@ import type { Copy } from "@/game/deck";
 import { getDeck } from "@/game/decks";
 import { LOBBY_ROUND, type RoomView, type Seat } from "@/game/engine";
 import { Lobby } from "./lobby";
+import { ReactionBar, useFloaters } from "./reactions";
 import { Reveal } from "./reveal";
 import { RoundInput } from "./round-input";
 
 const OFFLINE_END_AFTER_MS = 2 * 60 * 1000;
 
 export function Game({ initial, origin }: { initial: RoomView; origin: string }) {
-  const { view, connection, presence, error, send, post } = useRoom(initial);
+  const { spawn, overlay } = useFloaters();
+  const { view, connection, presence, error, send, post, react } = useRoom(initial, spawn);
   const [busy, setBusy] = useState(false);
   const partnerOnline = presence?.online ?? true;
   const now = useNow(!!presence && !presence.online);
@@ -127,7 +129,9 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
 
   const live = progress.phase !== "done" && progress.phase !== "ended";
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-4 py-6">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-4 pt-6 pb-24">
+      {overlay}
+      {live && view.players.guest && <ReactionBar onReact={react} />}
       <StatusBar
         names={names}
         seat={seat}

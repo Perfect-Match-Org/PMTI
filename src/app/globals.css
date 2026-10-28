@@ -4,3 +4,33 @@ body {
   background: #fff;
   color: #1a1a1a;
 }
+
+@keyframes reaction-float {
+  from {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx, 0), -55vh) scale(1.4);
+    opacity: 0;
+  }
+}
+
+@keyframes reaction-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.reaction-float {
+  animation: reaction-float 1.6s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction-float {
+    animation: reaction-fade 1.2s ease-out forwards;
+  }
+}

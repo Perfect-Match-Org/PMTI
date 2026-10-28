@@ -1,4 +1,7 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
+import postgres from "postgres";
+
+const LOCAL_DB = "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
 
 // Faster than the 5s poll, so passing this proves the realtime ping arrived.
 const REALTIME_MS = 3000;
@@ -44,6 +47,9 @@ test("two players play a full game in sync", async ({ browser }) => {
   const carol = await player(browser, "carol@cornell.edu", url);
   await expect(carol.getByRole("alert").filter({ hasText: "already has two players" })).toBeVisible();
 
+  for (let i = 0; i < 5; i++) await alice.getByRole("button", { name: "Send boo" }).click();
+  await expect(bob.locator(".reaction-float", { hasText: "🍅" }).first()).toBeAttached({ timeout: REALTIME_MS });
+
   await alice.getByRole("button", { name: "I'm ready", exact: true }).click();
   await bob.getByRole("button", { name: "I'm ready", exact: true }).click();
 
@@ -70,4 +76,13 @@ test("two players play a full game in sync", async ({ browser }) => {
   }
   await expect(bob.getByText("That's the day")).toBeVisible({ timeout: REALTIME_MS });
   expect(rounds).toBe(13);
+
+  // The lobby's reaction tally rode along on Alice's ready move.
+  const sql = postgres(LOCAL_DB);
+  const code = url.split("/").pop()!;
+  const [row] = await sql`
+    select m.payload from moves m join rooms r on r.id = m.room_id join auth.users u on u.id = m.player_id
+    where r.code = ${code} and u.email = 'alice@cornell.edu' and m.round = -1 and m.kind = 'ready'`;
+  await sql.end();
+  expect(row?.payload).toEqual({ reactions: { "🍅": 5 } });
 });

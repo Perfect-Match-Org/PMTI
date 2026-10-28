@@ -1,5 +1,6 @@
 "use client";
 
+import { QRCodeSVG } from "qrcode.react";
 import type { RoomView } from "@/game/engine";
 
 type Props = {
@@ -19,7 +20,8 @@ export function Lobby({ view, link, intro, busy, onReady, onKick }: Props) {
       <h1 className="text-2xl font-bold">Game {view.code}</h1>
       {!guest ? (
         <>
-          <p>Send this link to your {view.mode === "couple" ? "partner" : "friend"}:</p>
+          <p>Have your {view.mode === "couple" ? "partner" : "friend"} scan this, or send them the link:</p>
+          <QRCodeSVG value={link} size={176} marginSize={2} title={`QR code for ${link}`} className="self-center" />
           <div className="flex gap-2">
             <input readOnly value={link} aria-label="Invite link" className="flex-1 rounded border px-3 py-2" />
             <button

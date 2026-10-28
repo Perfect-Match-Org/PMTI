@@ -2,6 +2,7 @@ import "server-only";
 import type postgres from "postgres";
 import { z } from "zod";
 import { answerSchema } from "@/game/answers";
+import { readyPayloadSchema } from "@/game/reactions";
 import type { Deck } from "@/game/deck";
 import { CURRENT_DECK, getDeck } from "@/game/decks";
 import {
@@ -158,6 +159,10 @@ export async function submitMove(code: string, userId: string, body: unknown): P
     if (!answer.success) throw new RoomError(400, "That answer doesn't fit this round.");
     if (round.format === "write") texts = answer.data.texts ?? [];
     else payload = answer.data;
+  } else {
+    // Reaction tallies are a nice-to-have; a bad tally never blocks the game.
+    const ready = readyPayloadSchema.safeParse(parsed.data.payload ?? {});
+    if (ready.success) payload = ready.data;
   }
 
   await sql.begin(async (tx) => {
