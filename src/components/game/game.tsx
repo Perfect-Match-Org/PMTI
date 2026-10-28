@@ -10,7 +10,7 @@ import type { PlayerInfo, RoomView, Seat } from "@/game/engine";
 import { Avatar } from "@/components/ui/avatar";
 import { ActionBar } from "./action-bar";
 import { Lobby } from "./lobby";
-import { useFloaters } from "./reactions";
+import { useReactionLayer } from "./reactions";
 import { ResultView } from "./result";
 import { Reveal } from "./reveal";
 import { RoomProvider, type RoomContextValue } from "./room-context";
@@ -20,7 +20,7 @@ const OFFLINE_END_AFTER_MS = 2 * 60 * 1000;
 
 export function Game({ initial, origin }: { initial: RoomView; origin: string }) {
   const router = useRouter();
-  const { spawn, overlay } = useFloaters();
+  const { spawn, overlay } = useReactionLayer();
   const { view, connection, presence, error, send, post, react, refresh } = useRoom(initial, spawn);
   useResultRetry(view, refresh);
   const [busy, setBusy] = useState(false);
@@ -79,7 +79,7 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
     <MotionConfig reducedMotion="user">
       <RoomProvider value={ctx}>
         <main className="min-h-dvh overflow-x-clip bg-white">
-          {overlay}
+          {overlay(partner)}
           <div className="mx-auto flex max-w-md flex-col px-5 pt-4 pb-44">
             {inRound && <Segments step={progress.step} total={view.totalSteps} />}
             {partner && (progress.phase === "answer" || presence?.online === false) && progress.phase !== "done" && (

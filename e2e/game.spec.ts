@@ -65,7 +65,7 @@ test("two players play a full game in sync", async ({ browser }) => {
 
   await shot(alice, "02-lobby-ready");
   for (let i = 0; i < 5; i++) await alice.getByRole("button", { name: "Send boo" }).click();
-  await expect(bob.locator(".reaction-float", { hasText: "🍅" }).first()).toBeAttached({ timeout: REALTIME_MS });
+  await expect(bob.locator('[data-floater="🍅"]').first()).toBeAttached({ timeout: REALTIME_MS });
 
   await alice.getByRole("button", { name: "I’m ready", exact: true }).click();
   await bob.getByRole("button", { name: "I’m ready", exact: true }).click();
