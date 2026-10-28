@@ -9,9 +9,9 @@ export const cornellDay1: Deck = {
   rounds: [
     {
       id: "prelim-morning",
-      scene: { time: "8:40am", title: "Your prelim got moved to next week." },
+      scene: { time: "8:40am", title: "Tonight's 7:30 prelim just got moved to next week." },
       format: "pick",
-      prompt: "Surprise free morning. You…",
+      prompt: "Suddenly you don't have to study today. You…",
       options: [
         { label: "CTB bagels, then a slow walk down to the Commons", w: { E: 1, P: -1 } },
         { label: "Map out the rest of the week while you have the time", w: { E: -1, P: 2 } },
@@ -113,7 +113,7 @@ export const cornellDay1: Deck = {
       tries: 3,
       options: [
         { label: "Noodles in Collegetown" },
-        { label: "The dining hall (it's free)" },
+        { label: "The dining hall (the swipe's already paid for)" },
         { label: "A two-bus Wegmans expedition" },
         { label: "Whatever's still open" },
       ],
@@ -134,10 +134,10 @@ export const cornellDay1: Deck = {
       format: "pick",
       prompt: "Full and happy. What's the move?",
       options: [
-        { label: "Walk to the gorge and keep talking", w: { P: -1, H: 2 } },
+        { label: "Take the long way home and keep talking", w: { P: -1, H: 2 } },
         { label: "Head back, you planned a movie", w: { E: -1, P: 2 } },
         { label: "Text the group chat, see who's out", w: { E: 2, P: -1 } },
-        { label: "Split a pint of Cornell Dairy ice cream, say nothing, perfect", w: { E: -1, H: -2 } },
+        { label: "Split a pint you grabbed earlier, say nothing, perfect", w: { E: -1, H: -2 } },
       ],
     },
     {
@@ -162,11 +162,11 @@ export const cornellDay1: Deck = {
     },
     {
       id: "wegmans-run",
-      scene: { time: "10:30pm", title: "Someone suggests a 1am Wegmans run." },
+      scene: { time: "10:30pm", title: "Someone suggests a Wegmans run. It closes at midnight." },
       format: "likely",
       prompt: "Who's more likely to…",
       items: [
-        { text: "…say yes to the 1am Wegmans run", nudge: { E: 1, P: -1 } },
+        { text: "…say yes to the 11:30pm Wegmans run", nudge: { E: 1, P: -1 } },
         {
           text: {
             couple: "…plan your anniversary three months early",
