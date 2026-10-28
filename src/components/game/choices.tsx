@@ -12,11 +12,11 @@ type Props = {
   layout?: "stack" | "pair" | "scale";
 };
 
-const GRID = { stack: "grid-cols-1", pair: "grid-cols-2", scale: "grid-cols-7" };
+const GRID = { stack: "grid-cols-1 gap-2.5", pair: "grid-cols-2 gap-2", scale: "grid-cols-7 gap-1.5" };
 
 export function Choices({ label, options, value, onChange, disabled, layout = "stack" }: Props) {
   return (
-    <div role="radiogroup" aria-label={label} className={`grid gap-2.5 ${GRID[layout]}`}>
+    <div role="radiogroup" aria-label={label} className={`grid ${GRID[layout]}`}>
       {options.map((option, i) => {
         const checked = value === i;
         return (
@@ -37,7 +37,7 @@ export function Choices({ label, options, value, onChange, disabled, layout = "s
               // Springs only take two keyframes; the selection pop uses a short tween instead.
               scale: { type: "tween", duration: 0.25, ease: "easeOut", delay: 0 },
             }}
-            className={`tile ${layout === "scale" ? "tile-dot" : ""} ${layout === "pair" ? "text-center" : ""} ${layout === "stack" ? "flex items-center justify-between gap-3" : ""}`}
+            className={`tile ${layout === "scale" ? "tile-dot" : ""} ${layout === "pair" ? "min-h-[4.25rem] text-center text-balance" : ""} ${layout === "stack" ? "flex items-center justify-between gap-3" : ""}`}
           >
             <span>{option}</span>
             {layout === "stack" && (
@@ -59,6 +59,16 @@ export function Choices({ label, options, value, onChange, disabled, layout = "s
           </motion.button>
         );
       })}
+    </div>
+  );
+}
+
+/** End labels for a scale, aligned with the first and last dot. */
+export function ScaleEnds({ left, right }: { left: string; right: string }) {
+  return (
+    <div className="flex justify-between gap-6 text-sm font-semibold text-muted">
+      <span className="text-balance">{left}</span>
+      <span className="text-right text-balance">{right}</span>
     </div>
   );
 }

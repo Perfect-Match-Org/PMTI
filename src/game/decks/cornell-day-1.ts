@@ -9,9 +9,9 @@ export const cornellDay1: Deck = {
   rounds: [
     {
       id: "prelim-morning",
-      scene: { time: "8:40am", title: "Tonight's 7:30 prelim just got moved to next week." },
+      scene: { time: "8:40am", title: "Tonight’s 7:30 prelim just got moved to next week." },
       format: "pick",
-      prompt: "Suddenly you don't have to study today. You…",
+      prompt: "Suddenly you don’t have to study today. You…",
       options: [
         { label: "CTB bagels, then a slow walk down to the Commons", w: { E: 1, P: -1 } },
         { label: "Map out the rest of the week while you have the time", w: { E: -1, P: 2 } },
@@ -24,8 +24,8 @@ export const cornellDay1: Deck = {
       scene: { time: "9:30am", title: "The Libe Cafe line is out the door." },
       format: "mind",
       subject: "host",
-      prompt: "It's Friday, 5pm. What do you actually want to do?",
-      guessPrompt: "It's Friday, 5pm. What does {s} actually want to do?",
+      prompt: "It’s Friday, 5pm. What do you actually want to do?",
+      guessPrompt: "It’s Friday, 5pm. What does {s} actually want to do?",
       options: [
         { label: "Pregame, then Collegetown", w: { E: 2, P: -1 } },
         { label: "The dinner reservation you made on Monday", w: { E: 1, P: 2 } },
@@ -37,7 +37,7 @@ export const cornellDay1: Deck = {
       id: "group-project",
       scene: { time: "11:00am", title: "Group project meeting." },
       format: "likely",
-      prompt: "Who's more likely to…",
+      prompt: "Who’s more likely to…",
       items: [
         {
           text: "…have the Google Doc color-coded before the meeting",
@@ -50,7 +50,7 @@ export const cornellDay1: Deck = {
     },
     {
       id: "snow-speed",
-      scene: { time: "12:15pm", title: "It's snowing sideways. It's April." },
+      scene: { time: "12:15pm", title: "It’s snowing sideways. It’s April." },
       format: "speed",
       seconds: 10,
       prompt: "This or that?",
@@ -82,11 +82,11 @@ export const cornellDay1: Deck = {
       scene: { time: "1:30pm", title: "Crossing the Arts Quad." },
       format: "scale",
       prompt: {
-        couple: "When you love someone, you'd rather…",
+        couple: "When you love someone, you’d rather…",
         friends: "When you care about someone…",
       },
-      left: "say it (out loud, in writing, often)",
-      right: "show it (snacks, rides, showing up)",
+      left: "Say it",
+      right: "Show it",
       axis: "H",
       leftWeight: 2,
       steps: 7,
@@ -113,9 +113,9 @@ export const cornellDay1: Deck = {
       tries: 3,
       options: [
         { label: "Noodles in Collegetown" },
-        { label: "The dining hall (the swipe's already paid for)" },
+        { label: "The dining hall (the swipe’s already paid for)" },
         { label: "A two-bus Wegmans expedition" },
-        { label: "Whatever's still open" },
+        { label: "Whatever’s still open" },
       ],
     },
     {
@@ -132,11 +132,11 @@ export const cornellDay1: Deck = {
       scene: { time: "7:00pm", title: "Walking off dinner." },
       ifPrev: { round: "dinner", is: "matched" },
       format: "pick",
-      prompt: "Full and happy. What's the move?",
+      prompt: "Full and happy. What’s the move?",
       options: [
         { label: "Take the long way home and keep talking", w: { P: -1, H: 2 } },
         { label: "Head back, you planned a movie", w: { E: -1, P: 2 } },
-        { label: "Text the group chat, see who's out", w: { E: 2, P: -1 } },
+        { label: "Text the group chat, see who’s out", w: { E: 2, P: -1 } },
         { label: "Split a pint you grabbed earlier, say nothing, perfect", w: { E: -1, H: -2 } },
       ],
     },
@@ -146,7 +146,7 @@ export const cornellDay1: Deck = {
       format: "write",
       variant: "mirror",
       prompt: "Your comfort order after a day like this.",
-      partnerPrompt: "{p}'s comfort order after a day like this.",
+      partnerPrompt: "{p}’s comfort order after a day like this.",
       topic: "comfort order",
       poolKey: "comfort-order",
     },
@@ -155,8 +155,8 @@ export const cornellDay1: Deck = {
       scene: { time: "9:45pm", title: "Libe Slope at night." },
       format: "scale",
       prompt: "Perfect Friday night?",
-      left: "the Slope is packed",
-      right: "the Slope is empty, just you two",
+      left: "A packed Slope",
+      right: "Just the two of you",
       axis: "E",
       leftWeight: 2,
       steps: 7,
@@ -165,7 +165,7 @@ export const cornellDay1: Deck = {
       id: "wegmans-run",
       scene: { time: "10:30pm", title: "Someone suggests a Wegmans run. It closes at midnight." },
       format: "likely",
-      prompt: "Who's more likely to…",
+      prompt: "Who’s more likely to…",
       items: [
         { text: "…say yes to the 11:30pm Wegmans run", nudge: { E: 1, P: -1 } },
         {
@@ -192,7 +192,7 @@ export const cornellDay1: Deck = {
     },
     {
       id: "tomorrow",
-      scene: { time: "11:50pm", title: "Tomorrow's totally free." },
+      scene: { time: "11:50pm", title: "Tomorrow’s totally free." },
       format: "pick",
       prompt: "Final answer: tomorrow, we…",
       options: [

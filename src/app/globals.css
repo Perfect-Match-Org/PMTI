@@ -17,7 +17,6 @@
   --color-blush: #ffe8f2;
   --color-tile: #f3f5fa;
   --color-line: #e2e6f0;
-  --color-night: #0f1b47;
   --font-sans: var(--font-gabarito), system-ui, sans-serif;
 }
 
@@ -112,8 +111,10 @@ body {
     border-color: #eef0f6;
   }
   .tile-dot {
-    padding: 0.7rem 0;
-    text-align: center;
+    aspect-ratio: 1;
+    padding: 0;
+    display: grid;
+    place-items: center;
     border-radius: 9999px;
   }
 

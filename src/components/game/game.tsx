@@ -67,7 +67,7 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
     screen = (
       <>
         <h1 className="pt-10 text-4xl leading-tight font-extrabold">This game was ended.</h1>
-        <p className="mt-3 text-lg text-muted">Start a new one whenever you&apos;re both ready.</p>
+        <p className="mt-3 text-lg text-muted">Start a new one whenever you’re both ready.</p>
         <ActionBar reactions={false} primary={{ label: "Start a new game", onClick: () => router.push("/") }} />
       </>
     );
@@ -78,11 +78,11 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
   return (
     <MotionConfig reducedMotion="user">
       <RoomProvider value={ctx}>
-        <main className="min-h-dvh bg-white">
+        <main className="min-h-dvh overflow-x-clip bg-white">
           {overlay}
           <div className="mx-auto flex max-w-md flex-col px-5 pt-4 pb-44">
             {inRound && <Segments step={progress.step} total={view.totalSteps} />}
-            {partner && progress.phase !== "done" && (
+            {partner && (progress.phase === "answer" || presence?.online === false) && progress.phase !== "done" && (
               <LiveLine
                 partner={partner}
                 online={presence?.online ?? true}

@@ -124,7 +124,7 @@ export async function kickGuest(code: string, userId: string): Promise<void> {
 export async function endRoom(code: string, userId: string): Promise<void> {
   await sql.begin(async (tx) => {
     const room = await findRoom(tx, code, true);
-    if (!isPlayer(room, userId)) throw new RoomError(403, "You're not in this game.");
+    if (!isPlayer(room, userId)) throw new RoomError(403, "You’re not in this game.");
     if (!room.endedAt) await bump(tx, room.id, { endedAt: new Date(), endedBy: userId });
   });
 }
@@ -148,7 +148,7 @@ export async function submitMove(code: string, userId: string, body: unknown): P
   const room = await findRoom(sql, code);
   const deck = deckOf(room);
   const pre = checkMove(deck, room, (await loadLog(sql, room.id)).moves, key);
-  if (pre === "not-player") throw new RoomError(403, "You're not in this game.");
+  if (pre === "not-player") throw new RoomError(403, "You’re not in this game.");
   if (pre === "stale") throw new RoomError(409, "The game moved on.");
   if (pre === "duplicate") return loadView(code, userId);
 
@@ -157,7 +157,7 @@ export async function submitMove(code: string, userId: string, body: unknown): P
   if (kind === "answer") {
     const round = deck.rounds[r]!;
     const answer = answerSchema(round).safeParse(parsed.data.payload);
-    if (!answer.success) throw new RoomError(400, "That answer doesn't fit this round.");
+    if (!answer.success) throw new RoomError(400, "That answer doesn’t fit this round.");
     if (round.format === "write") texts = answer.data.texts ?? [];
     else payload = answer.data;
   } else {
@@ -237,7 +237,7 @@ async function playerInfo(ids: string[]): Promise<Map<string, PlayerInfo>> {
 
 export async function loadView(code: string, userId: string): Promise<RoomView> {
   const room = await findRoom(sql, code);
-  if (!isPlayer(room, userId)) throw new RoomError(403, "You're not in this game.");
+  if (!isPlayer(room, userId)) throw new RoomError(403, "You’re not in this game.");
   const deck = deckOf(room);
   const [{ moves, texts }, info] = await Promise.all([
     loadLog(sql, room.id),

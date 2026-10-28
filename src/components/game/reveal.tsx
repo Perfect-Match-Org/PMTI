@@ -3,65 +3,62 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import type { Answer } from "@/game/answers";
+import { whoFor } from "@/game/copy";
 import type { Option, Round } from "@/game/deck";
 import type { Pair, Seat, ViewText } from "@/game/engine";
+import { averagePct, verdictFor, vibeWord, type Tone } from "@/game/verdicts";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
 import { ActionBar } from "./action-bar";
+import { ScaleEnds } from "./choices";
 import { useRoomContext } from "./room-context";
 
 type RevealData = Pair<Answer> & { texts: ViewText[] };
-type Tone = "pink" | "navy" | "red";
 
 const FLASH_MS = 1100;
 /** Content starts arriving as the flash clears. */
 const AFTER_FLASH = FLASH_MS / 1000 - 0.15;
 const other = (seat: Seat): Seat => (seat === "host" ? "guest" : "host");
-/** Embedding similarity catches shared vibe/topic, not meaning (it can't tell "early" from "late"). */
-const vibe = (pct: number | null | undefined) => (pct == null ? null : `${pct}% vibe match`);
 
 export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) {
   const { view, seat, partnerSeat, names, t, busy, act, send } = useRoomContext();
   const reduce = useReducedMotion();
   const delay = reduce ? 0 : AFTER_FLASH;
+  const who = whoFor(seat, names);
   const pick = (s: Seat, item = 0) => reveal[s].picks?.[item];
   const label = (options: Option[], i: number | null | undefined) => (i == null ? "(skipped)" : t(options[i]!.label));
   const progress = view.progress;
-  const flash = flashFor(round, reveal);
+  const verdict = verdictFor(round, reveal, seat, who, view.tries.length + 1);
 
-  let verdict: string | null = null;
-  let sub: string | null = null;
   let body: React.ReactNode;
   switch (round.format) {
     case "pick":
-    case "agree": {
-      const same = pick("host") === pick("guest");
-      verdict = round.format === "agree" ? (same ? "Dinner's decided." : "Nobody budged.") : same ? "Same brain." : "Two brains.";
-      sub = round.format === "agree" ? `${view.tries.length + 1} ${view.tries.length ? "tries" : "try"}.` : null;
-      body = (
-        <PairTiles
-          match={same}
-          delay={delay}
-          left={{ seat, caption: seat === view.seat ? "You" : names[seat], text: label(round.options, pick(seat)) }}
-          right={{ seat: partnerSeat, caption: names[partnerSeat], text: label(round.options, pick(partnerSeat)) }}
-        />
-      );
+    case "agree":
+      body =
+        pick(seat) === pick(partnerSeat) ? (
+          <Together delay={delay} caption="You both picked" text={label(round.options, pick(seat))} />
+        ) : (
+          <Apart
+            delay={delay}
+            left={{ seat, caption: "You", text: label(round.options, pick(seat)) }}
+            right={{ seat: partnerSeat, caption: names[partnerSeat], text: label(round.options, pick(partnerSeat)) }}
+          />
+        );
       break;
-    }
     case "mind": {
       const subject = round.subject;
       const guesser = other(subject);
-      const hit = pick(subject) === pick(guesser);
-      verdict = hit ? `${names[guesser]} has ${names[subject]} figured out.` : "Not quite. Noted.";
-      body = (
-        <PairTiles
-          match={hit}
-          delay={delay}
-          left={{ seat: subject, caption: `${names[subject]} picked`, text: label(round.options, pick(subject)) }}
-          right={{ seat: guesser, caption: `${names[guesser]} guessed`, text: label(round.options, pick(guesser)) }}
-        />
-      );
+      body =
+        pick(subject) === pick(guesser) ? (
+          <Together delay={delay} caption={`${who(subject, true)} picked it, and ${who(guesser)} guessed it`} text={label(round.options, pick(subject))} />
+        ) : (
+          <Apart
+            delay={delay}
+            left={{ seat: subject, caption: `${who(subject, true)} picked`, text: label(round.options, pick(subject)) }}
+            right={{ seat: guesser, caption: `${who(guesser, true)} guessed`, text: label(round.options, pick(guesser)) }}
+          />
+        );
       break;
     }
     case "likely":
@@ -69,13 +66,18 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
         <div className="flex flex-col gap-2.5">
           {round.items.map((item, i) => {
             const named = (s: Seat) => (pick(s, i) === 0 ? s : other(s));
-            const agreed = named("host") === named("guest");
+            const mine = named(seat);
+            const theirs = named(partnerSeat);
+            const agreed = mine === theirs;
+            const line = agreed
+              ? `${who(mine, true)}, undisputed.`
+              : mine === seat && theirs === partnerSeat
+                ? "You both claim it."
+                : `You say ${who(mine)}. ${names[partnerSeat]} says ${who(theirs)}.`;
             return (
               <Arrive key={i} delay={delay + i * 0.08} className={`rounded-[1.125rem] px-4 py-3.5 ${agreed ? "bg-blush" : "bg-tile"}`}>
-                <p className="font-medium text-muted">{t(item.text)}</p>
-                <p className="mt-1 text-lg font-bold">
-                  {agreed ? `${names[named("host")]}, undisputed.` : `${names.host} says ${names[named("host")]}. ${names.guest} says ${names[named("guest")]}.`}
-                </p>
+                <p className="text-balance text-muted">{t(item.text)}</p>
+                <p className="mt-1 text-lg font-bold">{line}</p>
               </Arrive>
             );
           })}
@@ -83,74 +85,69 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
       );
       break;
     case "scale": {
-      const at = (s: Seat) => pick(s) ?? 0;
-      const guessed = (s: Seat) => reveal[s].guesses?.[0] ?? 0;
+      const self = (s: Seat) => pick(s) ?? 0;
+      const guessOf = (s: Seat) => reveal[other(s)].guesses?.[0] ?? 0;
       body = (
-        <div className="flex flex-col gap-3">
-          {[seat, partnerSeat].map((s, i) => (
-            <Arrive key={s} delay={delay + i * 0.1} className="rounded-[1.125rem] bg-tile px-4 py-3.5">
-              <p className="mb-2 font-bold">
-                {s === view.seat ? "You" : names[s]}
-                {guessed(other(s)) === at(s) ? <span className="text-red">, and {other(s) === view.seat ? "you" : names[other(s)]} nailed it</span> : ""}
+        <Arrive delay={delay} className="flex flex-col gap-5 rounded-[1.125rem] bg-tile p-4">
+          {[seat, partnerSeat].map((s) => (
+            <div key={s} className="flex flex-col gap-2">
+              <p className="flex justify-between gap-3">
+                <b className="font-bold">{s === seat ? "You" : names[s]}</b>
+                <span className={guessOf(s) === self(s) ? "font-bold text-red" : "font-medium text-muted"}>
+                  {guessOf(s) === self(s)
+                    ? `${who(other(s), true)} nailed it`
+                    : `${who(other(s), true)} ${other(s) === seat ? "were" : "was"} ${Math.abs(guessOf(s) - self(s))} off`}
+                </span>
               </p>
-              <ScaleRow steps={round.steps} self={at(s)} guess={guessed(other(s))} />
-            </Arrive>
+              <ScaleTrack steps={round.steps} at={self(s)} guess={guessOf(s)} owner={s} guesser={other(s)} />
+            </div>
           ))}
-          <p className="flex justify-between gap-4 text-sm text-muted">
-            <span>1 = {t(round.left)}</span>
-            <span className="text-right">
-              {round.steps} = {t(round.right)}
-            </span>
-          </p>
-          <p className="text-sm text-muted">Filled dot: where each of you stands. Red ring: where the other one guessed.</p>
-        </div>
+          <ScaleEnds left={t(round.left)} right={t(round.right)} />
+        </Arrive>
       );
       break;
     }
-    case "speed": {
-      const same = (i: number) => pick("host", i) != null && pick("host", i) === pick("guest", i);
-      const matches = round.items.filter((_, i) => same(i)).length;
-      verdict = `${matches} of ${round.items.length} the same.`;
+    case "speed":
       body = (
         <div className="flex flex-col gap-2">
-          {round.items.map((pair, i) => (
-            <Arrive key={i} delay={delay + i * 0.06} className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 ${same(i) ? "bg-blush font-bold" : "bg-tile"}`}>
-              {same(i) ? (
-                <>
-                  <span>Both: {label(pair, pick("host", i))}</span>
-                  <Heart size={18} className="text-red" />
-                </>
-              ) : (
-                <span>
-                  {names.host}: {label(pair, pick("host", i))} · {names.guest}: {label(pair, pick("guest", i))}
-                </span>
-              )}
-            </Arrive>
-          ))}
+          {round.items.map((pair, i) => {
+            const same = pick("host", i) != null && pick("host", i) === pick("guest", i);
+            return (
+              <Arrive key={i} delay={delay + i * 0.06} className={`grid grid-cols-2 gap-2 rounded-2xl p-2 ${same ? "bg-blush" : "bg-tile"}`}>
+                {pair.map((option, j) => {
+                  const byMe = pick(seat, i) === j;
+                  const byThem = pick(partnerSeat, i) === j;
+                  return (
+                    <span key={j} className={`flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 ${byMe || byThem ? "bg-white font-bold" : "text-muted"}`}>
+                      {t(option.label)}
+                      <span className="flex -space-x-1.5">
+                        {byMe && <Avatar player={view.players[seat]!} tone="me" size={20} />}
+                        {byThem && <Avatar player={view.players[partnerSeat]!} tone="partner" size={20} />}
+                      </span>
+                    </span>
+                  );
+                })}
+              </Arrive>
+            );
+          })}
         </div>
       );
       break;
-    }
     case "write": {
       const textOf = (s: Seat, slot: ViewText["slot"]) => reveal.texts.find((x) => x.seat === s && x.slot === slot);
       if (round.variant === "mirror") {
         body = (
           <div className="flex flex-col gap-7">
             {[seat, partnerSeat].map((s) => {
-              const g = textOf(other(s), "partner");
+              const guess = textOf(other(s), "partner");
               return (
                 <div key={s}>
-                  <PairTiles
-                    match={(g?.matchPct ?? 0) >= 60}
+                  <Apart
                     delay={delay}
-                    left={{ seat: s, caption: `${names[s]} said`, text: textOf(s, "self")?.body ?? "" }}
-                    right={{ seat: other(s), caption: `${names[other(s)]} guessed`, text: g?.body ?? "" }}
+                    left={{ seat: s, caption: `${who(s, true)} said`, text: textOf(s, "self")?.body ?? "" }}
+                    right={{ seat: other(s), caption: `${who(other(s), true)} guessed`, text: guess?.body ?? "" }}
                   />
-                  {vibe(g?.matchPct) && (
-                    <Arrive delay={delay + 0.35} className="mt-3 text-2xl font-black text-red">
-                      {vibe(g?.matchPct)}
-                    </Arrive>
-                  )}
+                  <Vibe delay={delay + 0.3} pct={guess?.matchPct} />
                 </div>
               );
             })}
@@ -159,21 +156,14 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
       } else {
         const mine = textOf(seat, "shared");
         const theirs = textOf(partnerSeat, "shared");
-        const scores = [mine?.matchPct, theirs?.matchPct].filter((p): p is number => p != null);
-        const pct = scores.length ? Math.round(scores.reduce((a, b) => a + b) / scores.length) : null;
         body = (
           <>
-            <PairTiles
-              match={(pct ?? 0) >= 60}
+            <Apart
               delay={delay}
               left={{ seat, caption: "You", text: mine?.body ?? "" }}
               right={{ seat: partnerSeat, caption: names[partnerSeat], text: theirs?.body ?? "" }}
             />
-            {vibe(pct) && (
-              <Arrive delay={delay + 0.35} className="mt-3 text-2xl font-black text-red">
-                {vibe(pct)}
-              </Arrive>
-            )}
+            <Vibe delay={delay + 0.3} pct={averagePct([mine?.matchPct, theirs?.matchPct])} />
           </>
         );
       }
@@ -183,20 +173,17 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
 
   return (
     <div className="pt-6">
-      {!reduce && <Flash text={flash.text} tone={flash.tone} />}
-      <p className="text-[0.95rem] font-bold text-red">{round.scene.time}</p>
+      {!reduce && <Flash text={verdict.text} tone={verdict.tone} />}
+      <p className="text-[0.95rem] font-bold text-navy">{round.scene.time}</p>
       <p className="text-[0.95rem] font-medium text-muted">{t(round.scene.title)}</p>
-      {verdict && (
-        <motion.h1
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay, type: "spring", stiffness: 420, damping: 20 }}
-          className="mt-3 origin-left text-[2.1rem] leading-[1.02] font-black tracking-[-0.02em]"
-        >
-          {verdict}
-        </motion.h1>
-      )}
-      {sub && <p className="mt-1 text-lg text-muted">{sub}</p>}
+      <motion.h1
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay, type: "spring", stiffness: 420, damping: 20 }}
+        className="mt-3 origin-left text-[2.1rem] leading-[1.02] font-black tracking-[-0.02em] text-balance"
+      >
+        {verdict.text}
+      </motion.h1>
       <div className="mt-6">{body}</div>
       <ActionBar
         primary={
@@ -211,32 +198,6 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
       />
     </div>
   );
-}
-
-function flashFor(round: Round, reveal: RevealData): { text: string; tone: Tone } {
-  const pick = (s: Seat, i = 0) => reveal[s].picks?.[i];
-  switch (round.format) {
-    case "pick":
-    case "agree":
-      return pick("host") === pick("guest") ? { text: "Same brain!", tone: "pink" } : { text: "Two brains.", tone: "navy" };
-    case "mind":
-      return pick("host") === pick("guest") ? { text: "Mind read!", tone: "pink" } : { text: "Not quite.", tone: "navy" };
-    case "likely": {
-      const target = (s: Seat, i: number) => (pick(s, i) === 0 ? s : other(s));
-      const agreed = round.items.filter((_, i) => target("host", i) === target("guest", i)).length;
-      if (agreed === round.items.length) return { text: "Fully agreed.", tone: "pink" };
-      if (agreed === 0) return { text: "Total denial.", tone: "red" };
-      return { text: `${agreed} of ${round.items.length} agreed.`, tone: "navy" };
-    }
-    case "scale":
-      return { text: "Where do you stand?", tone: "navy" };
-    case "speed": {
-      const matches = round.items.filter((_, i) => pick("host", i) != null && pick("host", i) === pick("guest", i)).length;
-      return { text: `${matches} of ${round.items.length}!`, tone: matches >= 4 ? "pink" : "navy" };
-    }
-    case "write":
-      return { text: "Vibe check…", tone: "red" };
-  }
 }
 
 const TONES: Record<Tone, string> = { pink: "bg-pink text-ink", navy: "bg-navy text-white", red: "bg-red text-white" };
@@ -264,7 +225,7 @@ function Flash({ text, tone }: { text: string; tone: Tone }) {
               initial={{ scale: 0.5, opacity: 0, rotate: -4 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
               transition={{ delay: 0.12, type: "spring", stiffness: 320, damping: 13 }}
-              className="text-center text-[clamp(3rem,15vw,5.5rem)] leading-[0.95] font-black tracking-[-0.03em]"
+              className="max-w-md text-center text-[clamp(2.75rem,13vw,4.75rem)] leading-[0.95] font-black tracking-[-0.03em] text-balance"
             >
               {text}
             </motion.p>
@@ -288,10 +249,37 @@ function Arrive({ delay, className, children }: { delay: number; className?: str
   );
 }
 
+/** A match: one tile, both faces overlapping with a heart beside them, the answer said once. */
+function Together({ caption, text, delay }: { caption: string; text: string; delay: number }) {
+  const { view, seat, partnerSeat } = useRoomContext();
+  return (
+    <Arrive delay={delay} className="rounded-[1.125rem] bg-blush p-4">
+      <div className="flex items-center">
+        <motion.span initial={{ x: -24 }} animate={{ x: 0 }} transition={{ delay, type: "spring", stiffness: 300, damping: 18 }}>
+          <Avatar player={view.players[seat]!} tone="me" size={40} />
+        </motion.span>
+        <motion.span
+          initial={{ x: 24 }}
+          animate={{ x: 0 }}
+          transition={{ delay, type: "spring", stiffness: 300, damping: 18 }}
+          className="-ml-2.5 rounded-full ring-[3px] ring-blush"
+        >
+          <Avatar player={view.players[partnerSeat]!} tone="partner" size={40} />
+        </motion.span>
+        <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.4, 1] }} transition={{ delay: delay + 0.25, duration: 0.45 }} className="ml-2 text-red">
+          <Heart size={24} />
+        </motion.span>
+      </div>
+      <p className="mt-3 text-sm font-semibold text-muted">{caption}</p>
+      <p className="mt-0.5 text-xl leading-snug font-bold">{text}</p>
+    </Arrive>
+  );
+}
+
 type Side = { seat: Seat; caption: string; text: string };
 
-/** The two of you, side by side: tiles slide in from opposite edges and meet; a heart joins a match. */
-function PairTiles({ left, right, match, delay }: { left: Side; right: Side; match: boolean; delay: number }) {
+/** Different answers: two tiles that slide in a short way from opposite sides (never off-screen). */
+function Apart({ left, right, delay }: { left: Side; right: Side; delay: number }) {
   const { view, seat } = useRoomContext();
   const tile = (side: Side, from: number) => {
     const player = view.players[side.seat];
@@ -300,7 +288,7 @@ function PairTiles({ left, right, match, delay }: { left: Side; right: Side; mat
         initial={{ opacity: 0, x: from }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay, type: "spring", stiffness: 300, damping: 24 }}
-        className={`flex min-h-36 flex-col gap-2 rounded-[1.125rem] p-4 ${match ? "bg-blush" : "bg-tile"}`}
+        className="flex min-h-36 flex-col gap-2 rounded-[1.125rem] bg-tile p-4"
       >
         {player && <Avatar player={player} tone={side.seat === seat ? "me" : "partner"} size={36} />}
         <p className="text-sm font-semibold text-muted">{side.caption}</p>
@@ -309,30 +297,37 @@ function PairTiles({ left, right, match, delay }: { left: Side; right: Side; mat
     );
   };
   return (
-    <div className="relative grid grid-cols-2 gap-2.5">
-      {tile(left, -70)}
-      {tile(right, 70)}
-      {match && (
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: [0, 1.4, 1] }}
-          transition={{ delay: delay + 0.3, duration: 0.45 }}
-          className="absolute top-1/2 left-1/2 grid size-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-red shadow-[0_0_0_5px_#fff]"
-        >
-          <Heart size={22} />
-        </motion.span>
-      )}
+    <div className="grid grid-cols-2 gap-2.5">
+      {tile(left, -16)}
+      {tile(right, 16)}
     </div>
   );
 }
 
-function ScaleRow({ steps, self, guess }: { steps: number; self: number; guess: number }) {
+function Vibe({ pct, delay }: { pct: number | null | undefined; delay: number }) {
+  const word = vibeWord(pct);
+  if (!word) return null;
   return (
-    <div className="grid grid-cols-7 gap-1" aria-hidden>
+    <Arrive delay={delay} className="mt-3 flex items-baseline gap-2">
+      <span className="text-xl font-black">{word}</span>
+      <span className="text-sm text-muted">{pct}% vibe match</span>
+    </Arrive>
+  );
+}
+
+/** Each person's own spot on the scale, with the other person's guess as a smaller face. */
+function ScaleTrack({ steps, at, guess, owner, guesser }: { steps: number; at: number; guess: number; owner: Seat; guesser: Seat }) {
+  const { view, seat } = useRoomContext();
+  return (
+    <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${steps}, 1fr)` }} aria-hidden>
       {Array.from({ length: steps }, (_, i) => (
-        <span key={i} className="relative flex h-8 items-center justify-center rounded-full bg-white">
-          {i === self && <span className="size-4 rounded-full bg-navy" />}
-          {i === guess && <span className="absolute size-7 rounded-full border-[3px] border-red" />}
+        <span key={i} className="relative grid aspect-square place-items-center rounded-full bg-white">
+          {i === at && <Avatar player={view.players[owner]!} tone={owner === seat ? "me" : "partner"} size={30} />}
+          {i === guess && (
+            <span className={`rounded-full ring-2 ring-white ${i === at ? "absolute -right-1 -bottom-1" : ""}`}>
+              <Avatar player={view.players[guesser]!} tone={guesser === seat ? "me" : "partner"} size={i === at ? 18 : 22} />
+            </span>
+          )}
         </span>
       ))}
     </div>

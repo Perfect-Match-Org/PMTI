@@ -5,7 +5,7 @@ import type { Answer } from "@/game/answers";
 import { MAX_TEXT_LENGTH, type Round } from "@/game/deck";
 import type { TextSlot } from "@/game/engine";
 import { ActionBar } from "./action-bar";
-import { Choices } from "./choices";
+import { Choices, ScaleEnds } from "./choices";
 import { useRoomContext } from "./room-context";
 
 const SLOT_ORDER: TextSlot[] = ["self", "partner", "shared"];
@@ -64,21 +64,18 @@ export function RoundInput({ round }: { round: Round }) {
       break;
     case "scale": {
       const dots = Array.from({ length: round.steps }, (_, i) => String(i + 1));
+      const ends = <ScaleEnds left={t(round.left)} right={t(round.right)} />;
       body = (
-        <div className="flex flex-col gap-5">
-          <div className="flex justify-between gap-6 text-sm text-muted">
-            <span>1 = {t(round.left)}</span>
-            <span className="text-right">
-              {round.steps} = {t(round.right)}
-            </span>
-          </div>
+        <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-2.5">
             <p className="text-lg font-semibold">You</p>
             <Choices label="Where you are" options={dots} value={picks[0] ?? null} onChange={setAt(setPicks, 0)} disabled={!!locked} layout="scale" />
+            {ends}
           </div>
           <div className="flex flex-col gap-2.5">
-            <p className="text-lg font-semibold">Where&apos;s {partnerName}?</p>
+            <p className="text-lg font-semibold">Where’s {partnerName}?</p>
             <Choices label={`Where ${partnerName} is`} options={dots} value={guess} onChange={setGuess} disabled={!!locked} layout="scale" />
+            {ends}
           </div>
         </div>
       );
@@ -87,7 +84,7 @@ export function RoundInput({ round }: { round: Round }) {
     }
     case "speed":
       body = (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {!locked && <Countdown seconds={round.seconds} />}
           {round.items.map((pair, i) => (
             <Choices
@@ -110,11 +107,12 @@ export function RoundInput({ round }: { round: Round }) {
         <div className="flex flex-col gap-5">
           {prompts.map((prompt, i) => (
             <label key={i} className="flex flex-col gap-2.5">
-              <span className="text-lg font-semibold">{t(prompt)}</span>
+              <span className={i === 0 ? "sr-only" : "text-lg font-semibold"}>{t(prompt)}</span>
               <input
                 value={texts[i] ?? ""}
                 maxLength={MAX_TEXT_LENGTH}
                 disabled={!!locked}
+                placeholder={i === 0 ? "Your answer" : `Your guess for ${partnerName}`}
                 onChange={(e) => setAt(setTexts, i)(e.target.value)}
                 className="field"
               />
@@ -132,7 +130,7 @@ export function RoundInput({ round }: { round: Round }) {
   const lastTry = view.tries.at(-1);
   return (
     <div className="pt-6">
-      <p className="text-[0.95rem] font-bold text-red">{round.scene.time}</p>
+      <p className="text-[0.95rem] font-bold text-navy">{round.scene.time}</p>
       <p className="text-[0.95rem] font-medium text-muted">{t(round.scene.title)}</p>
       {lastTry && round.format === "agree" && (
         <p className="mt-4 rounded-2xl bg-blush px-4 py-3 font-semibold">
@@ -140,7 +138,7 @@ export function RoundInput({ round }: { round: Round }) {
           {t(round.options[lastTry.guest.picks?.[0] ?? 0]!.label)}”. Try {attempt + 1} of {round.tries}.
         </p>
       )}
-      {round.format !== "write" && <h1 className="mt-3 text-[1.9rem] leading-[1.08] font-extrabold tracking-[-0.015em]">{t(title)}</h1>}
+      <h1 className="mt-3 text-[1.9rem] leading-[1.08] font-extrabold tracking-[-0.015em] text-balance">{t(title)}</h1>
       <div className="mt-6">{body}</div>
       <ActionBar
         primary={

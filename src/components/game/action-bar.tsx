@@ -18,7 +18,7 @@ export function ActionBar({ primary, secondary, reactions = true }: { primary: A
       <div className="fixed inset-x-0 bottom-0 z-20 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-md flex-col gap-3 px-5 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           {reactions && (
-            <div role="toolbar" aria-label="Reactions" className="flex justify-around">
+            <div role="toolbar" aria-label="Reactions" className="grid grid-cols-5 place-items-center">
               {REACTIONS.map((emoji) => (
                 <motion.button
                   key={emoji}

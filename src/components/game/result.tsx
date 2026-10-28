@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { Axis } from "@/game/deck";
 import { getDeck } from "@/game/decks";
-import type { Seat } from "@/game/engine";
+
 import { momentText } from "@/game/moments";
-import type { Result } from "@/game/scoring";
+import type { Moment, Result } from "@/game/scoring";
 import { duoType, type DuoType } from "@/game/types";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
@@ -15,7 +15,8 @@ import { Portal } from "@/components/ui/portal";
 import { ActionBar } from "./action-bar";
 import { useRoomContext } from "./room-context";
 
-const SLIDE_MS = 4500;
+const SLIDE_MS = 4000;
+const MOMENT_TONES = ["bg-white text-ink", "bg-blush text-ink", "bg-navy text-white"];
 
 export function ResultView({ result }: { result: Result }) {
   const [stage, setStage] = useState<"story" | "summary">("story");
@@ -28,6 +29,14 @@ export function ResultView({ result }: { result: Result }) {
   );
 }
 
+/** A moment that backs up the mind-reading number instead of contradicting it. */
+function mindMomentFor(result: Result): Moment | undefined {
+  const good = result.mindReading >= 0.5;
+  return result.moments.find((m) =>
+    m.kind === "mind" ? m.hit === good : m.kind === "mirror" ? m.pct >= 60 === good : m.kind === "close-call" && good
+  );
+}
+
 type Slide = { tone: string; body: React.ReactNode };
 
 /** Wrapped-style story: full-screen color slides that advance on their own; tap to move, or skip. */
@@ -35,8 +44,8 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
   const { view, seat, partnerSeat, names, t } = useRoomContext();
   const [index, setIndex] = useState(0);
   const deck = getDeck(view.deckId);
-  const moments = deck ? result.moments.map((m) => momentText(m, { deck, names, t })) : [];
-  const mindMoment = result.moments.find((m) => m.kind === "mind" || m.kind === "mirror" || m.kind === "close-call");
+  const say = (m: Moment) => (deck ? momentText(m, { deck, names, viewer: seat, t }) : "");
+  const mindMoment = mindMomentFor(result);
   const words = type.name.split(" ");
 
   const slides: Slide[] = [
@@ -44,9 +53,9 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
       tone: "bg-navy text-white",
       body: (
         <>
-          <Rise className="text-[clamp(3.25rem,17vw,5rem)] leading-[0.92] font-black tracking-[-0.03em]">That&apos;s the day.</Rise>
+          <Rise className="text-[clamp(3.25rem,17vw,5rem)] leading-[0.92] font-black tracking-[-0.03em]">That’s the day.</Rise>
           <Rise delay={0.35} className="mt-5 text-xl leading-snug text-white/80">
-            {view.totalSteps} rounds, one Cornell Tuesday. Here&apos;s how you two did.
+            {view.totalSteps} rounds, one Cornell Tuesday. Here’s how you two did.
           </Rise>
         </>
       ),
@@ -61,9 +70,6 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
           <Rise delay={0.5} className="mt-3 text-3xl font-extrabold">
             same brain
           </Rise>
-          <Rise delay={0.7} className="mt-2 text-xl text-ink/70">
-            How often you answered alike.
-          </Rise>
         </>
       ),
     },
@@ -77,40 +83,33 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
           <Rise delay={0.5} className="mt-3 text-3xl font-extrabold">
             mind reading
           </Rise>
-          <Rise delay={0.7} className="mt-2 text-xl leading-snug text-white/85">
-            {mindMoment && deck ? momentText(mindMoment, { deck, names, t }) : "How well you guessed each other."}
-          </Rise>
+          {mindMoment && (
+            <Rise delay={0.8} className="mt-3 text-xl leading-snug text-balance text-white/90">
+              {say(mindMoment)}
+            </Rise>
+          )}
         </>
       ),
     },
+    ...result.moments
+      .filter((m) => m !== mindMoment)
+      .map((m, i) => ({
+        tone: MOMENT_TONES[i % MOMENT_TONES.length]!,
+        body: (
+          <>
+            <Heart size={40} className="text-red" />
+            <Rise delay={0.15} className="mt-5 text-[clamp(2rem,9vw,2.75rem)] leading-[1.05] font-black tracking-[-0.02em] text-balance">
+              {say(m)}
+            </Rise>
+          </>
+        ),
+      })),
     {
-      tone: "bg-white text-ink",
-      body: (
-        <>
-          <Rise className="text-5xl font-black tracking-[-0.03em]">Moments</Rise>
-          <ul className="mt-6 flex flex-col gap-4">
-            {moments.map((text, i) => (
-              <motion.li
-                key={i}
-                initial={{ y: 24, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 + i * 0.45, type: "spring", stiffness: 300, damping: 24 }}
-                className="flex gap-3 text-xl leading-snug font-semibold"
-              >
-                <Heart size={22} className="mt-1 flex-none text-red" />
-                {text}
-              </motion.li>
-            ))}
-          </ul>
-        </>
-      ),
-    },
-    {
-      tone: "bg-night text-white",
+      tone: "bg-ink text-white",
       body: (
         <>
           <Rise className="text-2xl font-bold text-pink">
-            {view.mode === "friends" ? "In a parallel universe where you two date, you'd be" : "You two are"}
+            {view.mode === "friends" ? "In a parallel universe where you two date, you’d be" : "You two are"}
           </Rise>
           <h2 className="mt-3 text-[clamp(2.75rem,13vw,4rem)] leading-[0.95] font-black tracking-[-0.03em]">
             {words.map((word, i) => (
@@ -144,13 +143,13 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
             return (
               <motion.div
                 key={s}
-                initial={{ x: i ? 80 : -80, opacity: 0 }}
+                initial={{ x: i ? 40 : -40, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.2 + i * 0.25, type: "spring", stiffness: 280, damping: 22 }}
                 className="rounded-[1.5rem] bg-white p-5"
               >
                 {player && <Avatar player={player} tone={s === seat ? "me" : "partner"} size={44} />}
-                <p className="mt-3 text-lg font-semibold text-muted">{s === seat ? "You're" : `${names[s]} is`}</p>
+                <p className="mt-3 text-lg font-semibold text-muted">{s === seat ? "You’re" : `${names[s]} is`}</p>
                 <p className="text-3xl leading-tight font-black tracking-[-0.02em]">{half.name}</p>
                 <p className="mt-1 text-lg leading-snug text-muted">{half.line}.</p>
               </motion.div>
@@ -170,7 +169,7 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
   const slide = slides[index]!;
   return (
     <Portal>
-      <div className={`fixed inset-0 z-30 transition-colors duration-300 ${slide.tone}`} aria-live="polite">
+      <div className={`fixed inset-0 z-30 overflow-hidden transition-colors duration-300 ${slide.tone}`} aria-live="polite">
         <div className="mx-auto flex h-full max-w-md flex-col px-5 pt-4 pb-10">
           <div className="flex items-center gap-3">
             <div className="grid flex-1 gap-1" style={{ gridTemplateColumns: `repeat(${slides.length}, 1fr)` }}>
@@ -218,7 +217,7 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
   const mine = type.halves[result.roles[seat]];
 
   async function share() {
-    const text = `I'm ${mine.name} in a ${type.name} duo (${type.nickname}). What kind of duo are you two?`;
+    const text = `I’m ${mine.name} in a ${type.name} duo (${type.nickname}). What kind of duo are you two?`;
     const url = window.location.origin;
     if (navigator.share) {
       await navigator.share({ title: "PMTI", text, url }).catch(() => {});
@@ -231,7 +230,7 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
   return (
     <div className="pt-8">
       <p className="text-lg font-semibold text-muted">{view.mode === "friends" ? "In a parallel universe, you two are" : "You two are"}</p>
-      <h1 className="mt-1 text-[clamp(2.5rem,12vw,3.25rem)] leading-[0.98] font-black tracking-[-0.03em]">{type.name}</h1>
+      <h1 className="mt-1 text-[clamp(2.5rem,12vw,3.25rem)] leading-[0.98] font-black tracking-[-0.03em] text-balance">{type.name}</h1>
       <p className="mt-3 text-lg">
         <b className="font-extrabold">{type.nickname}.</b> <span className="text-muted">{type.tagline}</span>
       </p>
@@ -244,7 +243,7 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
             <div key={s} className="flex flex-col gap-2 rounded-[1.125rem] bg-blush p-4">
               {player && <Avatar player={player} tone={s === seat ? "me" : "partner"} size={36} />}
               <p className="text-sm font-semibold text-muted">
-                {s === seat ? "You're" : `${names[s]} is`} <span className="block text-xl leading-tight font-black text-ink">{half.name}</span>
+                {s === seat ? "You’re" : `${names[s]} is`} <span className="block text-xl leading-tight font-black text-ink">{half.name}</span>
               </p>
               <p className="text-sm leading-snug text-muted">{half.line}</p>
             </div>
@@ -252,20 +251,20 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
         })}
       </div>
 
-      <div className="mt-7 flex gap-8">
-        <div>
+      <div className="mt-7 grid grid-cols-2 gap-2.5">
+        <div className="px-1">
           <p className="text-5xl font-black tracking-[-0.03em] text-navy">{Math.round(result.sameBrain * 100)}%</p>
           <p className="mt-1 font-semibold text-muted">same brain</p>
         </div>
-        <div>
+        <div className="px-1">
           <p className="text-5xl font-black tracking-[-0.03em] text-red">{Math.round(result.mindReading * 100)}%</p>
           <p className="mt-1 font-semibold text-muted">mind reading</p>
         </div>
       </div>
 
-      <div className="mt-8 flex flex-col gap-4" aria-label="Where you each sit">
+      <div className="mt-8 flex flex-col gap-5" aria-label="Where you each sit">
         {(Object.keys(AXIS_ENDS) as Axis[]).map((axis) => (
-          <AxisBar key={axis} axis={axis} result={result} />
+          <AxisRail key={axis} axis={axis} result={result} />
         ))}
         {runnerUp && <p className="text-muted">With a streak of {runnerUp.name}.</p>}
       </div>
@@ -275,7 +274,7 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
           {result.moments.map((m, i) => (
             <li key={i} className="flex gap-3 text-lg leading-snug">
               <Heart size={18} className="mt-1 flex-none text-red" />
-              {momentText(m, { deck, names, t })}
+              {momentText(m, { deck, names, viewer: seat, t })}
             </li>
           ))}
         </ul>
@@ -290,30 +289,33 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
   );
 }
 
-function AxisBar({ axis, result }: { axis: Axis; result: Result }) {
-  const { view, seat } = useRoomContext();
+/** A rail from one end to the other with both faces on it (the partner's sits behind when you overlap). */
+function AxisRail({ axis, result }: { axis: Axis; result: Result }) {
+  const { view, seat, partnerSeat } = useRoomContext();
   const [left, right] = AXIS_ENDS[axis];
   const at = (v: number) => `clamp(16px, ${((1 - v) / 2) * 100}%, calc(100% - 16px))`;
+  // Side by side when you land in the same spot, so neither face hides the other.
+  const overlap = Math.abs(result.axes.host[axis] - result.axes.guest[axis]) < 0.15;
   return (
     <div>
       <div className="flex justify-between text-sm font-bold">
         <span>{left}</span>
         <span>{right}</span>
       </div>
-      {/* One lane per player, so identical answers never hide a face. */}
-      <div className="relative mt-1.5 h-16 rounded-2xl bg-tile">
-        {(["host", "guest"] as Seat[]).map((s) => {
+      <div className="relative mt-2 h-9">
+        <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-line" />
+        {[partnerSeat, seat].map((s) => {
           const player = view.players[s];
           if (!player) return null;
           return (
             <motion.span
               key={s}
-              className={`absolute -translate-x-1/2 ${s === "host" ? "top-1" : "bottom-1"}`}
+              className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-[3px] ring-white"
               initial={{ left: "50%" }}
-              animate={{ left: at(result.axes[s][axis]) }}
+              animate={{ left: at(result.axes[s][axis]), x: overlap ? (s === seat ? 12 : -12) : 0 }}
               transition={{ type: "spring", stiffness: 120, damping: 18, delay: 0.2 }}
             >
-              <Avatar player={player} tone={s === seat ? "me" : "partner"} size={28} />
+              <Avatar player={player} tone={s === seat ? "me" : "partner"} size={32} />
             </motion.span>
           );
         })}

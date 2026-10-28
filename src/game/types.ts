@@ -47,12 +47,12 @@ export const DUO_TYPES: DuoType[] = [
   },
   {
     id: "slopeday-stpattys",
-    name: "Slope Day & St. Patty's",
+    name: "Slope Day & St. Patty’s",
     nickname: "The Partiers",
     tagline: "Plans? You have a vibe.",
     halves: [
       { name: "Slope Day", line: "the main event, gets everyone outside" },
-      { name: "St. Patty's", line: "keeps it going well past when it should've ended" },
+      { name: "St. Patty’s", line: "keeps it going well past when it should’ve ended" },
     ],
     role: { by: "E", higherGets: 0 },
     ...corner(1, -1, -1),
@@ -61,9 +61,9 @@ export const DUO_TYPES: DuoType[] = [
     id: "stewart-cascadilla",
     name: "Stewart Park & Cascadilla",
     nickname: "The Wanderers",
-    tagline: "Let's just walk and see where we end up.",
+    tagline: "Let’s just walk and see where we end up.",
     halves: [
-      { name: "Stewart Park", line: "wide open, “let's see where the day goes”" },
+      { name: "Stewart Park", line: "wide open, “let’s see where the day goes”" },
       { name: "Cascadilla", line: "the one who asks the real questions, every walk ends in a real talk" },
     ],
     role: { by: "H", higherGets: 1 },
@@ -136,7 +136,7 @@ export const DUO_TYPES: DuoType[] = [
     nickname: "Plan & Plot Twist",
     tagline: "One of you has a plan. The other is why it changes.",
     halves: [
-      { name: "The Syllabus", line: "knows what's due before it's assigned" },
+      { name: "The Syllabus", line: "knows what’s due before it’s assigned" },
       { name: "The Snow Day", line: "cancels plans in the best way (rare, beloved)" },
     ],
     role: { by: "P", higherGets: 0 },
@@ -187,7 +187,7 @@ export const DUO_TYPES: DuoType[] = [
     tagline: "Every game night ends in a rematch.",
     halves: [
       { name: "Cornell", line: "obviously the winner" },
-      { name: "Harvard", line: "thinks they're the winner" },
+      { name: "Harvard", line: "thinks they’re the winner" },
     ],
     role: { by: "sharper", higherGets: 0 },
     kind: "earned",

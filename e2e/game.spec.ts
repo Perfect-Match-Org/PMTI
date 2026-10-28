@@ -51,9 +51,12 @@ test("two players play a full game in sync", async ({ browser }) => {
   await expect(alice).toHaveURL(/\/play\/[A-Z0-9]{6}$/);
   const url = new URL(alice.url()).pathname;
 
-  await expect(alice.getByText("Your game code")).toBeVisible();
+  await expect(alice.getByRole("heading", { name: "Get your partner in." })).toBeVisible();
   await shot(alice, "01-lobby-waiting");
-  const bob = await player(browser, "bob@cornell.edu", url);
+  // Bob joins by typing the code on the home page instead of scanning.
+  const bob = await player(browser, "bob@cornell.edu");
+  await bob.getByLabel("Game code").fill(url.split("/").pop()!.toLowerCase());
+  await bob.getByRole("button", { name: "Join", exact: true }).click();
   await expect(bob.getByText("Alice & Bob are in.")).toBeVisible();
   await expect(alice.getByText("Alice & Bob are in.")).toBeVisible({ timeout: REALTIME_MS });
 
@@ -64,12 +67,12 @@ test("two players play a full game in sync", async ({ browser }) => {
   for (let i = 0; i < 5; i++) await alice.getByRole("button", { name: "Send boo" }).click();
   await expect(bob.locator(".reaction-float", { hasText: "🍅" }).first()).toBeAttached({ timeout: REALTIME_MS });
 
-  await alice.getByRole("button", { name: "I'm ready", exact: true }).click();
-  await bob.getByRole("button", { name: "I'm ready", exact: true }).click();
+  await alice.getByRole("button", { name: "I’m ready", exact: true }).click();
+  await bob.getByRole("button", { name: "I’m ready", exact: true }).click();
 
   let rounds = 0;
   let vibeVerdicts = 0;
-  while (!(await alice.getByText(/^That's the day/).isVisible())) {
+  while (!(await alice.getByText(/^That’s the day/).isVisible())) {
     await expect(alice.getByRole("button", { name: "Lock in", exact: true })).toBeVisible({ timeout: REALTIME_MS });
     await expect(bob.getByRole("button", { name: "Lock in", exact: true })).toBeVisible({ timeout: REALTIME_MS });
 
@@ -93,13 +96,13 @@ test("two players play a full game in sync", async ({ browser }) => {
 
     await bob.getByRole("button", { name: "Next", exact: true }).click();
     await alice.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(alice.getByText(/^That's the day/).or(alice.getByRole("button", { name: "Lock in", exact: true }))).toBeVisible({
+    await expect(alice.getByText(/^That’s the day/).or(alice.getByRole("button", { name: "Lock in", exact: true }))).toBeVisible({
       timeout: REALTIME_MS,
     });
     rounds++;
     expect(rounds).toBeLessThan(20);
   }
-  await expect(bob.getByText(/^That's the day/)).toBeVisible({ timeout: REALTIME_MS });
+  await expect(bob.getByText(/^That’s the day/)).toBeVisible({ timeout: REALTIME_MS });
   if (process.env.SHOTS) {
     await alice.waitForTimeout(1200);
     await shot(alice, "90-story-1");
@@ -116,7 +119,7 @@ test("two players play a full game in sync", async ({ browser }) => {
   const typeName = await alice.getByRole("heading", { level: 1 }).innerText();
   await expect(bob.getByRole("heading", { level: 1 })).toHaveText(typeName);
   const sentence = (page: Page, start: string) => page.locator("p").filter({ hasText: new RegExp(`^${start}`) });
-  const aliceRole = ((await sentence(alice, "You're").textContent()) ?? "").replace(/^You're\s*/, "").trim();
+  const aliceRole = ((await sentence(alice, "You’re").textContent()) ?? "").replace(/^You’re\s*/, "").trim();
   expect(aliceRole.length).toBeGreaterThan(0);
   await expect(sentence(bob, "Alice is")).toHaveText(`Alice is ${aliceRole}`);
   await expect(alice.getByText("same brain", { exact: true })).toBeVisible();

@@ -18,17 +18,21 @@ export function Lobby({ link }: { link: string }) {
   if (!guest) {
     return (
       <div className="pt-8">
-        <p className="text-lg font-semibold text-muted">Your game code</p>
-        <p className="text-[clamp(2.75rem,14vw,4rem)] leading-none font-black tracking-[0.06em] text-navy">{view.code}</p>
-        <div className="mt-7 flex flex-col items-center gap-4 rounded-[1.5rem] bg-tile px-5 py-6">
-          <div className="rounded-2xl bg-white p-3">
-            <QRCodeSVG value={link} size={184} marginSize={0} fgColor="#1a2550" title={`QR code that opens ${link}`} />
-          </div>
-          <p className="text-center text-lg font-medium">
-            Have {view.mode === "couple" ? "your partner" : "your friend"} scan this with their phone camera.
-          </p>
-        </div>
-        <p className="mt-5 text-center text-muted">Waiting for them to join…</p>
+        <h1 className="text-[2.4rem] leading-[1] font-black tracking-[-0.025em] text-balance">
+          Get {view.mode === "couple" ? "your partner" : "your friend"} in.
+        </h1>
+        <p className="mt-3 text-lg text-muted">They scan this with their phone camera.</p>
+        <motion.div
+          initial={{ scale: 0.92, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 22 }}
+          className="mt-7 grid place-items-center"
+        >
+          <QRCodeSVG value={link} size={232} marginSize={0} fgColor="#1a2550" title={`QR code that opens ${link}`} />
+        </motion.div>
+        <p className="mt-7 text-center text-lg text-balance">
+          Or they enter code <b className="font-black tracking-[0.08em] text-navy">{view.code}</b> on the home page.
+        </p>
         <ActionBar
           reactions={false}
           primary={{
@@ -72,7 +76,7 @@ export function Lobby({ link }: { link: string }) {
         primary={
           view.mine.ready
             ? { label: `Waiting for ${partner.name}`, disabled: true }
-            : { label: "I'm ready", disabled: busy, onClick: () => act(() => send({ round: LOBBY_ROUND, attempt: 0, kind: "ready" })) }
+            : { label: "I’m ready", disabled: busy, onClick: () => act(() => send({ round: LOBBY_ROUND, attempt: 0, kind: "ready" })) }
         }
       />
     </div>
