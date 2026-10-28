@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import type { Answer } from "@/game/answers";
-import { whoFor } from "@/game/copy";
+import { promptFor, whoFor } from "@/game/copy";
 import type { Option, Round } from "@/game/deck";
 import type { Pair, Seat, ViewText } from "@/game/engine";
 import { averagePct, verdictFor, vibeWord, type Tone } from "@/game/verdicts";
@@ -27,7 +27,6 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
   const delay = reduce ? 0 : AFTER_FLASH;
   const who = whoFor(seat, names);
   const pick = (s: Seat, item = 0) => reveal[s].picks?.[item];
-  const label = (options: Option[], i: number | null | undefined) => (i == null ? "(skipped)" : t(options[i]!.label));
   const progress = view.progress;
   const verdict = verdictFor(round, reveal, seat, who, view.tries.length + 1);
 
@@ -35,30 +34,31 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
   switch (round.format) {
     case "pick":
     case "agree":
-      body =
-        pick(seat) === pick(partnerSeat) ? (
-          <Together delay={delay} caption="You both picked" text={label(round.options, pick(seat))} />
-        ) : (
-          <Apart
-            delay={delay}
-            left={{ seat, caption: "You", text: label(round.options, pick(seat)) }}
-            right={{ seat: partnerSeat, caption: names[partnerSeat], text: label(round.options, pick(partnerSeat)) }}
-          />
-        );
+      body = (
+        <Landed
+          delay={delay}
+          options={round.options}
+          marks={[
+            { seat, at: pick(seat) },
+            { seat: partnerSeat, at: pick(partnerSeat) },
+          ]}
+        />
+      );
       break;
     case "mind": {
       const subject = round.subject;
       const guesser = other(subject);
-      body =
-        pick(subject) === pick(guesser) ? (
-          <Together delay={delay} caption={`${who(subject, true)} picked it, and ${who(guesser)} guessed it`} text={label(round.options, pick(subject))} />
-        ) : (
-          <Apart
-            delay={delay}
-            left={{ seat: subject, caption: `${who(subject, true)} picked`, text: label(round.options, pick(subject)) }}
-            right={{ seat: guesser, caption: `${who(guesser, true)} guessed`, text: label(round.options, pick(guesser)) }}
-          />
-        );
+      const own = (s: Seat) => (s === seat ? "Your" : `${names[s]}’s`);
+      body = (
+        <Landed
+          delay={delay}
+          options={round.options}
+          marks={[
+            { seat: subject, at: pick(subject), caption: `${own(subject)} pick` },
+            { seat: guesser, at: pick(guesser), caption: `${own(guesser)} guess` },
+          ]}
+        />
+      );
       break;
     }
     case "likely":
@@ -184,7 +184,8 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
       >
         {verdict.text}
       </motion.h1>
-      <div className="mt-6">{body}</div>
+      <p className="mt-5 text-lg leading-snug font-medium text-balance text-muted">{t(promptFor(round, seat))}</p>
+      <div className="mt-3">{body}</div>
       <ActionBar
         primary={
           view.mine.ready
@@ -249,30 +250,54 @@ function Arrive({ delay, className, children }: { delay: number; className?: str
   );
 }
 
-/** A match: one tile, both faces overlapping with a heart beside them, the answer said once. */
-function Together({ caption, text, delay }: { caption: string; text: string; delay: number }) {
-  const { view, seat, partnerSeat } = useRoomContext();
+type Mark = { seat: Seat; at: number | null | undefined; caption?: string };
+
+/**
+ * Every option, in the same order as the question, with each face landing on the one that
+ * person chose. A shared pick turns pink and gets a heart; options nobody chose fade back.
+ */
+function Landed({ options, marks, delay }: { options: Option[]; marks: Mark[]; delay: number }) {
+  const { view, seat, t } = useRoomContext();
   return (
-    <Arrive delay={delay} className="rounded-[1.125rem] bg-blush p-4">
-      <div className="flex items-center">
-        <motion.span initial={{ x: -24 }} animate={{ x: 0 }} transition={{ delay, type: "spring", stiffness: 300, damping: 18 }}>
-          <Avatar player={view.players[seat]!} tone="me" size={40} />
-        </motion.span>
-        <motion.span
-          initial={{ x: 24 }}
-          animate={{ x: 0 }}
-          transition={{ delay, type: "spring", stiffness: 300, damping: 18 }}
-          className="-ml-2.5 rounded-full ring-[3px] ring-blush"
-        >
-          <Avatar player={view.players[partnerSeat]!} tone="partner" size={40} />
-        </motion.span>
-        <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.4, 1] }} transition={{ delay: delay + 0.25, duration: 0.45 }} className="ml-2 text-red">
-          <Heart size={24} />
-        </motion.span>
-      </div>
-      <p className="mt-3 text-sm font-semibold text-muted">{caption}</p>
-      <p className="mt-0.5 text-xl leading-snug font-bold">{text}</p>
-    </Arrive>
+    <div className="flex flex-col gap-2.5">
+      {options.map((option, i) => {
+        const here = marks.filter((m) => m.at === i).sort((a, b) => Number(b.seat === seat) - Number(a.seat === seat));
+        const both = here.length === 2;
+        const caption = here.length === 1 ? here[0]!.caption : undefined;
+        return (
+          <Arrive
+            key={i}
+            delay={delay + i * 0.05}
+            className={`flex min-h-[3.75rem] items-center gap-3 rounded-[1.125rem] border-2 px-4 py-2.5 ${
+              both ? "border-transparent bg-blush" : here.length ? "border-transparent bg-tile" : "border-tile"
+            }`}
+          >
+            <span className={`flex-1 text-[1.0625rem] leading-tight ${here.length ? "font-bold" : "font-medium text-muted/70"}`}>{t(option.label)}</span>
+            {caption && <span className="text-sm font-semibold whitespace-nowrap text-muted">{caption}</span>}
+            {here.length > 0 && (
+              <span className="flex flex-none items-center">
+                {here.map((m, j) => (
+                  <motion.span
+                    key={m.seat}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: delay + 0.3 + j * 0.1, type: "spring", stiffness: 500, damping: 15 }}
+                    className={`rounded-full ${j ? "-ml-2.5 ring-[3px] ring-blush" : ""}`}
+                  >
+                    <Avatar player={view.players[m.seat]!} tone={m.seat === seat ? "me" : "partner"} size={32} />
+                  </motion.span>
+                ))}
+                {both && (
+                  <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.4, 1] }} transition={{ delay: delay + 0.6, duration: 0.45 }} className="ml-2 text-red">
+                    <Heart size={22} />
+                  </motion.span>
+                )}
+              </span>
+            )}
+          </Arrive>
+        );
+      })}
+    </div>
   );
 }
 

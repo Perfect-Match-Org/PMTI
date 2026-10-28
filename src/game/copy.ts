@@ -1,4 +1,4 @@
-import type { Copy } from "./deck";
+import type { Copy, Round } from "./deck";
 import type { Mode, Pair, Seat } from "./engine";
 
 /** Resolves mode-specific copy and fills {p} (partner) / {s} (subject) style placeholders. */
@@ -12,4 +12,9 @@ export type Who = (seat: Seat, capital?: boolean) => string;
 
 export function whoFor(viewer: Seat, names: Pair<string>): Who {
   return (seat, capital = false) => (seat === viewer ? (capital ? "You" : "you") : names[seat]);
+}
+
+/** The question as this viewer sees it: in a mind round, the guesser gets the guessing version. */
+export function promptFor(round: Round, viewer: Seat): Copy {
+  return round.format === "mind" && round.subject !== viewer ? round.guessPrompt : round.prompt;
 }

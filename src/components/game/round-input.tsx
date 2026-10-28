@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Answer } from "@/game/answers";
+import { promptFor } from "@/game/copy";
 import { MAX_TEXT_LENGTH, type Round } from "@/game/deck";
 import type { TextSlot } from "@/game/engine";
 import { ActionBar } from "./action-bar";
@@ -23,7 +24,7 @@ export function RoundInput({ round }: { round: Round }) {
     set((prev) => Object.assign([...prev], { [i]: v }));
   const partnerName = names[partnerSeat];
 
-  const title = round.format === "mind" && round.subject !== seat ? round.guessPrompt : round.prompt;
+  const title = promptFor(round, seat);
   let body: React.ReactNode;
   let answer: Answer | null = null;
 
