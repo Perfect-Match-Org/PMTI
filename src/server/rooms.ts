@@ -5,6 +5,7 @@ import { answerSchema } from "@/game/answers";
 import { readyPayloadSchema } from "@/game/reactions";
 import type { Deck } from "@/game/deck";
 import { CURRENT_DECK, getDeck } from "@/game/decks";
+import { score, type Result } from "@/game/scoring";
 import {
   checkMove,
   derive,
@@ -30,6 +31,7 @@ type RoomRow = {
   seq: number;
   createdAt: Date;
   endedAt: Date | null;
+  result: Result | null;
 };
 
 export class RoomError extends Error {
@@ -242,9 +244,10 @@ export async function loadView(code: string, userId: string): Promise<RoomView> 
     playerInfo([room.hostId, ...(room.guestId ? [room.guestId] : [])]),
   ]);
   const unknown: PlayerInfo = { name: "Player", avatarUrl: null };
+  const result = room.result ?? (await ensureResult(deck, room, moves, texts));
   return viewFor({
     deck,
-    room,
+    room: { ...room, result },
     moves,
     texts,
     viewerId: userId,
@@ -253,6 +256,23 @@ export async function loadView(code: string, userId: string): Promise<RoomView> 
       guest: room.guestId ? (info.get(room.guestId) ?? unknown) : null,
     },
   });
+}
+
+/**
+ * Scores a finished game once and stores it. Runs on read, after the final move has committed,
+ * so a scoring bug shows up as a missing result (and a log line), never as a stuck Next button.
+ * Deterministic, so concurrent first reads store the same thing.
+ */
+async function ensureResult(deck: Deck, room: RoomRow, moves: MoveRow[], texts: TextRow[]): Promise<Result | null> {
+  if (!room.guestId || derive(deck, room, moves).phase !== "done") return null;
+  try {
+    const result = score(deck, { ...room, guestId: room.guestId }, moves, texts);
+    await sql`update rooms set result = ${sql.json(result as postgres.JSONValue)} where id = ${room.id} and result is null`;
+    return result;
+  } catch (error) {
+    console.error("[score] failed", error);
+    return null;
+  }
 }
 
 /** Whether the user already belongs to the room; used by the page to decide join vs. render. */

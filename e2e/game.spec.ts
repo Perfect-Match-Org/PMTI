@@ -55,7 +55,7 @@ test("two players play a full game in sync", async ({ browser }) => {
 
   let rounds = 0;
   let vibeVerdicts = 0;
-  while (!(await alice.getByText("That's the day").isVisible())) {
+  while (!(await alice.getByText("Your duo type").isVisible())) {
     await expect(alice.getByRole("button", { name: "Lock in", exact: true })).toBeVisible({ timeout: REALTIME_MS });
     await expect(bob.getByRole("button", { name: "Lock in", exact: true })).toBeVisible({ timeout: REALTIME_MS });
 
@@ -70,13 +70,20 @@ test("two players play a full game in sync", async ({ browser }) => {
 
     await bob.getByRole("button", { name: "Next", exact: true }).click();
     await alice.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(alice.getByText("That's the day").or(alice.getByRole("button", { name: "Lock in", exact: true }))).toBeVisible({
+    await expect(alice.getByText("Your duo type").or(alice.getByRole("button", { name: "Lock in", exact: true }))).toBeVisible({
       timeout: REALTIME_MS,
     });
     rounds++;
     expect(rounds).toBeLessThan(20);
   }
-  await expect(bob.getByText("That's the day")).toBeVisible({ timeout: REALTIME_MS });
+  await expect(bob.getByText("Your duo type")).toBeVisible({ timeout: REALTIME_MS });
+  // Same type on both screens, and each player's role shows up on the other's screen.
+  const typeName = await alice.getByRole("heading", { level: 1 }).innerText();
+  await expect(bob.getByRole("heading", { level: 1 })).toHaveText(typeName);
+  const aliceRole = (await alice.getByText(/^You're /).innerText()).replace(/^You're /, "");
+  await expect(bob.getByText(`Alice is ${aliceRole}`)).toBeVisible();
+  await expect(alice.getByText(/^Same Brain/)).toBeVisible();
+  if (process.env.SHOTS) await alice.screenshot({ path: "test-results/result.png", fullPage: true });
   expect(rounds).toBe(13);
   // Mirror round shows two verdicts and the shared first-date round one; all scored via embeddings.
   expect(vibeVerdicts).toBe(3);

@@ -1,6 +1,7 @@
 import { samePicks, type Answer } from "./answers";
 import type { Deck, Round } from "./deck";
 import type { ReactionTally } from "./reactions";
+import type { Result } from "./scoring";
 
 export type Seat = "host" | "guest";
 export type Mode = "couple" | "friends";
@@ -52,29 +53,33 @@ function indexMoves(moves: MoveRow[]) {
     byKey.get(keyOf({ playerId, round, attempt, kind }));
 }
 
-/** Progress is never stored: it is recomputed from the move log on every read and write. */
-export function derive(deck: Deck, room: RoomFacts, moves: MoveRow[]): Progress {
-  if (room.endedAt) return { phase: "ended" };
+/** A round both players finished answering; `attempts` > 1 only for Must Agree retries. */
+export type PlayedRound = { index: number; attempts: number; matched: boolean };
+
+/** Walks the move log once: where the game is, and which rounds were played. */
+export function walk(deck: Deck, room: RoomFacts, moves: MoveRow[]): { progress: Progress; played: PlayedRound[] } {
+  const played: PlayedRound[] = [];
+  const at = (progress: Progress) => ({ progress, played });
+  if (room.endedAt) return at({ phase: "ended" });
   const { hostId, guestId } = room;
-  if (!guestId) return { phase: "lobby" };
+  if (!guestId) return at({ phase: "lobby" });
 
   const get = indexMoves(moves);
   const both = (round: number, attempt: number, kind: MoveKind) =>
     !!get(hostId, round, attempt, kind) && !!get(guestId, round, attempt, kind);
 
-  if (!both(LOBBY_ROUND, 0, "ready")) return { phase: "lobby" };
+  if (!both(LOBBY_ROUND, 0, "ready")) return at({ phase: "lobby" });
 
   const matchedById = new Map<string, boolean>();
-  let step = 0;
   for (let r = 0; r < deck.rounds.length; r++) {
     const round = deck.rounds[r]!;
     if (round.ifPrev && matchedById.get(round.ifPrev.round) !== (round.ifPrev.is === "matched")) {
       continue;
     }
-    step++;
+    const step = played.length + 1;
     let attempt = 0;
     for (;;) {
-      if (!both(r, attempt, "answer")) return { phase: "answer", round: r, attempt, step };
+      if (!both(r, attempt, "answer")) return at({ phase: "answer", round: r, attempt, step });
       const matched = samePicks(
         get(hostId, r, attempt, "answer")?.payload,
         get(guestId, r, attempt, "answer")?.payload
@@ -84,11 +89,17 @@ export function derive(deck: Deck, room: RoomFacts, moves: MoveRow[]): Progress 
         continue;
       }
       matchedById.set(round.id, matched);
+      played.push({ index: r, attempts: attempt + 1, matched });
       break;
     }
-    if (!both(r, 0, "ready")) return { phase: "reveal", round: r, attempt, step };
+    if (!both(r, 0, "ready")) return at({ phase: "reveal", round: r, attempt, step });
   }
-  return { phase: "done" };
+  return at({ phase: "done" });
+}
+
+/** Progress is never stored: it is recomputed from the move log on every read and write. */
+export function derive(deck: Deck, room: RoomFacts, moves: MoveRow[]): Progress {
+  return walk(deck, room, moves).progress;
 }
 
 /** Rounds a pair will play: branch alternatives (same `ifPrev.round`) count once. */
@@ -142,11 +153,13 @@ export type RoomView = {
   /** Must Agree: earlier attempts of the current round, shown to both by design. */
   tries: Pair<Answer>[];
   reveal: (Pair<Answer> & { texts: ViewText[] }) | null;
+  /** Set once the game is done and scored. */
+  result: Result | null;
 };
 
 export type ViewInput = {
   deck: Deck;
-  room: RoomFacts & { id: string; code: string; mode: Mode; deckId: string; seq: number };
+  room: RoomFacts & { id: string; code: string; mode: Mode; deckId: string; seq: number; result?: Result | null };
   moves: MoveRow[];
   texts: TextRow[];
   players: RoomView["players"];
@@ -189,6 +202,7 @@ export function viewFor({ deck, room, moves, texts, players, viewerId }: ViewInp
     partner: { answered: false, ready: false },
     tries: [],
     reveal: null,
+    result: progress.phase === "done" ? (room.result ?? null) : null,
   };
 
   if (progress.phase === "lobby") {

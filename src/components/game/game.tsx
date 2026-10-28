@@ -9,6 +9,7 @@ import { getDeck } from "@/game/decks";
 import { LOBBY_ROUND, type RoomView, type Seat } from "@/game/engine";
 import { Lobby } from "./lobby";
 import { ReactionBar, useFloaters } from "./reactions";
+import { ResultView } from "./result";
 import { Reveal } from "./reveal";
 import { RoundInput } from "./round-input";
 
@@ -16,7 +17,8 @@ const OFFLINE_END_AFTER_MS = 2 * 60 * 1000;
 
 export function Game({ initial, origin }: { initial: RoomView; origin: string }) {
   const { spawn, overlay } = useFloaters();
-  const { view, connection, presence, error, send, post, react } = useRoom(initial, spawn);
+  const { view, connection, presence, error, send, post, react, refresh } = useRoom(initial, spawn);
+  useResultRetry(view, refresh);
   const [busy, setBusy] = useState(false);
   const partnerOnline = presence?.online ?? true;
   const now = useNow(!!presence && !presence.online);
@@ -115,7 +117,11 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
       );
     }
   } else if (progress.phase === "done") {
-    content = <p className="text-xl">That&apos;s the day. Your duo type is being worked out (results come in a later build).</p>;
+    content = view.result ? (
+      <ResultView result={view.result} view={view} names={names} t={t} />
+    ) : (
+      <p className="text-xl">That&apos;s the day. Working out your duo type…</p>
+    );
   } else {
     content = (
       <div className="flex flex-col gap-3">
@@ -183,6 +189,20 @@ function StatusBar({
       {connection === "polling" && <span className="opacity-60">reconnecting…</span>}
     </div>
   );
+}
+
+/** If the game is done but unscored (scoring failed or raced), ask again a few times. */
+function useResultRetry(view: RoomView, refresh: () => Promise<void>) {
+  const missing = view.progress.phase === "done" && !view.result;
+  useEffect(() => {
+    if (!missing) return;
+    let tries = 0;
+    const id = setInterval(() => {
+      if (++tries > 5) clearInterval(id);
+      else void refresh();
+    }, 2000);
+    return () => clearInterval(id);
+  }, [missing, refresh]);
 }
 
 /** A clock that ticks every 10s while `active`, for "offline for 2 minutes" checks. */
