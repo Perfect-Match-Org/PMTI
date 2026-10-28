@@ -13,7 +13,7 @@ export const cornellDay1: Deck = {
       format: "pick",
       prompt: "Surprise free morning. You…",
       options: [
-        { label: "Ithaca Bakery, then wander the Commons", w: { E: 1, P: -1 } },
+        { label: "CTB bagels, then a slow walk down to the Commons", w: { E: 1, P: -1 } },
         { label: "Map out the rest of the week while you have the time", w: { E: -1, P: 2 } },
         { label: "Run up Libe Slope. Because you can.", w: { E: 1, H: -2 } },
         { label: "Stay in and talk about everything", w: { E: -2, P: -1, H: 2 } },
@@ -112,9 +112,9 @@ export const cornellDay1: Deck = {
       prompt: "You have to land on the same place.",
       tries: 3,
       options: [
-        { label: "Ramen in Collegetown" },
+        { label: "Noodles in Collegetown" },
         { label: "The dining hall (it's free)" },
-        { label: "Wegmans sushi on the floor of Mann" },
+        { label: "A two-bus Wegmans expedition" },
         { label: "Whatever's still open" },
       ],
     },
@@ -128,16 +128,16 @@ export const cornellDay1: Deck = {
       poolKey: "olive-branch",
     },
     {
-      id: "dairy-bar",
-      scene: { time: "7:00pm", title: "Dessert at the Dairy Bar." },
+      id: "after-dinner",
+      scene: { time: "7:00pm", title: "Walking off dinner." },
       ifPrev: { round: "dinner", is: "matched" },
       format: "pick",
-      prompt: "Ice cream in hand. What's the move?",
+      prompt: "Full and happy. What's the move?",
       options: [
         { label: "Walk to the gorge and keep talking", w: { P: -1, H: 2 } },
         { label: "Head back, you planned a movie", w: { E: -1, P: 2 } },
         { label: "Text the group chat, see who's out", w: { E: 2, P: -1 } },
-        { label: "Share one cone, say nothing, perfect", w: { E: -1, H: -2 } },
+        { label: "Split a pint of Cornell Dairy ice cream, say nothing, perfect", w: { E: -1, H: -2 } },
       ],
     },
     {
@@ -180,7 +180,7 @@ export const cornellDay1: Deck = {
     },
     {
       id: "first-date",
-      scene: { time: "11:15pm", title: "The Suspension Bridge, walking home." },
+      scene: { time: "11:15pm", title: "Walking home through Collegetown." },
       format: "write",
       variant: "shared",
       prompt: {
@@ -195,7 +195,7 @@ export const cornellDay1: Deck = {
       format: "pick",
       prompt: "Final answer: tomorrow, we…",
       options: [
-        { label: "Taughannock at sunrise. Alarm's set.", w: { E: 1, P: 2, H: -1 } },
+        { label: "Taughannock at sunrise. Someone has a car.", w: { E: 1, P: 2, H: -1 } },
         { label: "Wake up whenever, decide over breakfast", w: { P: -2 } },
         { label: "Brunch with friends, then the Commons", w: { E: 2 } },
         { label: "Sleep in, then a long talk about the future", w: { E: -2, H: 2 } },
