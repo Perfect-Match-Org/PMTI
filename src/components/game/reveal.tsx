@@ -96,19 +96,44 @@ export function Reveal({ round, reveal, names, t }: Props) {
     case "write": {
       const textOf = (seat: Seat, slot: ViewText["slot"]) =>
         reveal.texts.find((x) => x.seat === seat && x.slot === slot);
-      const rows: [string, string][] =
-        round.variant === "mirror"
-          ? (["host", "guest"] as const).flatMap((seat): [string, string][] => [
-              [`${names[seat]} on ${names[seat]}`, textOf(seat, "self")?.body ?? ""],
-              [`${names[other(seat)]} on ${names[seat]}`, textOf(other(seat), "partner")?.body ?? ""],
-            ])
-          : [
-              [names.host, textOf("host", "shared")?.body ?? ""],
-              [names.guest, textOf("guest", "shared")?.body ?? ""],
-            ];
-      return <Lines rows={rows} />;
+      if (round.variant === "mirror") {
+        return (
+          <div className="flex flex-col gap-4">
+            {(["host", "guest"] as const).map((seat) => {
+              const guess = textOf(other(seat), "partner");
+              return (
+                <Lines
+                  key={seat}
+                  rows={[
+                    [`${names[seat]} on ${names[seat]}`, textOf(seat, "self")?.body ?? ""],
+                    [`${names[other(seat)]} on ${names[seat]}`, guess?.body ?? ""],
+                  ]}
+                  verdict={vibe(guess?.matchPct)}
+                />
+              );
+            })}
+          </div>
+        );
+      }
+      const host = textOf("host", "shared");
+      const guest = textOf("guest", "shared");
+      const scores = [host?.matchPct, guest?.matchPct].filter((p): p is number => p != null);
+      return (
+        <Lines
+          rows={[
+            [names.host, host?.body ?? ""],
+            [names.guest, guest?.body ?? ""],
+          ]}
+          verdict={vibe(scores.length ? Math.round(scores.reduce((a, b) => a + b) / scores.length) : null)}
+        />
+      );
     }
   }
+}
+
+/** Embedding similarity catches shared vibe/topic, not meaning (it can't tell "early" from "late"). */
+function vibe(pct: number | null | undefined): string | undefined {
+  return pct == null ? undefined : `${pct}% vibe match`;
 }
 
 function Lines({ rows, verdict }: { rows: [string, string][]; verdict?: string }) {

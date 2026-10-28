@@ -23,13 +23,13 @@ async function player(browser: Browser, email: string, url = "/"): Promise<Page>
   return page;
 }
 
-async function answerRound(page: Page) {
+async function answerRound(page: Page, text: string) {
   const groups = page.getByRole("radiogroup");
   for (let i = 0; i < (await groups.count()); i++) {
     await groups.nth(i).getByRole("radio").first().click();
   }
   const inputs = page.locator("main input:not([readonly])");
-  for (let i = 0; i < (await inputs.count()); i++) await inputs.nth(i).fill("bagels at midnight");
+  for (let i = 0; i < (await inputs.count()); i++) await inputs.nth(i).fill(text);
   await page.getByRole("button", { name: "Lock in", exact: true }).click();
 }
 
@@ -54,17 +54,19 @@ test("two players play a full game in sync", async ({ browser }) => {
   await bob.getByRole("button", { name: "I'm ready", exact: true }).click();
 
   let rounds = 0;
+  let vibeVerdicts = 0;
   while (!(await alice.getByText("That's the day").isVisible())) {
     await expect(alice.getByRole("button", { name: "Lock in", exact: true })).toBeVisible({ timeout: REALTIME_MS });
     await expect(bob.getByRole("button", { name: "Lock in", exact: true })).toBeVisible({ timeout: REALTIME_MS });
 
-    await answerRound(alice);
+    await answerRound(alice, "bagels at midnight");
     await expect(alice.getByText("Locked in.")).toBeVisible();
     await expect(bob.getByText("Alice: locked in")).toBeVisible({ timeout: REALTIME_MS });
 
-    await answerRound(bob);
+    await answerRound(bob, "a late night bagel run");
     await expect(bob.getByRole("button", { name: "Next", exact: true })).toBeVisible();
     await expect(alice.getByRole("button", { name: "Next", exact: true })).toBeVisible({ timeout: REALTIME_MS });
+    vibeVerdicts += await alice.getByText(/^\d+% vibe match$/).count();
 
     await bob.getByRole("button", { name: "Next", exact: true }).click();
     await alice.getByRole("button", { name: "Next", exact: true }).click();
@@ -76,6 +78,8 @@ test("two players play a full game in sync", async ({ browser }) => {
   }
   await expect(bob.getByText("That's the day")).toBeVisible({ timeout: REALTIME_MS });
   expect(rounds).toBe(13);
+  // Mirror round shows two verdicts and the shared first-date round one; all scored via embeddings.
+  expect(vibeVerdicts).toBe(3);
 
   // The lobby's reaction tally rode along on Alice's ready move.
   const sql = postgres(LOCAL_DB);

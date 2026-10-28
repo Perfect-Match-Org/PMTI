@@ -121,7 +121,7 @@ export function RoundInput({ round, seat, partnerName, t, busy, onSubmit }: Prop
         onClick={() => answer && onSubmit(answer)}
         className="rounded bg-black px-4 py-3 text-white disabled:opacity-40"
       >
-        Lock in
+        {busy ? "Locking in…" : "Lock in"}
       </button>
     </div>
   );

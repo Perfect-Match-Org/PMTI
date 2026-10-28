@@ -14,3 +14,6 @@ export const sql =
   });
 
 if (process.env.NODE_ENV !== "production") globalForDb.sql = sql;
+
+export type Tx = Parameters<Parameters<typeof sql.begin>[1]>[0];
+export type Db = typeof sql | Tx;

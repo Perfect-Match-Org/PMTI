@@ -391,8 +391,12 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+EMBED_SECRET = "env(EMBED_SECRET)"
+
+# Called only by our server, which sends a shared secret header instead of a user JWT.
+[functions.embed]
+verify_jwt = false
 
 [analytics]
 enabled = false

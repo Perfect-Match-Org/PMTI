@@ -16,10 +16,9 @@ import {
   type TextRow,
   type TextSlot,
 } from "@/game/engine";
-import { sql } from "./db";
-
-type Tx = Parameters<Parameters<typeof sql.begin>[1]>[0];
-type Db = typeof sql | Tx;
+import { sql, type Db } from "./db";
+import { embed, toVector } from "./embed";
+import { matchPercentile, type TextRef } from "./similarity";
 
 type RoomRow = {
   id: string;
@@ -165,6 +164,9 @@ export async function submitMove(code: string, userId: string, body: unknown): P
     if (ready.success) payload = ready.data;
   }
 
+  // Embed before taking the lock (it can take seconds on a cold start); null means "no score".
+  const vectors = texts.length ? await embed(texts) : null;
+
   await sql.begin(async (tx) => {
     // READ COMMITTED: the moves read below is a separate statement, so it sees the partner's
     // move committed while we waited for the lock.
@@ -180,14 +182,36 @@ export async function submitMove(code: string, userId: string, body: unknown): P
       on conflict do nothing`;
     for (const [i, body] of texts.entries()) {
       const slot = texts.length === 2 ? MIRROR_SLOTS[i]! : "shared";
+      const vector = vectors?.[i] ? toVector(vectors[i]) : null;
       await tx`
-        insert into texts (prompt_id, body, room_id, player_id, round, slot)
-        values (${promptId(deck, r, slot)}, ${body}, ${locked.id}, ${userId}, ${r}, ${slot})`;
+        insert into texts (prompt_id, body, embedding, room_id, player_id, round, slot)
+        values (${promptId(deck, r, slot)}, ${body}, ${vector}::extensions.vector,
+                ${locked.id}, ${userId}, ${r}, ${slot})`;
     }
+    if (texts.length) await scoreRoundTexts(tx, locked.id, r);
     await bump(tx, locked.id);
   });
 
   return loadView(code, userId);
+}
+
+/**
+ * Once both players' texts for a round are in, score each "candidate" text against its anchor:
+ * shared rounds compare the two answers; mirror rounds compare what you wrote about your partner
+ * with what they wrote about themselves.
+ */
+async function scoreRoundTexts(db: Db, roomId: string, round: number) {
+  const rows = await db<(TextRef & { playerId: string; slot: TextSlot })[]>`
+    select id, player_id, slot, body, prompt_id, embedding is not null as has_embedding
+    from texts where room_id = ${roomId} and round = ${round}`;
+  if (new Set(rows.map((t) => t.playerId)).size < 2) return;
+  for (const candidate of rows) {
+    const anchorSlot = candidate.slot === "shared" ? "shared" : candidate.slot === "partner" ? "self" : null;
+    const anchor = rows.find((t) => t.slot === anchorSlot && t.playerId !== candidate.playerId);
+    if (!anchor) continue;
+    const pct = await matchPercentile(db, anchor, candidate, roomId);
+    await db`update texts set match_pct = ${pct} where id = ${candidate.id}`;
+  }
 }
 
 function promptId(deck: Deck, round: number, slot: TextSlot): string {
