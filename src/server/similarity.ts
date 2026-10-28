@@ -14,9 +14,10 @@ export function sameWords(a: string, b: string): boolean {
 }
 
 /**
- * How close `candidate` is to `anchor`, as a percentile against other people's answers to the
- * candidate's prompt: 90 means closer than 90% of the pool. Ranking against the pool sidesteps
- * gte-small's high baseline similarity, which differs from prompt to prompt.
+ * How close `candidate` is to `anchor`, ranked against other people's answers to the candidate's
+ * prompt. Ranking sidesteps gte-small's high baseline similarity, which differs per prompt.
+ * The rank is curved (squared) so a random answer (~50th percentile) shows as ~25%, not ~50%,
+ * while real matches stay near 100%.
  */
 export async function matchPercentile(
   db: Db,
@@ -40,5 +41,5 @@ export async function matchPercentile(
            (count(*) filter (where (pool.embedding <=> x.embedding) > (c.embedding <=> x.embedding)))::int as beaten
     from pool, x, c`;
   if (!row || row.n < MIN_POOL) return null;
-  return Math.round((row.beaten / row.n) * 100);
+  return Math.round((row.beaten / row.n) ** 2 * 100);
 }

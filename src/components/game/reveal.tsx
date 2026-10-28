@@ -105,8 +105,8 @@ export function Reveal({ round, reveal, names, t }: Props) {
                 <Lines
                   key={seat}
                   rows={[
-                    [`${names[seat]} on ${names[seat]}`, textOf(seat, "self")?.body ?? ""],
-                    [`${names[other(seat)]} on ${names[seat]}`, guess?.body ?? ""],
+                    [`${names[seat]} said`, textOf(seat, "self")?.body ?? ""],
+                    [`${names[other(seat)]} guessed`, guess?.body ?? ""],
                   ]}
                   verdict={vibe(guess?.matchPct)}
                 />

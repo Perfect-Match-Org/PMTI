@@ -37,7 +37,7 @@ export function momentText(m: Moment, { deck, names, t }: Context): string {
     case "close-call":
       return `${names[m.guesser]} placed ${names[other(m.guesser)]} exactly right on “${round ? t(round.scene.title) : "the scale"}”.`;
     case "mirror":
-      return `${names[other(m.about)]} described ${names[m.about]} with a ${m.pct}% vibe match.`;
+      return `${names[other(m.about)]} guessed ${names[m.about]}'s ${(round?.format === "write" && round.topic) || "answer"} with a ${m.pct}% vibe match.`;
     case "reactions":
       return `${names[m.who]} sent ${m.count} ${m.emoji} during “${round ? t(round.scene.title) : "the lobby"}”.`;
   }

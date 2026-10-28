@@ -66,6 +66,8 @@ export type SpeedRound = RoundBase & {
 /**
  * Free text. `mirror`: each writes about themselves and about the partner.
  * `shared`: both answer the same prompt. `poolKey` groups answers across deck versions for scoring.
+ * Ask for concrete things (an order, a place), not adjectives: embedding similarity can't tell
+ * opposites apart ("always early" vs "always late" score as near-identical).
  */
 export type WriteRound = RoundBase & {
   format: "write";
@@ -73,6 +75,8 @@ export type WriteRound = RoundBase & {
   prompt: Copy;
   /** Mirror only: the prompt for the line about the partner. */
   partnerPrompt?: Copy;
+  /** What the answer is, for result copy: "guessed Bob's comfort order". */
+  topic?: string;
   poolKey: string;
 };
 

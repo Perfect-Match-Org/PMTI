@@ -141,13 +141,14 @@ export const cornellDay1: Deck = {
       ],
     },
     {
-      id: "three-words",
-      scene: { time: "8:30pm", title: "Back at the apartment." },
+      id: "comfort-order",
+      scene: { time: "8:30pm", title: "Back at the apartment. Long day." },
       format: "write",
       variant: "mirror",
-      prompt: "Three words for you.",
-      partnerPrompt: "Three words for {p}.",
-      poolKey: "three-words",
+      prompt: "Your comfort order after a day like this.",
+      partnerPrompt: "{p}'s comfort order after a day like this.",
+      topic: "comfort order",
+      poolKey: "comfort-order",
     },
     {
       id: "slope-night",
@@ -184,10 +185,10 @@ export const cornellDay1: Deck = {
       format: "write",
       variant: "shared",
       prompt: {
-        couple: "Finish the sentence: our first date was…",
-        friends: "In that universe, our first date was…",
+        couple: "Your first date: where was it, and what did you order?",
+        friends: "In that universe, your first date: where, and what did you order?",
       },
-      poolKey: "first-date",
+      poolKey: "first-date-spot",
     },
     {
       id: "tomorrow",
