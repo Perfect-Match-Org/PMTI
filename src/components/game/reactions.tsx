@@ -43,14 +43,18 @@ export function useFloaters() {
 
 export function ReactionBar({ onReact }: { onReact: (emoji: Reaction) => void }) {
   return (
-    <div role="toolbar" aria-label="Reactions" className="fixed inset-x-0 bottom-0 flex justify-center gap-2 bg-white/90 p-3">
+    <div
+      role="toolbar"
+      aria-label="Reactions"
+      className="fixed inset-x-0 bottom-4 mx-auto flex w-fit gap-1 rounded-full border-[3px] border-pm-blue bg-white px-2 py-1 shadow-[4px_4px_0_0_var(--line)]"
+    >
       {REACTIONS.map((emoji) => (
         <button
           key={emoji}
           type="button"
           aria-label={`Send ${REACTION_LABELS[emoji]}`}
           onClick={() => onReact(emoji)}
-          className="rounded-full border px-3 py-2 text-2xl active:scale-90"
+          className="rounded-full px-2.5 py-1.5 text-2xl transition-transform active:scale-75"
         >
           {emoji}
         </button>

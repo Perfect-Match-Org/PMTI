@@ -8,7 +8,7 @@ export function SignOutButton() {
   return (
     <button
       type="button"
-      className="rounded border px-3 py-2"
+      className="btn-quiet"
       onClick={async () => {
         await supabaseBrowser().auth.signOut();
         router.refresh();

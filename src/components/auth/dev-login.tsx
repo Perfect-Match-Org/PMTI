@@ -33,23 +33,23 @@ export function DevLogin() {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-2" aria-label="Dev sign-in">
-      <label className="text-xs uppercase tracking-wide opacity-60" htmlFor="dev-email">
+      <label className="text-sm font-medium" htmlFor="dev-email">
         Dev sign-in (local only)
       </label>
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <input
           id="dev-email"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="flex-1 rounded border px-3 py-2"
+          className="field flex-1"
         />
-        <button type="submit" className="rounded border px-3 py-2">
+        <button type="submit" className="btn">
           Sign in
         </button>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="card border-pm-red font-medium">
           {error}
         </p>
       )}

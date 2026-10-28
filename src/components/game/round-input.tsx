@@ -42,14 +42,14 @@ export function RoundInput({ round, seat, partnerName, t, busy, onSubmit }: Prop
       break;
     case "likely":
       body = round.items.map((item, i) => (
-        <div key={i} className="flex flex-col gap-1">
-          <p>{t(item.text)}</p>
+        <div key={i} className="flex flex-col gap-2">
+          <p className="font-medium">{t(item.text)}</p>
           <Choices
             label={t(item.text)}
             options={["Me", partnerName]}
             value={picks[i] ?? null}
             onChange={setAt(setPicks, i)}
-            columns={2}
+            layout="pair"
           />
         </div>
       ));
@@ -59,15 +59,23 @@ export function RoundInput({ round, seat, partnerName, t, busy, onSubmit }: Prop
       break;
     case "scale": {
       const dots = Array.from({ length: round.steps }, (_, i) => String(i + 1));
+      const ends = (
+        <div className="flex justify-between gap-6 text-sm">
+          <span>1 = {t(round.left)}</span>
+          <span className="text-right">{round.steps} = {t(round.right)}</span>
+        </div>
+      );
       body = (
         <>
-          <div className="flex justify-between gap-4 text-sm">
-            <span>← {t(round.left)}</span>
-            <span className="text-right">{t(round.right)} →</span>
+          {ends}
+          <div className="flex flex-col gap-2">
+            <p className="font-medium">You</p>
+            <Choices label="Where you are" options={dots} value={picks[0] ?? null} onChange={setAt(setPicks, 0)} layout="scale" />
           </div>
-          <Choices label="Where you are" options={dots} value={picks[0] ?? null} onChange={setAt(setPicks, 0)} columns={7} />
-          <p className="text-sm">Where&apos;s {partnerName}?</p>
-          <Choices label={`Where ${partnerName} is`} options={dots} value={guess} onChange={setGuess} columns={7} />
+          <div className="flex flex-col gap-2">
+            <p className="font-medium">Where&apos;s {partnerName}?</p>
+            <Choices label={`Where ${partnerName} is`} options={dots} value={guess} onChange={setGuess} layout="scale" />
+          </div>
         </>
       );
       if (picks[0] != null && guess != null) answer = { picks: [picks[0]], guesses: [guess] };
@@ -84,7 +92,7 @@ export function RoundInput({ round, seat, partnerName, t, busy, onSubmit }: Prop
               options={pair.map((o) => t(o.label))}
               value={picks[i] ?? null}
               onChange={setAt(setPicks, i)}
-              columns={2}
+              layout="pair"
             />
           ))}
         </>
@@ -95,13 +103,13 @@ export function RoundInput({ round, seat, partnerName, t, busy, onSubmit }: Prop
       const prompts =
         round.variant === "mirror" ? [round.prompt, round.partnerPrompt ?? round.prompt] : [round.prompt];
       body = prompts.map((prompt, i) => (
-        <label key={i} className="flex flex-col gap-1">
-          <span>{t(prompt)}</span>
+        <label key={i} className="flex flex-col gap-2">
+          <span className="text-lg font-semibold">{t(prompt)}</span>
           <input
             value={texts[i] ?? ""}
             maxLength={MAX_TEXT_LENGTH}
             onChange={(e) => setAt(setTexts, i)(e.target.value)}
-            className="rounded border px-3 py-2"
+            className="field"
           />
         </label>
       ));
@@ -112,14 +120,16 @@ export function RoundInput({ round, seat, partnerName, t, busy, onSubmit }: Prop
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {round.format !== "write" && <h2 className="text-xl font-semibold">{t(title)}</h2>}
-      {body}
+    <div className="flex flex-col gap-5">
+      <div className="card flex flex-col gap-4">
+        {round.format !== "write" && <h2 className="text-lg leading-snug font-semibold">{t(title)}</h2>}
+        {body}
+      </div>
       <button
         type="button"
         disabled={!answer || busy}
         onClick={() => answer && onSubmit(answer)}
-        className="rounded bg-black px-4 py-3 text-white disabled:opacity-40"
+        className="btn self-start"
       >
         {busy ? "Locking in…" : "Lock in"}
       </button>
@@ -134,5 +144,12 @@ function Countdown({ seconds }: { seconds: number }) {
     const id = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
   }, []);
-  return <p className="text-sm">{left > 0 ? `${left}s, go with your gut` : "Time! (it still counts)"}</p>;
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-pm-sky">
+        <div className="h-full bg-pm-red transition-[width] duration-1000 ease-linear" style={{ width: `${(left / seconds) * 100}%` }} />
+      </div>
+      <span className="w-24 text-right text-sm font-medium">{left > 0 ? `${left}s, gut only` : "Time! It still counts"}</span>
+    </div>
+  );
 }

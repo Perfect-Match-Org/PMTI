@@ -13,6 +13,9 @@ type Props = {
 
 const other = (seat: Seat): Seat => (seat === "host" ? "guest" : "host");
 
+/** Embedding similarity catches shared vibe/topic, not meaning (it can't tell "early" from "late"). */
+const vibe = (pct: number | null | undefined) => (pct == null ? undefined : `${pct}% vibe match`);
+
 export function Reveal({ round, reveal, names, t }: Props) {
   const label = (options: Option[], i: number | null | undefined) =>
     i == null ? "(skipped)" : t(options[i]!.label);
@@ -20,24 +23,22 @@ export function Reveal({ round, reveal, names, t }: Props) {
 
   switch (round.format) {
     case "pick":
-    case "agree": {
-      const same = pick("host") === pick("guest");
+    case "agree":
       return (
-        <Lines
+        <Answers
           rows={[
             [names.host, label(round.options, pick("host"))],
             [names.guest, label(round.options, pick("guest"))],
           ]}
-          verdict={same ? "Same brain." : "Two different answers."}
+          verdict={pick("host") === pick("guest") ? "Same brain." : "Two different answers."}
         />
       );
-    }
     case "mind": {
       const subject = round.subject;
       const guesser = other(subject);
       const hit = pick(subject) === pick(guesser);
       return (
-        <Lines
+        <Answers
           rows={[
             [`${names[subject]} picked`, label(round.options, pick(subject))],
             [`${names[guesser]} guessed`, label(round.options, pick(guesser))],
@@ -48,61 +49,77 @@ export function Reveal({ round, reveal, names, t }: Props) {
     }
     case "likely":
       return (
-        <ul className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           {round.items.map((item, i) => {
             const named = (seat: Seat) => (pick(seat, i) === 0 ? seat : other(seat));
-            const host = named("host");
-            const guest = named("guest");
+            const agreed = named("host") === named("guest");
             return (
-              <li key={i}>
-                <p>{t(item.text)}</p>
-                <p className="text-sm">
-                  {names.host} says {names[host]} · {names.guest} says {names[guest]}
-                  {host === guest ? " · Undisputed." : ""}
+              <div key={i} className="card reveal-in" style={tilt(i)}>
+                <p className="font-medium">{t(item.text)}</p>
+                <p className="mt-2 text-lg font-semibold">
+                  {agreed
+                    ? `${names[named("host")]}, undisputed.`
+                    : `${names.host} says ${names[named("host")]}. ${names.guest} says ${names[named("guest")]}.`}
                 </p>
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
       );
     case "scale": {
-      const at = (seat: Seat) => (pick(seat) ?? 0) + 1;
-      const guessed = (seat: Seat) => (reveal[seat].guesses?.[0] ?? 0) + 1;
+      const at = (seat: Seat) => pick(seat) ?? 0;
+      const guessed = (seat: Seat) => reveal[seat].guesses?.[0] ?? 0;
       return (
-        <Lines
-          rows={[
-            [names.host, `${at("host")} (guessed ${names.guest} at ${guessed("host")})`],
-            [names.guest, `${at("guest")} (guessed ${names.host} at ${guessed("guest")})`],
-          ]}
-          verdict={`On a scale from “${t(round.left)}” (1) to “${t(round.right)}” (${round.steps}).`}
-        />
+        <div className="card reveal-in flex flex-col gap-4">
+          {(["host", "guest"] as const).map((seat) => {
+            const nailed = guessed(other(seat)) === at(seat);
+            return (
+              <div key={seat} className="flex flex-col gap-1.5">
+                <p className="text-sm font-semibold">
+                  {names[seat]}
+                  {nailed ? `, and ${names[other(seat)]} nailed it` : ""}
+                </p>
+                <ScaleRow steps={round.steps} self={at(seat)} guess={guessed(other(seat))} />
+              </div>
+            );
+          })}
+          <div className="flex justify-between gap-6 text-sm">
+            <span>{t(round.left)}</span>
+            <span className="text-right">{t(round.right)}</span>
+          </div>
+          <p className="text-sm">Solid dot: where each of you stands. Red ring: where the other one guessed.</p>
+        </div>
       );
     }
     case "speed": {
       const matches = round.items.filter((_, i) => pick("host", i) != null && pick("host", i) === pick("guest", i)).length;
       return (
-        <div className="flex flex-col gap-2">
-          {round.items.map((pair, i) => (
-            <p key={i} className="text-sm">
-              {names.host}: {label(pair, pick("host", i))} · {names.guest}: {label(pair, pick("guest", i))}
-            </p>
-          ))}
-          <p className="font-semibold">
-            You matched on {matches}/{round.items.length}.
-          </p>
+        <div className="flex flex-col gap-3">
+          <div className="card reveal-in flex flex-col gap-2">
+            {round.items.map((pair, i) => {
+              const same = pick("host", i) != null && pick("host", i) === pick("guest", i);
+              return (
+                <p key={i} className={same ? "font-semibold" : ""}>
+                  {same
+                    ? `Both: ${label(pair, pick("host", i))}`
+                    : `${names.host}: ${label(pair, pick("host", i))}. ${names.guest}: ${label(pair, pick("guest", i))}.`}
+                </p>
+              );
+            })}
+          </div>
+          <Verdict text={`${matches} of ${round.items.length} the same.`} />
         </div>
       );
     }
     case "write": {
-      const textOf = (seat: Seat, slot: ViewText["slot"]) =>
-        reveal.texts.find((x) => x.seat === seat && x.slot === slot);
+      const textOf = (seat: Seat, slot: ViewText["slot"]) => reveal.texts.find((x) => x.seat === seat && x.slot === slot);
       if (round.variant === "mirror") {
         return (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-6">
             {(["host", "guest"] as const).map((seat) => {
               const guess = textOf(other(seat), "partner");
               return (
-                <Lines
+                <Answers
                   key={seat}
                   rows={[
                     [`${names[seat]} said`, textOf(seat, "self")?.body ?? ""],
@@ -119,7 +136,7 @@ export function Reveal({ round, reveal, names, t }: Props) {
       const guest = textOf("guest", "shared");
       const scores = [host?.matchPct, guest?.matchPct].filter((p): p is number => p != null);
       return (
-        <Lines
+        <Answers
           rows={[
             [names.host, host?.body ?? ""],
             [names.guest, guest?.body ?? ""],
@@ -131,20 +148,40 @@ export function Reveal({ round, reveal, names, t }: Props) {
   }
 }
 
-/** Embedding similarity catches shared vibe/topic, not meaning (it can't tell "early" from "late"). */
-function vibe(pct: number | null | undefined): string | undefined {
-  return pct == null ? undefined : `${pct}% vibe match`;
+const tilt = (i: number): React.CSSProperties =>
+  ({ "--tilt": i % 2 ? "2.5deg" : "-2.5deg", animationDelay: `${i * 90}ms` }) as React.CSSProperties;
+
+function Answers({ rows, verdict }: { rows: [string, string][]; verdict?: string }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {rows.map(([who, what], i) => (
+        <div key={i} className="card reveal-in" style={tilt(i)}>
+          <p className="text-sm font-semibold">{who}</p>
+          <p className="mt-1 text-lg leading-snug font-medium">{what}</p>
+        </div>
+      ))}
+      {verdict && <Verdict text={verdict} delay={rows.length * 90} />}
+    </div>
+  );
 }
 
-function Lines({ rows, verdict }: { rows: [string, string][]; verdict?: string }) {
+function Verdict({ text, delay = 0 }: { text: string; delay?: number }) {
   return (
-    <div className="flex flex-col gap-2">
-      {rows.map(([who, what], i) => (
-        <p key={i}>
-          <span className="font-semibold">{who}:</span> {what}
-        </p>
+    <p className="reveal-in font-display text-3xl leading-tight text-[var(--clock)]" style={{ animationDelay: `${delay}ms` }}>
+      {text}
+    </p>
+  );
+}
+
+function ScaleRow({ steps, self, guess }: { steps: number; self: number; guess: number }) {
+  return (
+    <div className="grid grid-cols-7 gap-1" aria-hidden>
+      {Array.from({ length: steps }, (_, i) => (
+        <span key={i} className="relative flex h-8 items-center justify-center rounded-full bg-pm-sky/70">
+          {i === self && <span className="size-4 rounded-full bg-pm-blue" />}
+          {i === guess && <span className="absolute size-7 rounded-full border-[3px] border-pm-red" />}
+        </span>
       ))}
-      {verdict && <p className="text-lg font-semibold">{verdict}</p>}
     </div>
   );
 }

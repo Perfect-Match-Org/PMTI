@@ -1,6 +1,7 @@
 "use client";
 
 import { QRCodeSVG } from "qrcode.react";
+import { useState } from "react";
 import type { RoomView } from "@/game/engine";
 
 type Props = {
@@ -13,51 +14,58 @@ type Props = {
 };
 
 export function Lobby({ view, link, intro, busy, onReady, onKick }: Props) {
+  const [copied, setCopied] = useState(false);
   const guest = view.players.guest;
+  const partnerWord = view.mode === "couple" ? "your partner" : "your friend";
 
-  return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">Game {view.code}</h1>
-      {!guest ? (
-        <>
-          <p>Have your {view.mode === "couple" ? "partner" : "friend"} scan this, or send them the link:</p>
-          <QRCodeSVG value={link} size={176} marginSize={2} title={`QR code for ${link}`} className="self-center" />
-          <div className="flex gap-2">
-            <input readOnly value={link} aria-label="Invite link" className="flex-1 rounded border px-3 py-2" />
-            <button
-              type="button"
-              className="rounded border px-3 py-2"
-              onClick={() => void navigator.clipboard.writeText(link)}
-            >
-              Copy
-            </button>
-          </div>
-          <p className="text-sm opacity-60">Or have them enter code {view.code}. Waiting for them to join…</p>
-        </>
-      ) : (
-        <>
-          <p>
-            {view.players.host.name} &amp; {guest.name} are in.
+  if (!guest) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div>
+          <p className="text-lg font-medium">Your game code</p>
+          <p className="font-display text-[clamp(2.5rem,13vw,4rem)] leading-none tracking-[0.04em] text-pm-red">
+            {view.code}
           </p>
-          <p className="italic">{intro}</p>
-          {view.mine.ready ? (
-            <p>Ready. Waiting for {view.seat === "host" ? guest.name : view.players.host.name}…</p>
-          ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onReady}
-              className="rounded bg-black px-4 py-3 text-white disabled:opacity-40"
-            >
-              I&apos;m ready
-            </button>
-          )}
-          {view.seat === "host" && (
-            <button type="button" onClick={onKick} className="self-start text-sm underline">
-              Not your partner? Remove {guest.name}
-            </button>
-          )}
-        </>
+        </div>
+        <div className="card flex flex-col items-center gap-4">
+          <QRCodeSVG value={link} size={196} marginSize={1} fgColor="#24438d" title={`QR code that opens ${link}`} />
+          <p className="text-center">Have {partnerWord} scan this with their phone camera.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <button
+            type="button"
+            className="btn"
+            onClick={async () => {
+              await navigator.clipboard.writeText(link);
+              setCopied(true);
+            }}
+          >
+            {copied ? "Link copied" : "Copy invite link"}
+          </button>
+          <span className="text-sm">Waiting for them to join…</span>
+        </div>
+      </div>
+    );
+  }
+
+  const partnerName = view.seat === "host" ? guest.name : view.players.host.name;
+  return (
+    <div className="flex flex-col gap-6">
+      <p className="font-display text-[clamp(2.5rem,13vw,3.75rem)] leading-[0.95]">
+        {view.players.host.name} &amp; {guest.name} are in.
+      </p>
+      <p className="text-xl leading-snug">{intro}</p>
+      {view.mine.ready ? (
+        <p className="font-medium">You&apos;re ready. Waiting for {partnerName}…</p>
+      ) : (
+        <button type="button" disabled={busy} onClick={onReady} className="btn btn-solid self-start">
+          I&apos;m ready
+        </button>
+      )}
+      {view.seat === "host" && (
+        <button type="button" onClick={onKick} className="btn-quiet self-start text-sm">
+          Not who you invited? Remove {guest.name}
+        </button>
       )}
     </div>
   );

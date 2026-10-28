@@ -18,17 +18,21 @@ export function JoinGate({ code }: { code: string }) {
   }, [code, router]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-4 px-4">
-      {error ? (
-        <>
-          <p role="alert">{error}</p>
-          <Link href="/" className="underline">
-            Start your own game
-          </Link>
-        </>
-      ) : (
-        <p>Joining game {code}…</p>
-      )}
+    <main data-phase="morning" className="stage">
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-4">
+        {error ? (
+          <>
+            <p role="alert" className="font-display text-3xl leading-tight">
+              {error}
+            </p>
+            <Link href="/" className="btn self-start">
+              Start your own game
+            </Link>
+          </>
+        ) : (
+          <p className="font-display text-3xl">Joining game {code}…</p>
+        )}
+      </div>
     </main>
   );
 }

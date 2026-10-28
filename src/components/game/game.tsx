@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRoom } from "@/client/useRoom";
+import { useRoom, type Connection } from "@/client/useRoom";
 import { say } from "@/game/copy";
-import type { Copy } from "@/game/deck";
+import { phaseOf, splitTime, type DayPhase } from "@/game/day";
+import type { Copy, Round } from "@/game/deck";
 import { getDeck } from "@/game/decks";
 import { LOBBY_ROUND, type RoomView, type Seat } from "@/game/engine";
 import { Lobby } from "./lobby";
@@ -20,7 +21,6 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
   const { view, connection, presence, error, send, post, react, refresh } = useRoom(initial, spawn);
   useResultRetry(view, refresh);
   const [busy, setBusy] = useState(false);
-  const partnerOnline = presence?.online ?? true;
   const now = useNow(!!presence && !presence.online);
   const offlineFor = presence && !presence.online && view.players.guest ? now - presence.since : 0;
 
@@ -42,8 +42,10 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
     }
   };
 
+  let phase: DayPhase = "afternoon";
   let content: React.ReactNode;
   if (progress.phase === "lobby") {
+    phase = "morning";
     const deck = getDeck(view.deckId);
     content = (
       <Lobby
@@ -56,31 +58,28 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
       />
     );
   } else if ((progress.phase === "answer" || progress.phase === "reveal") && round) {
-    const header = (
-      <header className="flex flex-col gap-1">
-        <p className="text-sm opacity-60">
-          {progress.step}/{view.totalSteps} · {round.scene.time}
-        </p>
-        <p className="text-lg">{t(round.scene.title)}</p>
-      </header>
-    );
+    phase = phaseOf(round.scene.time);
+    const header = <SceneHeader round={round} t={t} />;
     if (progress.phase === "answer") {
       content = (
         <>
           {header}
           {view.tries.length > 0 && (
-            <p className="text-sm">
-              Try {progress.attempt + 1}. Last time:{" "}
+            <div className="card flex flex-col gap-1">
+              <p className="font-semibold">Not the same. Try {progress.attempt + 1} of {"tries" in round ? round.tries : 3}.</p>
               {view.tries.map((tr, i) => (
-                <span key={i}>
-                  {names.host} said “{optionLabel(round, tr.host.picks?.[0], t)}”, {names.guest} said “
-                  {optionLabel(round, tr.guest.picks?.[0], t)}”.{" "}
-                </span>
+                <p key={i} className="text-sm">
+                  {names.host} picked “{optionLabel(round, tr.host.picks?.[0], t)}”, {names.guest} picked “
+                  {optionLabel(round, tr.guest.picks?.[0], t)}”.
+                </p>
               ))}
-            </p>
+            </div>
           )}
           {view.mine.answer ? (
-            <p>Locked in. {view.partner.answered ? "" : `Waiting for ${partnerName}…`}</p>
+            <div className="card">
+              <p className="font-display text-2xl">Locked in.</p>
+              <p className="mt-1">{view.partner.answered ? "Revealing…" : `Waiting for ${partnerName}…`}</p>
+            </div>
           ) : (
             <RoundInput
               key={`${progress.round}-${progress.attempt}`}
@@ -100,15 +99,17 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
       content = (
         <>
           {header}
-          {view.reveal && <Reveal round={round} reveal={view.reveal} names={names} t={t} />}
+          {view.reveal && (
+            <Reveal key={`${progress.round}-${progress.attempt}`} round={round} reveal={view.reveal} names={names} t={t} />
+          )}
           {view.mine.ready ? (
-            <p>Waiting for {partnerName}…</p>
+            <p className="font-medium">Waiting for {partnerName} to move on…</p>
           ) : (
             <button
               type="button"
               disabled={busy}
               onClick={() => act(() => send({ round: progress.round, attempt: 0, kind: "ready" }))}
-              className="rounded bg-black px-4 py-3 text-white disabled:opacity-40"
+              className="btn self-start"
             >
               Next
             </button>
@@ -117,16 +118,17 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
       );
     }
   } else if (progress.phase === "done") {
+    phase = "night";
     content = view.result ? (
       <ResultView result={view.result} view={view} names={names} t={t} />
     ) : (
-      <p className="text-xl">That&apos;s the day. Working out your duo type…</p>
+      <p className="font-display text-3xl">Working out your duo type…</p>
     );
   } else {
     content = (
-      <div className="flex flex-col gap-3">
-        <p className="text-xl">This game was ended.</p>
-        <Link href="/" className="underline">
+      <div className="card flex flex-col items-start gap-4">
+        <p className="font-display text-2xl">This game was ended.</p>
+        <Link href="/" className="btn">
           Start a new game
         </Link>
       </div>
@@ -135,58 +137,90 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
 
   const live = progress.phase !== "done" && progress.phase !== "ended";
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-4 pt-6 pb-24">
+    <main data-phase={phase} className="stage min-h-dvh">
       {overlay}
+      <div className="mx-auto flex max-w-md flex-col gap-6 px-4 pt-5 pb-28">
+        <TopBar
+          partnerName={partnerName}
+          online={presence?.online ?? true}
+          lockedIn={progress.phase === "answer" && view.partner.answered}
+          joined={!!view.players.guest}
+          connection={connection}
+          step={progress.phase === "answer" || progress.phase === "reveal" ? progress.step : null}
+          total={view.totalSteps}
+        />
+        {content}
+        {error && (
+          <p role="alert" className="card border-pm-red font-medium">
+            {error}
+          </p>
+        )}
+        {live && view.players.guest && offlineFor >= OFFLINE_END_AFTER_MS && (
+          <div className="card flex flex-col items-start gap-3">
+            <p>{partnerName} has been offline for a couple of minutes. They can rejoin with the same link.</p>
+            <button type="button" className="btn" onClick={() => act(() => post("end"))}>
+              End game
+            </button>
+          </div>
+        )}
+      </div>
       {live && view.players.guest && <ReactionBar onReact={react} />}
-      <StatusBar
-        names={names}
-        seat={seat}
-        partnerOnline={partnerOnline}
-        partnerAnswered={progress.phase === "answer" && view.partner.answered}
-        connection={connection}
-      />
-      {content}
-      {error && (
-        <p role="alert" className="text-sm text-red-700">
-          {error}
-        </p>
-      )}
-      {live && view.players.guest && offlineFor >= OFFLINE_END_AFTER_MS && (
-        <div className="flex flex-col gap-2 rounded border p-3">
-          <p>{partnerName} has been offline for a while. They can rejoin with the same link.</p>
-          <button type="button" className="rounded border px-3 py-2" onClick={() => act(() => post("end"))}>
-            End game
-          </button>
-        </div>
-      )}
     </main>
   );
 }
 
-function optionLabel(round: NonNullable<RoomView["round"]>, i: number | null | undefined, t: (c: Copy) => string) {
+function SceneHeader({ round, t }: { round: Round; t: (copy: Copy) => string }) {
+  const { clock, meridiem } = splitTime(round.scene.time);
+  return (
+    <header>
+      <p className="font-display text-[clamp(4.5rem,24vw,7rem)] leading-[0.82] text-[var(--clock)]">
+        {clock}
+        <span className="ml-1 text-[0.32em]">{meridiem}</span>
+      </p>
+      <p className="mt-3 text-xl leading-snug font-medium">{t(round.scene.title)}</p>
+    </header>
+  );
+}
+
+function optionLabel(round: Round, i: number | null | undefined, t: (c: Copy) => string) {
   return "options" in round && i != null ? t(round.options[i]!.label) : "?";
 }
 
-function StatusBar({
-  names,
-  seat,
-  partnerOnline,
-  partnerAnswered,
-  connection,
-}: {
-  names: { host: string; guest: string };
-  seat: Seat;
-  partnerOnline: boolean;
-  partnerAnswered: boolean;
-  connection: string;
+function TopBar(props: {
+  partnerName: string;
+  online: boolean;
+  lockedIn: boolean;
+  joined: boolean;
+  connection: Connection;
+  step: number | null;
+  total: number;
 }) {
-  const partner = seat === "host" ? names.guest : names.host;
+  const { partnerName, online, lockedIn, joined, connection, step, total } = props;
+  const status = !joined ? null : !online ? `${partnerName} is offline` : lockedIn ? `${partnerName} locked in` : `${partnerName} is here`;
   return (
-    <div className="flex items-center justify-between text-sm" aria-live="polite">
-      <span>
-        {partner}: {partnerOnline ? (partnerAnswered ? "locked in" : "here") : "offline"}
+    <div className="flex min-h-6 items-center justify-between gap-3 text-sm font-medium">
+      <span aria-live="polite" className="flex items-center gap-2">
+        {status && (
+          <>
+            <span
+              aria-hidden
+              className={`size-2.5 rounded-full ${!online ? "bg-current opacity-30" : lockedIn ? "bg-pm-red" : "bg-current"}`}
+            />
+            {status}
+          </>
+        )}
+        {connection === "polling" && <span className="opacity-70">(reconnecting)</span>}
       </span>
-      {connection === "polling" && <span className="opacity-60">reconnecting…</span>}
+      {step !== null && (
+        <span role="img" aria-label={`Round ${step} of ${total}`} className="flex gap-1">
+          {Array.from({ length: total }, (_, i) => (
+            <span
+              key={i}
+              className={`size-1.5 rounded-full ${i + 1 === step ? "bg-[var(--clock)]" : i + 1 < step ? "bg-current" : "bg-current opacity-25"}`}
+            />
+          ))}
+        </span>
+      )}
     </div>
   );
 }
