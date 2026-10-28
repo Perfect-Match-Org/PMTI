@@ -43,3 +43,7 @@ next-env.d.ts
 # ignore notes taken in markdown files
 *.md
 !README.md
+
+# playwright
+/test-results/
+/playwright-report/
