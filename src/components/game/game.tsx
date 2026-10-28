@@ -15,6 +15,7 @@ import { ResultView } from "./result";
 import { Reveal } from "./reveal";
 import { RoomProvider, type RoomContextValue } from "./room-context";
 import { RoundInput } from "./round-input";
+import { Stage } from "./stage";
 
 const OFFLINE_END_AFTER_MS = 2 * 60 * 1000;
 
@@ -57,40 +58,47 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
     screen = <Reveal key={key} round={round} reveal={view.reveal} />;
   } else if (progress.phase === "done") {
     key = "done";
-    screen = view.result ? (
-      <ResultView result={view.result} />
-    ) : (
-      <p className="pt-10 text-3xl font-extrabold">Working out your duo type…</p>
-    );
+    screen = view.result ? <ResultView result={view.result} /> : <Stage aside={<p className="text-3xl font-extrabold">Working out your duo type…</p>} />;
   } else {
     key = "ended";
     screen = (
-      <>
-        <h1 className="pt-10 text-4xl leading-tight font-extrabold">This game was ended.</h1>
-        <p className="mt-3 text-lg text-muted">Start a new one whenever you’re both ready.</p>
-        <ActionBar reactions={false} primary={{ label: "Start a new game", onClick: () => router.push("/") }} />
-      </>
+      <Stage
+        aside={
+          <>
+            <h1 className="text-4xl leading-tight font-extrabold lg:text-5xl">This game was ended.</h1>
+            <p className="mt-3 text-lg text-muted">Start a new one whenever you’re both ready.</p>
+            <ActionBar reactions={false} primary={{ label: "Start a new game", onClick: () => router.push("/") }} />
+          </>
+        }
+      />
     );
   }
 
   const inRound = progress.phase === "answer" || progress.phase === "reveal";
   const partner = view.players[partnerSeat];
+  const showLive = (progress.phase === "answer" || presence?.online === false) && progress.phase !== "done";
   return (
     <MotionConfig reducedMotion="user">
       <RoomProvider value={ctx}>
         <main className="min-h-dvh overflow-x-clip bg-white">
           {overlay(partner)}
-          <div className="mx-auto flex max-w-md flex-col px-5 pt-4 pb-44 md:pt-8">
-            {inRound && <Segments step={progress.step} total={view.totalSteps} />}
-            {partner && (progress.phase === "answer" || presence?.online === false) && progress.phase !== "done" && (
-              <LiveLine
-                partner={partner}
-                online={presence?.online ?? true}
-                lockedIn={progress.phase === "answer" && view.partner.answered}
-                choosing={progress.phase === "answer" && !view.partner.answered}
-                connection={connection}
-              />
-            )}
+          <div className="frame flex flex-col pt-4 pb-44 md:pt-8 lg:pt-6 lg:pb-36">
+            {/* Mounted in every phase so the desktop row never reflows between lobby, rounds and result. */}
+            <header className="flex flex-col lg:min-h-8 lg:flex-row lg:items-center lg:gap-10">
+              <p className="hidden text-xl font-black text-navy lg:block">PMTI</p>
+              <div className="lg:flex-1">{inRound && <Segments step={progress.step} total={view.totalSteps} />}</div>
+              <div className="lg:flex lg:w-72 lg:justify-end">
+                {showLive && partner && (
+                  <LiveLine
+                    partner={partner}
+                    online={presence?.online ?? true}
+                    lockedIn={progress.phase === "answer" && view.partner.answered}
+                    choosing={progress.phase === "answer" && !view.partner.answered}
+                    connection={connection}
+                  />
+                )}
+              </div>
+            </header>
             {error && (
               <p role="alert" className="mt-4 rounded-2xl bg-blush px-4 py-3 font-semibold text-red-deep">
                 {error}
@@ -147,7 +155,7 @@ function LiveLine(props: { partner: PlayerInfo; online: boolean; lockedIn: boole
   const { partner, online, lockedIn, choosing, connection } = props;
   const state = !online ? "offline" : lockedIn ? "locked" : choosing ? "choosing" : "here";
   return (
-    <div className="mt-3 flex min-h-8 items-center gap-2.5 text-[0.95rem]" aria-live="polite">
+    <div className="mt-3 flex min-h-8 items-center gap-2.5 text-[0.95rem] lg:mt-0" aria-live="polite">
       <Avatar player={partner} tone="partner" size={28} />
       <AnimatePresence mode="wait" initial={false}>
         <motion.span

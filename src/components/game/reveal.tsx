@@ -1,7 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useAnimate, useReducedMotion } from "motion/react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import type { Answer } from "@/game/answers";
 import { promptFor, whoFor } from "@/game/copy";
 import type { Option, Round } from "@/game/deck";
@@ -13,6 +13,8 @@ import { Portal } from "@/components/ui/portal";
 import { ActionBar } from "./action-bar";
 import { ScaleEnds } from "./choices";
 import { useRoomContext } from "./room-context";
+import { Stage } from "./stage";
+import { TONES } from "./tones";
 
 type RevealData = Pair<Answer> & { texts: ViewText[] };
 
@@ -172,19 +174,24 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
   }
 
   return (
-    <div className="pt-6">
-      {!reduce && <Flash text={verdict.text} tone={verdict.tone} />}
-      <p className="text-[0.95rem] font-bold text-navy">{round.scene.time}</p>
-      <p className="text-[0.95rem] font-medium text-muted">{t(round.scene.title)}</p>
-      <motion.h1
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay, type: "spring", stiffness: 420, damping: 20 }}
-        className="mt-3 origin-left text-[2.1rem] leading-[1.02] font-black tracking-[-0.02em] text-balance"
-      >
-        {verdict.text}
-      </motion.h1>
-      <p className="mt-5 text-lg leading-snug font-medium text-balance text-muted">{t(promptFor(round, seat))}</p>
+    <Stage
+      aside={
+        <>
+          {!reduce && <Flash text={verdict.text} tone={verdict.tone} />}
+          <p className="text-[0.95rem] font-bold text-navy">{round.scene.time}</p>
+          <p className="text-[0.95rem] font-medium text-muted">{t(round.scene.title)}</p>
+          <motion.h1
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay, type: "spring", stiffness: 420, damping: 20 }}
+            className="mt-3 origin-left text-[2.1rem] leading-[1.02] font-black tracking-[-0.02em] text-balance lg:mt-4 lg:text-[3.5rem] lg:leading-[0.98]"
+          >
+            {verdict.text}
+          </motion.h1>
+        </>
+      }
+    >
+      <p className="-mt-1 text-lg leading-snug font-medium text-balance text-muted lg:mt-0">{t(promptFor(round, seat))}</p>
       <div className="mt-3">{body}</div>
       <ActionBar
         primary={
@@ -197,13 +204,14 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
               }
         }
       />
-    </div>
+    </Stage>
   );
 }
 
-const TONES: Record<Tone, string> = { pink: "bg-pink text-ink", navy: "bg-navy text-white", red: "bg-red text-white" };
-
-/** The Wrapped moment: one bold color takes the whole screen, the verdict springs in, then it clears. */
+/**
+ * The Wrapped moment: one bold color takes the whole screen, the verdict springs in, then it
+ * clears. The color bursts out of the action button, where the press that caused it happened.
+ */
 function Flash({ text, tone }: { text: string; tone: Tone }) {
   const [show, setShow] = useState(true);
   useEffect(() => {
@@ -214,26 +222,40 @@ function Flash({ text, tone }: { text: string; tone: Tone }) {
     <Portal>
       <AnimatePresence>
         {show && (
-          <motion.div
-            className={`fixed inset-0 z-30 grid place-items-center px-6 ${TONES[tone]}`}
-            initial={{ clipPath: "circle(0% at 50% 90%)" }}
-            animate={{ clipPath: "circle(150% at 50% 90%)" }}
-            exit={{ opacity: 0, transition: { duration: 0.2 } }}
-            transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
-            onClick={() => setShow(false)}
-          >
+          <Burst key="flash" className={TONES[tone]} onClick={() => setShow(false)}>
             <motion.p
               initial={{ scale: 0.5, opacity: 0, rotate: -4 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
               transition={{ delay: 0.12, type: "spring", stiffness: 320, damping: 13 }}
-              className="max-w-md text-center text-[clamp(2.75rem,13vw,4.75rem)] leading-[0.95] font-black tracking-[-0.03em] text-balance"
+              className="max-w-md text-center text-[clamp(2.75rem,13vw,4.75rem)] leading-[0.95] font-black tracking-[-0.03em] text-balance lg:max-w-4xl lg:text-[7rem]"
             >
               {text}
             </motion.p>
-          </motion.div>
+          </Burst>
         )}
       </AnimatePresence>
     </Portal>
+  );
+}
+
+/** A full-screen layer that opens as a circle from the action button (measured once it's on screen). */
+function Burst({ className, onClick, children }: { className: string; onClick: () => void; children: React.ReactNode }) {
+  const [scope, animate] = useAnimate<HTMLDivElement>();
+  useLayoutEffect(() => {
+    const r = document.querySelector("[data-primary-action]")?.getBoundingClientRect();
+    const at = r ? `${Math.round(r.left + r.width / 2)}px ${Math.round(r.top + r.height / 2)}px` : "50% 90%";
+    animate(scope.current, { clipPath: [`circle(0% at ${at})`, `circle(150% at ${at})`] }, { duration: 0.45, ease: [0.2, 0.8, 0.2, 1] });
+  }, [animate, scope]);
+  return (
+    <motion.div
+      ref={scope}
+      className={`fixed inset-0 z-30 grid place-items-center px-6 ${className}`}
+      style={{ clipPath: "circle(0% at 50% 90%)" }}
+      exit={{ opacity: 0, transition: { duration: 0.2 } }}
+      onClick={onClick}
+    >
+      {children}
+    </motion.div>
   );
 }
 

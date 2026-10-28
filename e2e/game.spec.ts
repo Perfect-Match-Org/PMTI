@@ -79,7 +79,16 @@ test("two players play a full game in sync", async ({ browser }) => {
     const n = String(rounds + 1).padStart(2, "0");
     if (process.env.SHOTS) await alice.waitForTimeout(700);
     await shot(alice, `r${n}-a-question`);
-    await answerRound(alice, "bagels at midnight");
+    // On desktop, round 1 is played from the keyboard: a number key picks, Enter locks in and moves on.
+    const byKeyboard = test.info().project.name === "desktop" && rounds === 0;
+    if (byKeyboard) {
+      await alice.waitForTimeout(1100);
+      await alice.keyboard.press("1");
+      await expect(alice.getByRole("radio").first()).toHaveAttribute("aria-checked", "true");
+      await alice.keyboard.press("Enter");
+    } else {
+      await answerRound(alice, "bagels at midnight");
+    }
     await expect(alice.getByRole("button", { name: "Waiting for Bob" })).toBeDisabled();
     await expect(bob.getByText("Alice locked in")).toBeVisible({ timeout: REALTIME_MS });
 
@@ -105,7 +114,12 @@ test("two players play a full game in sync", async ({ browser }) => {
     }
 
     await bob.getByRole("button", { name: "Next", exact: true }).click();
-    await alice.getByRole("button", { name: "Next", exact: true }).click();
+    if (byKeyboard) {
+      await alice.waitForTimeout(1100);
+      await alice.keyboard.press("Enter");
+    } else {
+      await alice.getByRole("button", { name: "Next", exact: true }).click();
+    }
     await expect(alice.getByText(/^That’s the day/).or(alice.getByRole("button", { name: "Lock in", exact: true }))).toBeVisible({
       timeout: REALTIME_MS,
     });

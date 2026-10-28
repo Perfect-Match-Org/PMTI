@@ -8,6 +8,7 @@ import type { TextSlot } from "@/game/engine";
 import { ActionBar } from "./action-bar";
 import { Choices, ScaleEnds } from "./choices";
 import { useRoomContext } from "./room-context";
+import { Stage } from "./stage";
 
 const SLOT_ORDER: TextSlot[] = ["self", "partner", "shared"];
 
@@ -39,6 +40,7 @@ export function RoundInput({ round }: { round: Round }) {
           value={picks[0] ?? null}
           onChange={setAt(setPicks, 0)}
           disabled={!!locked}
+          hotkeys
         />
       );
       if (picks[0] != null) answer = { picks: [picks[0]] };
@@ -130,17 +132,24 @@ export function RoundInput({ round }: { round: Round }) {
   const attempt = progress.phase === "answer" ? progress.attempt : 0;
   const lastTry = view.tries.at(-1);
   return (
-    <div className="pt-6">
-      <p className="text-[0.95rem] font-bold text-navy">{round.scene.time}</p>
-      <p className="text-[0.95rem] font-medium text-muted">{t(round.scene.title)}</p>
-      {lastTry && round.format === "agree" && (
-        <p className="mt-4 rounded-2xl bg-blush px-4 py-3 font-semibold">
-          Not the same yet. {names.host} picked “{t(round.options[lastTry.host.picks?.[0] ?? 0]!.label)}”, {names.guest} picked “
-          {t(round.options[lastTry.guest.picks?.[0] ?? 0]!.label)}”. Try {attempt + 1} of {round.tries}.
-        </p>
-      )}
-      <h1 className="mt-3 text-[1.9rem] leading-[1.08] font-extrabold tracking-[-0.015em] text-balance">{t(title)}</h1>
-      <div className="mt-6">{body}</div>
+    <Stage
+      aside={
+        <>
+          <p className="text-[0.95rem] font-bold text-navy">{round.scene.time}</p>
+          <p className="text-[0.95rem] font-medium text-muted">{t(round.scene.title)}</p>
+          {lastTry && round.format === "agree" && (
+            <p className="mt-4 rounded-2xl bg-blush px-4 py-3 font-semibold">
+              Not the same yet. {names.host} picked “{t(round.options[lastTry.host.picks?.[0] ?? 0]!.label)}”, {names.guest} picked “
+              {t(round.options[lastTry.guest.picks?.[0] ?? 0]!.label)}”. Try {attempt + 1} of {round.tries}.
+            </p>
+          )}
+          <h1 className="mt-3 text-[1.9rem] leading-[1.08] font-extrabold tracking-[-0.015em] text-balance lg:mt-4 lg:text-[2.75rem] lg:leading-[1.04]">
+            {t(title)}
+          </h1>
+        </>
+      }
+    >
+      {body}
       <ActionBar
         primary={
           locked
@@ -152,7 +161,7 @@ export function RoundInput({ round }: { round: Round }) {
               }
         }
       />
-    </div>
+    </Stage>
   );
 }
 

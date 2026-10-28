@@ -14,6 +14,7 @@ import { BrokenHeart, Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
 import { ActionBar } from "./action-bar";
 import { useRoomContext } from "./room-context";
+import { Stage } from "./stage";
 
 const SLIDE_MS = 4000;
 const MOMENT_TONES = ["bg-white text-ink", "bg-blush text-ink", "bg-navy text-white"];
@@ -182,7 +183,7 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
     <Portal>
       <div className={`fixed inset-0 z-30 overflow-hidden transition-colors duration-300 md:grid md:place-items-center ${slide.tone} md:bg-tile`} aria-live="polite">
         <div
-          className={`relative mx-auto flex h-full max-w-md flex-col px-5 pt-4 pb-10 transition-colors duration-300 md:aspect-[9/16] md:h-[min(calc(100dvh-3rem),56rem)] md:max-w-none md:overflow-hidden md:rounded-[2rem] ${slide.tone}`}
+          className={`relative mx-auto flex h-full max-w-md flex-col px-5 pt-4 pb-10 transition-colors duration-300 md:aspect-[9/16] md:h-[min(calc(100dvh-3rem),56rem)] md:max-w-none md:rounded-[2rem] ${slide.tone}`}
         >
           <div className="flex items-center gap-3">
             <div className="grid flex-1 gap-1" style={{ gridTemplateColumns: `repeat(${slides.length}, 1fr)` }}>
@@ -208,9 +209,30 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
             <button type="button" aria-label="Previous slide" className="absolute inset-y-0 left-0 w-1/3" onClick={back} />
             <button type="button" aria-label="Next slide" className="absolute inset-y-0 right-0 w-2/3" onClick={next} />
           </div>
+          <StoryArrow side="left" onClick={back} hidden={index === 0} />
+          <StoryArrow side="right" onClick={next} />
         </div>
       </div>
     </Portal>
+  );
+}
+
+/** Mouse-sized arrows beside the card on a wide screen; on a phone you tap the slide itself. */
+function StoryArrow({ side, onClick, hidden = false }: { side: "left" | "right"; onClick: () => void; hidden?: boolean }) {
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-hidden
+      onClick={onClick}
+      className={`absolute top-1/2 hidden size-14 -translate-y-1/2 place-items-center rounded-full border-2 border-line bg-white text-ink md:grid ${
+        side === "left" ? "-left-20" : "-right-20"
+      } ${hidden ? "invisible" : ""}`}
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden className={side === "left" ? "rotate-180" : ""}>
+        <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
   );
 }
 
@@ -236,9 +258,13 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
   }
 
   return (
-    <div className="pt-8">
+    <Stage
+      aside={
+        <>
       <p className="text-lg font-semibold text-muted">{view.mode === "friends" ? "In a parallel universe, you two are" : "You two are"}</p>
-      <h1 className="mt-1 text-[clamp(2.5rem,12vw,3.25rem)] leading-[0.98] font-black tracking-[-0.03em] text-balance">{type.name}</h1>
+      <h1 className="mt-1 text-[clamp(2.5rem,12vw,3.25rem)] leading-[0.98] font-black tracking-[-0.03em] text-balance lg:text-[4rem] lg:leading-[0.95]">
+        {type.name}
+      </h1>
       <p className="mt-3 text-lg">
         <b className="font-extrabold">{type.nickname}.</b> <span className="text-muted">{type.tagline}</span>
       </p>
@@ -258,8 +284,10 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
           );
         })}
       </div>
-
-      <div className="mt-7 grid grid-cols-2 gap-2.5">
+        </>
+      }
+    >
+      <div className="grid grid-cols-2 gap-2.5">
         <div className="px-1">
           <p className="text-5xl font-black tracking-[-0.03em] text-navy">{Math.round(result.sameBrain * 100)}%</p>
           <p className="mt-1 font-semibold text-muted">same brain</p>
@@ -293,7 +321,7 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
         secondary={{ label: "Play again", onClick: () => router.push("/") }}
         primary={{ label: shared ? "Copied" : "Share my card", onClick: share }}
       />
-    </div>
+    </Stage>
   );
 }
 

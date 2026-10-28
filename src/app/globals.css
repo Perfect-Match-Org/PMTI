@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Keyboard hints only where there is a mouse; a touch-only iPad in landscape is still wide. */
+@custom-variant pointer-fine (@media (hover: hover) and (pointer: fine));
+
 /*
  * Calm screens, loud moments. Pages stay white (the Hinge part); everything you touch has a
  * physical lip that presses down (the Duolingo part); reveals and the result take over the
@@ -41,6 +44,20 @@ a[href] {
 }
 
 @layer components {
+  /* Where content sits: a phone column, or a wide desktop frame. Shell, top bar, footer and pills share it so they line up. */
+  .frame {
+    width: 100%;
+    max-width: 28rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (width >= 64rem) {
+    .frame {
+      max-width: 72rem;
+      padding-inline: 2.5rem;
+    }
+  }
+
   /* Tactile controls: a solid lip under the control that collapses when pressed. */
   .btn {
     display: inline-flex;

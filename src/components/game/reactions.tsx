@@ -25,7 +25,7 @@ const MAX_ON_SCREEN = 48;
 export const COMBO_IDLE_MS = 1400;
 const MINE_SIZE = 32;
 const THEIRS_SIZE = 40;
-/** Roughly the top of the action bar's reaction row. */
+/** Fallback when the reaction row isn't on screen: roughly where it sits on a phone. */
 const BAR_TOP = 170;
 
 const same = (s: number[]) => ({ scaleX: s, scaleY: s });
@@ -113,11 +113,19 @@ function incomingTomato(h: number): Flight {
 
 const STILL: Flight = { times: [0, 0.2, 1], x: [0, 0, 0], y: [0, 0, 0], rotate: [0, 0, 0], ...same([1, 1, 1]), opacity: [0, 1, 0], duration: 1.2 };
 
+const center = (rect: DOMRect) => ({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+const fallback = () => ({ x: window.innerWidth / 2, y: window.innerHeight - BAR_TOP });
+
+/** Yours leave from the button you tapped. */
 function launchPoint(emoji: Reaction) {
   const rect = document.querySelector(`[data-reaction="${emoji}"]`)?.getBoundingClientRect();
-  return rect
-    ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-    : { x: window.innerWidth / 2, y: window.innerHeight - BAR_TOP };
+  return rect ? center(rect) : fallback();
+}
+
+/** Your partner's rise from anywhere along the reaction row, wherever the layout put it. */
+function arrivalPoint() {
+  const rect = document.querySelector('[role="toolbar"][aria-label="Reactions"]')?.getBoundingClientRect();
+  return rect ? { x: rect.left + Math.random() * rect.width, y: rect.top + rect.height / 2 } : fallback();
 }
 
 /**
@@ -141,7 +149,7 @@ export function useReactionLayer() {
         if (!mine && emoji === "🍅") {
           return { ...base, left: w * (0.25 + Math.random() * 0.5), top: h * 0.18, size: THEIRS_SIZE, flight: reduce ? STILL : incomingTomato(h) };
         }
-        const from = mine ? launchPoint(emoji) : { x: w / 2 + (Math.random() - 0.5) * Math.min(w, 448) * 0.8, y: h - BAR_TOP };
+        const from = mine ? launchPoint(emoji) : arrivalPoint();
         return { ...base, left: from.x, top: from.y, size: mine ? MINE_SIZE : THEIRS_SIZE, flight: reduce ? STILL : flightFor(emoji, h) };
       });
       setFloaters((prev) => [...prev, ...fresh].slice(-MAX_ON_SCREEN));
@@ -172,8 +180,8 @@ export function useReactionLayer() {
       ))}
       <AnimatePresence>
         {combo && partner && (
-          <div key="combo" className="fixed inset-x-0 bottom-40">
-            <div className="mx-auto max-w-md px-5">
+          <div key="combo" className="fixed inset-x-0 bottom-40 lg:bottom-30">
+            <div className="frame">
               <motion.div
                 initial={{ x: -32, opacity: 0, scale: 0.8 }}
                 animate={{ x: 0, opacity: 1, scale: 1 }}
