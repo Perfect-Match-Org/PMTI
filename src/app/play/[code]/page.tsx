@@ -14,11 +14,15 @@ export default async function PlayPage({ params }: { params: Promise<{ code: str
 
   if (!user) {
     return (
-      <Hero compact title="You’re invited to a Cornell day for two.">
-        <p className="text-xl text-white/85">Sign in with your Cornell account to join game {code}.</p>
-        <GoogleButton />
-        <DevLogin />
-      </Hero>
+      <main className="min-h-dvh bg-navy">
+        <Hero compact title="You’re invited to a Cornell day for two.">
+          <p className="text-xl text-white/85">Sign in with your Cornell account to join game {code}.</p>
+          <div className="flex max-w-xl flex-col gap-5">
+            <GoogleButton />
+            <DevLogin />
+          </div>
+        </Hero>
+      </main>
     );
   }
 
