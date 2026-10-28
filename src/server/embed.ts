@@ -10,13 +10,19 @@ export async function embed(texts: string[]): Promise<number[][] | null> {
   const url = process.env.EMBED_URL;
   const secret = process.env.EMBED_SECRET;
   if (!url || !secret || texts.length === 0) return null;
-  try {
-    const res = await fetch(url, {
+  const deadline = AbortSignal.timeout(TIMEOUT_MS);
+  const post = () =>
+    fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json", "x-embed-secret": secret },
       body: JSON.stringify({ texts }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: deadline,
     });
+  try {
+    let res = await post();
+    // The edge runtime recycles workers; a request that lands on a retiring one fails fast with a
+    // 5xx and goes through on a second try. Both tries share one deadline.
+    if (res.status >= 500) res = await post();
     if (!res.ok) {
       console.warn(`[embed] HTTP ${res.status}`);
       return null;
