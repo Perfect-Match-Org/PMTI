@@ -3,12 +3,11 @@ import { GoogleButton } from "@/components/auth/google-button";
 import { DevLogin } from "@/components/auth/dev-login";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { StartGame } from "@/components/game/start-game";
-import { phaseOf, splitTime } from "@/game/day";
 
-const DAY = [
-  { time: "12:15pm", line: "It's snowing sideways. It's April. Five this-or-thats, ten seconds." },
-  { time: "5:30pm", line: "Dinner. Where? You keep picking until you agree." },
-  { time: "11:50pm", line: "Then the day ends, and you find out what kind of duo you are: Olin & Uris? Level B & Alley Cat Cafe?" },
+const HOW = [
+  { tone: "bg-pink text-ink", big: "Pick in secret.", small: "Thirteen quick rounds through one Cornell day, from a cancelled prelim to the walk home." },
+  { tone: "bg-red text-white", big: "Reveal together.", small: "Both answers land at the same time. Mash the 🍅 if you have to." },
+  { tone: "bg-white text-ink", big: "Find your duo type.", small: "Olin & Uris? Level B & Alley Cat Cafe? Each of you gets your own half." },
 ];
 
 export default async function Home() {
@@ -16,25 +15,24 @@ export default async function Home() {
 
   return (
     <main>
-      <section data-phase="morning" className="stage">
-        <div className="mx-auto flex min-h-[80dvh] max-w-md flex-col justify-end gap-6 px-4 pt-10 pb-12">
-          <p className="font-display text-xl text-pm-red">PMTI</p>
-          <h1 className="font-display text-[clamp(3rem,16vw,4.5rem)] leading-[0.92]">A Cornell day for two.</h1>
-          <p className="text-xl leading-snug">
-            Play it together, each on your own phone. Pick in secret, reveal at the same time, and find out what
-            kind of duo you are.
+      <section className="bg-navy text-white">
+        <div className="mx-auto flex min-h-[86dvh] max-w-md flex-col justify-end gap-6 px-5 pt-10 pb-12">
+          <p className="text-xl font-black text-pink">PMTI</p>
+          <h1 className="text-[clamp(3.25rem,17vw,5rem)] leading-[0.9] font-black tracking-[-0.035em]">A Cornell day for two.</h1>
+          <p className="text-xl leading-snug text-white/85">
+            A game you play together, each on your own phone. Find out what kind of duo you are.
           </p>
           {user ? (
             <>
               <StartGame />
-              <p className="flex flex-wrap items-center gap-x-3 text-sm">
+              <p className="flex flex-wrap items-center gap-x-3 text-white/70">
                 Signed in as {user.email}
                 <SignOutButton />
               </p>
             </>
           ) : (
             <div className="flex flex-col gap-5">
-              <p className="font-medium">Sign in with your Cornell account to start.</p>
+              <p className="font-semibold">Sign in with your Cornell account to start.</p>
               <GoogleButton />
               <DevLogin />
             </div>
@@ -42,25 +40,17 @@ export default async function Home() {
         </div>
       </section>
 
-      {DAY.map(({ time, line }) => {
-        const { clock, meridiem } = splitTime(time);
-        return (
-          <section key={time} data-phase={phaseOf(time)} className="stage">
-            <div className="mx-auto flex max-w-md flex-col gap-2 px-4 py-10">
-              <p className="font-display text-6xl leading-none text-[var(--clock)]">
-                {clock}
-                <span className="ml-1 text-2xl">{meridiem}</span>
-              </p>
-              <p className="text-lg leading-snug">{line}</p>
-            </div>
-          </section>
-        );
-      })}
+      {HOW.map(({ tone, big, small }) => (
+        <section key={big} className={tone}>
+          <div className="mx-auto flex max-w-md flex-col gap-3 px-5 py-14">
+            <h2 className="text-[clamp(2.5rem,12vw,3.25rem)] leading-[0.95] font-black tracking-[-0.03em]">{big}</h2>
+            <p className="text-xl leading-snug opacity-85">{small}</p>
+          </div>
+        </section>
+      ))}
 
-      <footer data-phase="night" className="stage border-t border-white/20">
-        <p className="mx-auto max-w-md px-4 pb-10 text-sm">
-          Made by Cornell Perfect Match. Questions: perfectmatch@cornell.edu
-        </p>
+      <footer className="bg-navy text-white/70">
+        <p className="mx-auto max-w-md px-5 py-10">Made by Cornell Perfect Match. Questions: perfectmatch@cornell.edu</p>
       </footer>
     </main>
   );

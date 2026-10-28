@@ -18,19 +18,19 @@ export function JoinGate({ code }: { code: string }) {
   }, [code, router]);
 
   return (
-    <main data-phase="morning" className="stage">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-4">
+    <main className="min-h-dvh bg-white">
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-5">
         {error ? (
           <>
-            <p role="alert" className="font-display text-3xl leading-tight">
+            <p role="alert" className="text-4xl leading-tight font-black tracking-[-0.02em]">
               {error}
             </p>
-            <Link href="/" className="btn self-start">
+            <Link href="/" className="btn btn-primary self-start">
               Start your own game
             </Link>
           </>
         ) : (
-          <p className="font-display text-3xl">Joining game {code}…</p>
+          <p className="text-4xl font-black tracking-[-0.02em]">Joining game {code}…</p>
         )}
       </div>
     </main>

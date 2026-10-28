@@ -13,13 +13,13 @@ export default async function PlayPage({ params }: { params: Promise<{ code: str
 
   if (!user) {
     return (
-      <main data-phase="morning" className="stage">
-        <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-4">
-          <p className="font-display text-xl text-pm-red">PMTI</p>
-          <h1 className="font-display text-[clamp(2.75rem,14vw,4rem)] leading-[0.95]">
+      <main className="min-h-dvh bg-navy text-white">
+        <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-end gap-6 px-5 pb-12">
+          <p className="text-xl font-black text-pink">PMTI</p>
+          <h1 className="text-[clamp(3rem,15vw,4.25rem)] leading-[0.92] font-black tracking-[-0.035em]">
             You&apos;re invited to a Cornell day for two.
           </h1>
-          <p className="text-lg">Sign in with your Cornell account to join game {code}.</p>
+          <p className="text-xl text-white/85">Sign in with your Cornell account to join game {code}.</p>
           <GoogleButton />
           <DevLogin />
         </div>
@@ -38,12 +38,12 @@ export default async function PlayPage({ params }: { params: Promise<{ code: str
   );
   if ("error" in loaded) {
     return (
-      <main data-phase="morning" className="stage">
-        <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-4">
-          <p role="alert" className="font-display text-3xl leading-tight">
+      <main className="min-h-dvh bg-white">
+        <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-5">
+          <p role="alert" className="text-4xl leading-tight font-black tracking-[-0.02em]">
             {loaded.error}
           </p>
-          <Link href="/" className="btn self-start">
+          <Link href="/" className="btn btn-primary self-start">
             Start a new game
           </Link>
         </div>

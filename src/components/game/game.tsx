@@ -1,22 +1,25 @@
 "use client";
 
-import Link from "next/link";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRoom, type Connection } from "@/client/useRoom";
 import { say } from "@/game/copy";
-import { phaseOf, splitTime, type DayPhase } from "@/game/day";
-import type { Copy, Round } from "@/game/deck";
-import { getDeck } from "@/game/decks";
-import { LOBBY_ROUND, type RoomView, type Seat } from "@/game/engine";
+import type { Copy } from "@/game/deck";
+import type { PlayerInfo, RoomView, Seat } from "@/game/engine";
+import { Avatar } from "@/components/ui/avatar";
+import { ActionBar } from "./action-bar";
 import { Lobby } from "./lobby";
-import { ReactionBar, useFloaters } from "./reactions";
+import { useFloaters } from "./reactions";
 import { ResultView } from "./result";
 import { Reveal } from "./reveal";
+import { RoomProvider, type RoomContextValue } from "./room-context";
 import { RoundInput } from "./round-input";
 
 const OFFLINE_END_AFTER_MS = 2 * 60 * 1000;
 
 export function Game({ initial, origin }: { initial: RoomView; origin: string }) {
+  const router = useRouter();
   const { spawn, overlay } = useFloaters();
   const { view, connection, presence, error, send, post, react, refresh } = useRoom(initial, spawn);
   useResultRetry(view, refresh);
@@ -27,12 +30,9 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
   const seat = view.seat;
   const partnerSeat: Seat = seat === "host" ? "guest" : "host";
   const names = { host: view.players.host.name, guest: view.players.guest?.name ?? "your partner" };
-  const partnerName = names[partnerSeat];
-  const progress = view.progress;
   const round = view.round;
-  const subject = round?.format === "mind" ? names[round.subject] : partnerName;
-  const t = (copy: Copy) => say(copy, view.mode, { p: partnerName, s: subject });
-
+  const subject = round?.format === "mind" ? names[round.subject] : names[partnerSeat];
+  const t = (copy: Copy) => say(copy, view.mode, { p: names[partnerSeat], s: subject });
   const act = async (fn: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -41,186 +41,146 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
       setBusy(false);
     }
   };
+  const ctx: RoomContextValue = { view, seat, partnerSeat, names, t, busy, act, send, post, react };
 
-  let phase: DayPhase = "afternoon";
-  let content: React.ReactNode;
+  const progress = view.progress;
+  let key: string;
+  let screen: React.ReactNode;
   if (progress.phase === "lobby") {
-    phase = "morning";
-    const deck = getDeck(view.deckId);
-    content = (
-      <Lobby
-        view={view}
-        link={`${origin}/play/${view.code}`}
-        intro={deck ? t(deck.intro) : ""}
-        busy={busy}
-        onReady={() => act(() => send({ round: LOBBY_ROUND, attempt: 0, kind: "ready" }))}
-        onKick={() => act(() => post("kick"))}
-      />
-    );
-  } else if ((progress.phase === "answer" || progress.phase === "reveal") && round) {
-    phase = phaseOf(round.scene.time);
-    const header = <SceneHeader round={round} t={t} />;
-    if (progress.phase === "answer") {
-      content = (
-        <>
-          {header}
-          {view.tries.length > 0 && (
-            <div className="card flex flex-col gap-1">
-              <p className="font-semibold">Not the same. Try {progress.attempt + 1} of {"tries" in round ? round.tries : 3}.</p>
-              {view.tries.map((tr, i) => (
-                <p key={i} className="text-sm">
-                  {names.host} picked “{optionLabel(round, tr.host.picks?.[0], t)}”, {names.guest} picked “
-                  {optionLabel(round, tr.guest.picks?.[0], t)}”.
-                </p>
-              ))}
-            </div>
-          )}
-          {view.mine.answer ? (
-            <div className="card">
-              <p className="font-display text-2xl">Locked in.</p>
-              <p className="mt-1">{view.partner.answered ? "Revealing…" : `Waiting for ${partnerName}…`}</p>
-            </div>
-          ) : (
-            <RoundInput
-              key={`${progress.round}-${progress.attempt}`}
-              round={round}
-              seat={seat}
-              partnerName={partnerName}
-              t={t}
-              busy={busy}
-              onSubmit={(payload) =>
-                act(() => send({ round: progress.round, attempt: progress.attempt, kind: "answer", payload }))
-              }
-            />
-          )}
-        </>
-      );
-    } else {
-      content = (
-        <>
-          {header}
-          {view.reveal && (
-            <Reveal key={`${progress.round}-${progress.attempt}`} round={round} reveal={view.reveal} names={names} t={t} />
-          )}
-          {view.mine.ready ? (
-            <p className="font-medium">Waiting for {partnerName} to move on…</p>
-          ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => act(() => send({ round: progress.round, attempt: 0, kind: "ready" }))}
-              className="btn self-start"
-            >
-              Next
-            </button>
-          )}
-        </>
-      );
-    }
+    key = "lobby";
+    screen = <Lobby link={`${origin}/play/${view.code}`} />;
+  } else if (progress.phase === "answer" && round) {
+    key = `answer-${progress.round}-${progress.attempt}`;
+    screen = <RoundInput key={key} round={round} />;
+  } else if (progress.phase === "reveal" && round && view.reveal) {
+    key = `reveal-${progress.round}`;
+    screen = <Reveal key={key} round={round} reveal={view.reveal} />;
   } else if (progress.phase === "done") {
-    phase = "night";
-    content = view.result ? (
-      <ResultView result={view.result} view={view} names={names} t={t} />
+    key = "done";
+    screen = view.result ? (
+      <ResultView result={view.result} />
     ) : (
-      <p className="font-display text-3xl">Working out your duo type…</p>
+      <p className="pt-10 text-3xl font-extrabold">Working out your duo type…</p>
     );
   } else {
-    content = (
-      <div className="card flex flex-col items-start gap-4">
-        <p className="font-display text-2xl">This game was ended.</p>
-        <Link href="/" className="btn">
-          Start a new game
-        </Link>
-      </div>
+    key = "ended";
+    screen = (
+      <>
+        <h1 className="pt-10 text-4xl leading-tight font-extrabold">This game was ended.</h1>
+        <p className="mt-3 text-lg text-muted">Start a new one whenever you&apos;re both ready.</p>
+        <ActionBar reactions={false} primary={{ label: "Start a new game", onClick: () => router.push("/") }} />
+      </>
     );
   }
 
-  const live = progress.phase !== "done" && progress.phase !== "ended";
+  const inRound = progress.phase === "answer" || progress.phase === "reveal";
+  const partner = view.players[partnerSeat];
   return (
-    <main data-phase={phase} className="stage min-h-dvh">
-      {overlay}
-      <div className="mx-auto flex max-w-md flex-col gap-6 px-4 pt-5 pb-28">
-        <TopBar
-          partnerName={partnerName}
-          online={presence?.online ?? true}
-          lockedIn={progress.phase === "answer" && view.partner.answered}
-          joined={!!view.players.guest}
-          connection={connection}
-          step={progress.phase === "answer" || progress.phase === "reveal" ? progress.step : null}
-          total={view.totalSteps}
-        />
-        {content}
-        {error && (
-          <p role="alert" className="card border-pm-red font-medium">
-            {error}
-          </p>
-        )}
-        {live && view.players.guest && offlineFor >= OFFLINE_END_AFTER_MS && (
-          <div className="card flex flex-col items-start gap-3">
-            <p>{partnerName} has been offline for a couple of minutes. They can rejoin with the same link.</p>
-            <button type="button" className="btn" onClick={() => act(() => post("end"))}>
-              End game
-            </button>
+    <MotionConfig reducedMotion="user">
+      <RoomProvider value={ctx}>
+        <main className="min-h-dvh bg-white">
+          {overlay}
+          <div className="mx-auto flex max-w-md flex-col px-5 pt-4 pb-44">
+            {inRound && <Segments step={progress.step} total={view.totalSteps} />}
+            {partner && progress.phase !== "done" && (
+              <LiveLine
+                partner={partner}
+                online={presence?.online ?? true}
+                lockedIn={progress.phase === "answer" && view.partner.answered}
+                choosing={progress.phase === "answer" && !view.partner.answered}
+                connection={connection}
+              />
+            )}
+            {error && (
+              <p role="alert" className="mt-4 rounded-2xl bg-blush px-4 py-3 font-semibold text-red-deep">
+                {error}
+              </p>
+            )}
+            {partner && progress.phase !== "done" && progress.phase !== "ended" && offlineFor >= OFFLINE_END_AFTER_MS && (
+              <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-tile px-4 py-3">
+                <p className="font-medium">{partner.name} has been offline a while. They can rejoin with the same link.</p>
+                <button type="button" className="font-bold text-navy underline" onClick={() => act(() => post("end"))}>
+                  End game
+                </button>
+              </div>
+            )}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={key}
+                initial={{ opacity: 0, x: 28 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -28 }}
+                transition={{ type: "spring", stiffness: 380, damping: 34 }}
+              >
+                {screen}
+              </motion.div>
+            </AnimatePresence>
           </div>
-        )}
-      </div>
-      {live && view.players.guest && <ReactionBar onReact={react} />}
-    </main>
+        </main>
+      </RoomProvider>
+    </MotionConfig>
   );
 }
 
-function SceneHeader({ round, t }: { round: Round; t: (copy: Copy) => string }) {
-  const { clock, meridiem } = splitTime(round.scene.time);
+/** Story-style progress: one segment per round, the current one fills in red. */
+function Segments({ step, total }: { step: number; total: number }) {
   return (
-    <header>
-      <p className="font-display text-[clamp(4.5rem,24vw,7rem)] leading-[0.82] text-[var(--clock)]">
-        {clock}
-        <span className="ml-1 text-[0.32em]">{meridiem}</span>
-      </p>
-      <p className="mt-3 text-xl leading-snug font-medium">{t(round.scene.title)}</p>
-    </header>
-  );
-}
-
-function optionLabel(round: Round, i: number | null | undefined, t: (c: Copy) => string) {
-  return "options" in round && i != null ? t(round.options[i]!.label) : "?";
-}
-
-function TopBar(props: {
-  partnerName: string;
-  online: boolean;
-  lockedIn: boolean;
-  joined: boolean;
-  connection: Connection;
-  step: number | null;
-  total: number;
-}) {
-  const { partnerName, online, lockedIn, joined, connection, step, total } = props;
-  const status = !joined ? null : !online ? `${partnerName} is offline` : lockedIn ? `${partnerName} locked in` : `${partnerName} is here`;
-  return (
-    <div className="flex min-h-6 items-center justify-between gap-3 text-sm font-medium">
-      <span aria-live="polite" className="flex items-center gap-2">
-        {status && (
-          <>
-            <span
-              aria-hidden
-              className={`size-2.5 rounded-full ${!online ? "bg-current opacity-30" : lockedIn ? "bg-pm-red" : "bg-current"}`}
+    <div role="img" aria-label={`Round ${step} of ${total}`} className="grid gap-1" style={{ gridTemplateColumns: `repeat(${total}, 1fr)` }}>
+      {Array.from({ length: total }, (_, i) => (
+        <span key={i} className="h-1 overflow-hidden rounded-full bg-line">
+          {i + 1 < step && <span className="block h-full bg-navy" />}
+          {i + 1 === step && (
+            <motion.span
+              className="block h-full origin-left bg-red"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
             />
-            {status}
-          </>
-        )}
-        {connection === "polling" && <span className="opacity-70">(reconnecting)</span>}
-      </span>
-      {step !== null && (
-        <span role="img" aria-label={`Round ${step} of ${total}`} className="flex gap-1">
-          {Array.from({ length: total }, (_, i) => (
-            <span
-              key={i}
-              className={`size-1.5 rounded-full ${i + 1 === step ? "bg-[var(--clock)]" : i + 1 < step ? "bg-current" : "bg-current opacity-25"}`}
-            />
-          ))}
+          )}
         </span>
-      )}
+      ))}
+    </div>
+  );
+}
+
+function LiveLine(props: { partner: PlayerInfo; online: boolean; lockedIn: boolean; choosing: boolean; connection: Connection }) {
+  const { partner, online, lockedIn, choosing, connection } = props;
+  const state = !online ? "offline" : lockedIn ? "locked" : choosing ? "choosing" : "here";
+  return (
+    <div className="mt-3 flex min-h-8 items-center gap-2.5 text-[0.95rem]" aria-live="polite">
+      <Avatar player={partner} tone="partner" size={28} />
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={state}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18 }}
+          className="flex items-center gap-1.5 text-muted"
+        >
+          {state === "locked" ? (
+            <span className="font-bold text-red">{partner.name} locked in</span>
+          ) : state === "offline" ? (
+            <span>{partner.name} is offline</span>
+          ) : state === "choosing" ? (
+            <>
+              <span>
+                <b className="font-bold text-ink">{partner.name}</b> is choosing
+              </span>
+              <span aria-hidden className="flex gap-0.5">
+                {[0, 1, 2].map((i) => (
+                  <i key={i} className="typing-dot block size-1.5 rounded-full bg-muted" style={{ animationDelay: `${i * 0.15}s` }} />
+                ))}
+              </span>
+            </>
+          ) : (
+            <span>
+              <b className="font-bold text-ink">{partner.name}</b> is here
+            </span>
+          )}
+        </motion.span>
+      </AnimatePresence>
+      {connection === "polling" && <span className="ml-auto text-sm text-muted">reconnecting…</span>}
     </div>
   );
 }

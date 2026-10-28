@@ -26,12 +26,12 @@ export function StartGame() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <button
         type="button"
         disabled={busy}
         onClick={() => start("couple")}
-        className="btn btn-solid self-start"
+        className="btn btn-pink"
       >
         Start a game as a couple
       </button>
@@ -39,12 +39,12 @@ export function StartGame() {
         type="button"
         disabled={busy}
         onClick={() => start("friends")}
-        className="btn self-start"
+        className="btn border-2 border-white/40 bg-transparent text-white shadow-none"
       >
         Start one as friends (parallel universe)
       </button>
       {error && (
-        <p role="alert" className="card border-pm-red font-medium">
+        <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep">
           {error}
         </p>
       )}

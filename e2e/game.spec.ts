@@ -15,8 +15,11 @@ test.beforeAll(async ({ request }) => {
   }
 });
 
+// VIDEO=1 records each player's screen to test-results/video (written when the test finishes).
+const contextOptions = process.env.VIDEO ? { recordVideo: { dir: "test-results/video", size: { width: 412, height: 915 } } } : {};
+
 async function player(browser: Browser, email: string, url = "/"): Promise<Page> {
-  const page = await (await browser.newContext()).newPage();
+  const page = await (await browser.newContext(contextOptions)).newPage();
   await page.goto(url);
   await page.getByLabel("Dev sign-in (local only)").fill(email);
   await page.getByRole("button", { name: "Sign in" }).click();
@@ -71,17 +74,22 @@ test("two players play a full game in sync", async ({ browser }) => {
     await expect(bob.getByRole("button", { name: "Lock in", exact: true })).toBeVisible({ timeout: REALTIME_MS });
 
     const n = String(rounds + 1).padStart(2, "0");
+    if (process.env.SHOTS) await alice.waitForTimeout(700);
     await shot(alice, `r${n}-a-question`);
     await answerRound(alice, "bagels at midnight");
-    await expect(alice.getByText("Locked in.")).toBeVisible();
+    await expect(alice.getByRole("button", { name: "Waiting for Bob" })).toBeDisabled();
     await expect(bob.getByText("Alice locked in")).toBeVisible({ timeout: REALTIME_MS });
 
     await answerRound(bob, "a late night bagel run");
     await expect(bob.getByRole("button", { name: "Next", exact: true })).toBeVisible();
     await expect(alice.getByRole("button", { name: "Next", exact: true })).toBeVisible({ timeout: REALTIME_MS });
     vibeVerdicts += await alice.getByText(/^\d+% vibe match$/).count();
-    await alice.waitForTimeout(500);
-    await shot(alice, `r${n}-b-reveal`);
+    if (process.env.SHOTS) {
+      await alice.waitForTimeout(350);
+      await shot(alice, `r${n}-b-flash`);
+      await alice.waitForTimeout(1600);
+    }
+    await shot(alice, `r${n}-c-reveal`);
 
     await bob.getByRole("button", { name: "Next", exact: true }).click();
     await alice.getByRole("button", { name: "Next", exact: true }).click();
@@ -92,6 +100,18 @@ test("two players play a full game in sync", async ({ browser }) => {
     expect(rounds).toBeLessThan(20);
   }
   await expect(bob.getByText(/^That's the day/)).toBeVisible({ timeout: REALTIME_MS });
+  if (process.env.SHOTS) {
+    await alice.waitForTimeout(1200);
+    await shot(alice, "90-story-1");
+    for (const n of [2, 3, 4, 5, 6]) {
+      await alice.getByRole("button", { name: "Next slide" }).click();
+      await alice.waitForTimeout(2600);
+      await shot(alice, `90-story-${n}`);
+    }
+  }
+  // The result opens as a story; skip it on both phones to reach the summary.
+  await alice.getByRole("button", { name: "Skip" }).click();
+  await bob.getByRole("button", { name: "Skip" }).click();
   // Same type on both screens, and each player's role shows up on the other's screen.
   const typeName = await alice.getByRole("heading", { level: 1 }).innerText();
   await expect(bob.getByRole("heading", { level: 1 })).toHaveText(typeName);
@@ -99,7 +119,8 @@ test("two players play a full game in sync", async ({ browser }) => {
   const aliceRole = ((await sentence(alice, "You're").textContent()) ?? "").replace(/^You're\s*/, "").trim();
   expect(aliceRole.length).toBeGreaterThan(0);
   await expect(sentence(bob, "Alice is")).toHaveText(`Alice is ${aliceRole}`);
-  await expect(alice.getByText(/^Same Brain/)).toBeVisible();
+  await expect(alice.getByText("same brain", { exact: true })).toBeVisible();
+  if (process.env.SHOTS) await alice.waitForTimeout(1500);
   await shot(alice, "99-result");
   expect(rounds).toBe(13);
   // Mirror round shows two verdicts and the shared first-date round one; all scored via embeddings.
@@ -113,4 +134,7 @@ test("two players play a full game in sync", async ({ browser }) => {
     where r.code = ${code} and u.email = 'alice@cornell.edu' and m.round = -1 and m.kind = 'ready'`;
   await sql.end();
   expect(row?.payload).toEqual({ reactions: { "🍅": 5 } });
+  const videos = [alice, bob].map((page, i) => page.video()?.saveAs(`test-results/video/${i ? "bob" : "alice"}.webm`));
+  await Promise.all([alice.context().close(), bob.context().close(), carol.context().close()]);
+  await Promise.all(videos);
 });

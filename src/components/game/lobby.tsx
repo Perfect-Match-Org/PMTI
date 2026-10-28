@@ -1,72 +1,80 @@
 "use client";
 
+import { motion } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
-import type { RoomView } from "@/game/engine";
+import { getDeck } from "@/game/decks";
+import { LOBBY_ROUND } from "@/game/engine";
+import { Avatar } from "@/components/ui/avatar";
+import { ActionBar } from "./action-bar";
+import { useRoomContext } from "./room-context";
 
-type Props = {
-  view: RoomView;
-  link: string;
-  intro: string;
-  busy: boolean;
-  onReady: () => void;
-  onKick: () => void;
-};
-
-export function Lobby({ view, link, intro, busy, onReady, onKick }: Props) {
+export function Lobby({ link }: { link: string }) {
+  const { view, seat, partnerSeat, names, t, busy, act, send, post } = useRoomContext();
   const [copied, setCopied] = useState(false);
   const guest = view.players.guest;
-  const partnerWord = view.mode === "couple" ? "your partner" : "your friend";
+  const deck = getDeck(view.deckId);
 
   if (!guest) {
     return (
-      <div className="flex flex-col gap-6">
-        <div>
-          <p className="text-lg font-medium">Your game code</p>
-          <p className="font-display text-[clamp(2.5rem,13vw,4rem)] leading-none tracking-[0.04em] text-pm-red">
-            {view.code}
+      <div className="pt-8">
+        <p className="text-lg font-semibold text-muted">Your game code</p>
+        <p className="text-[clamp(2.75rem,14vw,4rem)] leading-none font-black tracking-[0.06em] text-navy">{view.code}</p>
+        <div className="mt-7 flex flex-col items-center gap-4 rounded-[1.5rem] bg-tile px-5 py-6">
+          <div className="rounded-2xl bg-white p-3">
+            <QRCodeSVG value={link} size={184} marginSize={0} fgColor="#1a2550" title={`QR code that opens ${link}`} />
+          </div>
+          <p className="text-center text-lg font-medium">
+            Have {view.mode === "couple" ? "your partner" : "your friend"} scan this with their phone camera.
           </p>
         </div>
-        <div className="card flex flex-col items-center gap-4">
-          <QRCodeSVG value={link} size={196} marginSize={1} fgColor="#24438d" title={`QR code that opens ${link}`} />
-          <p className="text-center">Have {partnerWord} scan this with their phone camera.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <button
-            type="button"
-            className="btn"
-            onClick={async () => {
+        <p className="mt-5 text-center text-muted">Waiting for them to join…</p>
+        <ActionBar
+          reactions={false}
+          primary={{
+            label: copied ? "Link copied" : "Copy invite link",
+            onClick: async () => {
               await navigator.clipboard.writeText(link);
               setCopied(true);
-            }}
-          >
-            {copied ? "Link copied" : "Copy invite link"}
-          </button>
-          <span className="text-sm">Waiting for them to join…</span>
-        </div>
+            },
+          }}
+        />
       </div>
     );
   }
 
-  const partnerName = view.seat === "host" ? guest.name : view.players.host.name;
+  const partner = view.players[partnerSeat]!;
   return (
-    <div className="flex flex-col gap-6">
-      <p className="font-display text-[clamp(2.5rem,13vw,3.75rem)] leading-[0.95]">
-        {view.players.host.name} &amp; {guest.name} are in.
-      </p>
-      <p className="text-xl leading-snug">{intro}</p>
-      {view.mine.ready ? (
-        <p className="font-medium">You&apos;re ready. Waiting for {partnerName}…</p>
-      ) : (
-        <button type="button" disabled={busy} onClick={onReady} className="btn btn-solid self-start">
-          I&apos;m ready
+    <div className="pt-8">
+      <div className="flex items-center">
+        <motion.span initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+          <Avatar player={view.players[seat]!} tone="me" size={64} />
+        </motion.span>
+        <motion.span
+          initial={{ x: 30, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.08 }}
+          className="-ml-3 rounded-full ring-4 ring-white"
+        >
+          <Avatar player={partner} tone="partner" size={64} />
+        </motion.span>
+      </div>
+      <h1 className="mt-5 text-[2.6rem] leading-[1] font-black tracking-[-0.025em]">
+        {names.host} &amp; {names.guest} are in.
+      </h1>
+      {deck && <p className="mt-4 text-xl leading-snug text-muted">{t(deck.intro)}</p>}
+      {seat === "host" && (
+        <button type="button" onClick={() => act(() => post("kick"))} className="mt-6 font-semibold text-muted underline underline-offset-4">
+          Not who you invited? Remove {partner.name}
         </button>
       )}
-      {view.seat === "host" && (
-        <button type="button" onClick={onKick} className="btn-quiet self-start text-sm">
-          Not who you invited? Remove {guest.name}
-        </button>
-      )}
+      <ActionBar
+        primary={
+          view.mine.ready
+            ? { label: `Waiting for ${partner.name}`, disabled: true }
+            : { label: "I'm ready", disabled: busy, onClick: () => act(() => send({ round: LOBBY_ROUND, attempt: 0, kind: "ready" })) }
+        }
+      />
     </div>
   );
 }

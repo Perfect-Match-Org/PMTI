@@ -70,7 +70,7 @@ export function GoogleButton() {
       <Script src="https://accounts.google.com/gsi/client" onReady={() => void init()} />
       <div ref={container} />
       {error && (
-        <p role="alert" className="card border-pm-red font-medium">
+        <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep">
           {error}
         </p>
       )}

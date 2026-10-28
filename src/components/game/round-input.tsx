@@ -2,25 +2,26 @@
 
 import { useEffect, useState } from "react";
 import type { Answer } from "@/game/answers";
-import { MAX_TEXT_LENGTH, type Copy, type Round } from "@/game/deck";
-import type { Seat } from "@/game/engine";
+import { MAX_TEXT_LENGTH, type Round } from "@/game/deck";
+import type { TextSlot } from "@/game/engine";
+import { ActionBar } from "./action-bar";
 import { Choices } from "./choices";
+import { useRoomContext } from "./room-context";
 
-type Props = {
-  round: Round;
-  seat: Seat;
-  partnerName: string;
-  t: (copy: Copy) => string;
-  busy: boolean;
-  onSubmit: (answer: Answer) => void;
-};
+const SLOT_ORDER: TextSlot[] = ["self", "partner", "shared"];
 
-export function RoundInput({ round, seat, partnerName, t, busy, onSubmit }: Props) {
-  const [picks, setPicks] = useState<(number | null)[]>([]);
-  const [guess, setGuess] = useState<number | null>(null);
-  const [texts, setTexts] = useState<string[]>([]);
+export function RoundInput({ round }: { round: Round }) {
+  const { view, seat, partnerSeat, names, t, busy, act, send } = useRoomContext();
+  const progress = view.progress;
+  const locked = view.mine.answer;
+  const lockedTexts = [...view.mine.texts].sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot));
+
+  const [picks, setPicks] = useState<(number | null)[]>(() => locked?.picks ?? []);
+  const [guess, setGuess] = useState<number | null>(() => locked?.guesses?.[0] ?? null);
+  const [texts, setTexts] = useState<string[]>(() => lockedTexts.map((x) => x.body));
   const setAt = <T,>(set: React.Dispatch<React.SetStateAction<T[]>>, i: number) => (v: T) =>
     set((prev) => Object.assign([...prev], { [i]: v }));
+  const partnerName = names[partnerSeat];
 
   const title = round.format === "mind" && round.subject !== seat ? round.guessPrompt : round.prompt;
   let body: React.ReactNode;
@@ -36,55 +37,58 @@ export function RoundInput({ round, seat, partnerName, t, busy, onSubmit }: Prop
           options={round.options.map((o) => t(o.label))}
           value={picks[0] ?? null}
           onChange={setAt(setPicks, 0)}
+          disabled={!!locked}
         />
       );
       if (picks[0] != null) answer = { picks: [picks[0]] };
       break;
     case "likely":
-      body = round.items.map((item, i) => (
-        <div key={i} className="flex flex-col gap-2">
-          <p className="font-medium">{t(item.text)}</p>
-          <Choices
-            label={t(item.text)}
-            options={["Me", partnerName]}
-            value={picks[i] ?? null}
-            onChange={setAt(setPicks, i)}
-            layout="pair"
-          />
+      body = (
+        <div className="flex flex-col gap-5">
+          {round.items.map((item, i) => (
+            <div key={i} className="flex flex-col gap-2.5">
+              <p className="text-lg font-semibold">{t(item.text)}</p>
+              <Choices
+                label={t(item.text)}
+                options={["Me", partnerName]}
+                value={picks[i] ?? null}
+                onChange={setAt(setPicks, i)}
+                disabled={!!locked}
+                layout="pair"
+              />
+            </div>
+          ))}
         </div>
-      ));
-      if (round.items.every((_, i) => picks[i] != null)) {
-        answer = { picks: round.items.map((_, i) => picks[i]!) };
-      }
+      );
+      if (round.items.every((_, i) => picks[i] != null)) answer = { picks: round.items.map((_, i) => picks[i]!) };
       break;
     case "scale": {
       const dots = Array.from({ length: round.steps }, (_, i) => String(i + 1));
-      const ends = (
-        <div className="flex justify-between gap-6 text-sm">
-          <span>1 = {t(round.left)}</span>
-          <span className="text-right">{round.steps} = {t(round.right)}</span>
-        </div>
-      );
       body = (
-        <>
-          {ends}
-          <div className="flex flex-col gap-2">
-            <p className="font-medium">You</p>
-            <Choices label="Where you are" options={dots} value={picks[0] ?? null} onChange={setAt(setPicks, 0)} layout="scale" />
+        <div className="flex flex-col gap-5">
+          <div className="flex justify-between gap-6 text-sm text-muted">
+            <span>1 = {t(round.left)}</span>
+            <span className="text-right">
+              {round.steps} = {t(round.right)}
+            </span>
           </div>
-          <div className="flex flex-col gap-2">
-            <p className="font-medium">Where&apos;s {partnerName}?</p>
-            <Choices label={`Where ${partnerName} is`} options={dots} value={guess} onChange={setGuess} layout="scale" />
+          <div className="flex flex-col gap-2.5">
+            <p className="text-lg font-semibold">You</p>
+            <Choices label="Where you are" options={dots} value={picks[0] ?? null} onChange={setAt(setPicks, 0)} disabled={!!locked} layout="scale" />
           </div>
-        </>
+          <div className="flex flex-col gap-2.5">
+            <p className="text-lg font-semibold">Where&apos;s {partnerName}?</p>
+            <Choices label={`Where ${partnerName} is`} options={dots} value={guess} onChange={setGuess} disabled={!!locked} layout="scale" />
+          </div>
+        </div>
       );
       if (picks[0] != null && guess != null) answer = { picks: [picks[0]], guesses: [guess] };
       break;
     }
     case "speed":
       body = (
-        <>
-          <Countdown seconds={round.seconds} />
+        <div className="flex flex-col gap-3">
+          {!locked && <Countdown seconds={round.seconds} />}
           {round.items.map((pair, i) => (
             <Choices
               key={i}
@@ -92,47 +96,63 @@ export function RoundInput({ round, seat, partnerName, t, busy, onSubmit }: Prop
               options={pair.map((o) => t(o.label))}
               value={picks[i] ?? null}
               onChange={setAt(setPicks, i)}
+              disabled={!!locked}
               layout="pair"
             />
           ))}
-        </>
+        </div>
       );
       if (picks.some((p) => p != null)) answer = { picks: round.items.map((_, i) => picks[i] ?? null) };
       break;
     case "write": {
-      const prompts =
-        round.variant === "mirror" ? [round.prompt, round.partnerPrompt ?? round.prompt] : [round.prompt];
-      body = prompts.map((prompt, i) => (
-        <label key={i} className="flex flex-col gap-2">
-          <span className="text-lg font-semibold">{t(prompt)}</span>
-          <input
-            value={texts[i] ?? ""}
-            maxLength={MAX_TEXT_LENGTH}
-            onChange={(e) => setAt(setTexts, i)(e.target.value)}
-            className="field"
-          />
-        </label>
-      ));
+      const prompts = round.variant === "mirror" ? [round.prompt, round.partnerPrompt ?? round.prompt] : [round.prompt];
+      body = (
+        <div className="flex flex-col gap-5">
+          {prompts.map((prompt, i) => (
+            <label key={i} className="flex flex-col gap-2.5">
+              <span className="text-lg font-semibold">{t(prompt)}</span>
+              <input
+                value={texts[i] ?? ""}
+                maxLength={MAX_TEXT_LENGTH}
+                disabled={!!locked}
+                onChange={(e) => setAt(setTexts, i)(e.target.value)}
+                className="field"
+              />
+            </label>
+          ))}
+        </div>
+      );
       const filled = prompts.map((_, i) => (texts[i] ?? "").trim());
       if (filled.every(Boolean)) answer = { texts: filled };
       break;
     }
   }
 
+  const attempt = progress.phase === "answer" ? progress.attempt : 0;
+  const lastTry = view.tries.at(-1);
   return (
-    <div className="flex flex-col gap-5">
-      <div className="card flex flex-col gap-4">
-        {round.format !== "write" && <h2 className="text-lg leading-snug font-semibold">{t(title)}</h2>}
-        {body}
-      </div>
-      <button
-        type="button"
-        disabled={!answer || busy}
-        onClick={() => answer && onSubmit(answer)}
-        className="btn self-start"
-      >
-        {busy ? "Locking in…" : "Lock in"}
-      </button>
+    <div className="pt-6">
+      <p className="text-[0.95rem] font-bold text-red">{round.scene.time}</p>
+      <p className="text-[0.95rem] font-medium text-muted">{t(round.scene.title)}</p>
+      {lastTry && round.format === "agree" && (
+        <p className="mt-4 rounded-2xl bg-blush px-4 py-3 font-semibold">
+          Not the same yet. {names.host} picked “{t(round.options[lastTry.host.picks?.[0] ?? 0]!.label)}”, {names.guest} picked “
+          {t(round.options[lastTry.guest.picks?.[0] ?? 0]!.label)}”. Try {attempt + 1} of {round.tries}.
+        </p>
+      )}
+      {round.format !== "write" && <h1 className="mt-3 text-[1.9rem] leading-[1.08] font-extrabold tracking-[-0.015em]">{t(title)}</h1>}
+      <div className="mt-6">{body}</div>
+      <ActionBar
+        primary={
+          locked
+            ? { label: `Waiting for ${partnerName}`, disabled: true }
+            : {
+                label: busy ? "Locking in…" : "Lock in",
+                disabled: !answer || busy,
+                onClick: () => answer && act(() => send({ round: progress.phase === "answer" ? progress.round : 0, attempt, kind: "answer", payload: answer })),
+              }
+        }
+      />
     </div>
   );
 }
@@ -145,11 +165,11 @@ function Countdown({ seconds }: { seconds: number }) {
     return () => clearInterval(id);
   }, []);
   return (
-    <div className="flex items-center gap-3">
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-pm-sky">
-        <div className="h-full bg-pm-red transition-[width] duration-1000 ease-linear" style={{ width: `${(left / seconds) * 100}%` }} />
+    <div className="mb-1 flex items-center gap-3">
+      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-tile">
+        <div className="h-full rounded-full bg-red transition-[width] duration-1000 ease-linear" style={{ width: `${(left / seconds) * 100}%` }} />
       </div>
-      <span className="w-24 text-right text-sm font-medium">{left > 0 ? `${left}s, gut only` : "Time! It still counts"}</span>
+      <span className="w-20 text-right text-sm font-semibold text-muted">{left > 0 ? `${left}s, gut only` : "Time!"}</span>
     </div>
   );
 }

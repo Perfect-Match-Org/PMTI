@@ -8,7 +8,7 @@ export function SignOutButton() {
   return (
     <button
       type="button"
-      className="btn-quiet"
+      className="font-semibold underline underline-offset-4"
       onClick={async () => {
         await supabaseBrowser().auth.signOut();
         router.refresh();

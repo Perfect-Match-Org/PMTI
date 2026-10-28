@@ -44,12 +44,12 @@ export function DevLogin() {
           onChange={(event) => setEmail(event.target.value)}
           className="field flex-1"
         />
-        <button type="submit" className="btn">
+        <button type="submit" className="btn btn-pink">
           Sign in
         </button>
       </div>
       {error && (
-        <p role="alert" className="card border-pm-red font-medium">
+        <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep">
           {error}
         </p>
       )}
