@@ -30,7 +30,7 @@ for (const [promptId, texts] of Object.entries(pool)) {
     const vectors = await embed(batch);
     for (const [j, body] of batch.entries()) {
       await sql`insert into texts (prompt_id, body, embedding)
-                values (${promptId}, ${body}, ${`[${vectors[j].join(",")}]`}::extensions.vector)`;
+                values (${promptId}, ${body}, ${`[${vectors[j].join(",")}]`}::extensions.halfvec)`;
     }
   }
   console.log(`${promptId}: ${todo.length} added, ${have.size} already there`);

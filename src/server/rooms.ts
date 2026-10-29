@@ -218,7 +218,7 @@ export async function submitMove(code: string, userId: string, body: unknown): P
       const vector = vectors?.[i] ? toVector(vectors[i]) : null;
       await tx`
         insert into texts (prompt_id, body, embedding, room_id, player_id, round, slot)
-        values (${promptId}, ${body}, ${vector}::extensions.vector,
+        values (${promptId}, ${body}, ${vector}::extensions.halfvec,
                 ${locked.id}, ${userId}, ${r}, ${slot})`;
     }
     if (texts.length) await scoreRoundTexts(tx, locked.id, r);
