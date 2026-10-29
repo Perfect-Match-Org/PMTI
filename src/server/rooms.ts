@@ -294,11 +294,12 @@ export async function loadView(code: string, userId: string): Promise<RoomView> 
   const info = await playerInfo([room.hostId, ...(room.guestId ? [room.guestId] : [])]);
   const unknown: PlayerInfo = { name: "Player", avatarUrl: null };
   const result = room.result ?? (await ensureResult(deck, room, moves, texts));
+  const shareId = result ? (room.shareId ?? (await assignShareId(room.id))) : null;
   // An expired lobby reads as ended, so the host isn't left waiting on a link that no longer works.
   const endedAt = room.endedAt ?? (expired(room) ? new Date(room.createdAt.getTime() + ROOM_TTL_MS) : null);
   return viewFor({
     deck,
-    room: { ...room, endedAt, result },
+    room: { ...room, endedAt, result, shareId },
     moves,
     texts,
     viewerId: userId,
@@ -341,18 +342,15 @@ export async function setShareName(code: string, userId: string, body: unknown):
   });
 }
 
-/** The share card's address for a finished game, made the first time either player shares. */
-export async function shareCard(code: string, userId: string): Promise<{ shareId: string }> {
-  return sql.begin(async (tx) => {
-    const room = await findRoom(tx, code, true);
-    if (!isPlayer(room, userId)) throw notPlayer(room, userId);
-    if (!room.result) throw new RoomError(409, "Your result isn’t ready yet.");
-    if (room.shareId) return { shareId: room.shareId };
-    // Ten characters, so nobody finds a card by guessing; the room code alone would be too short.
-    const shareId = newCode(10);
-    await tx`update rooms set share_id = ${shareId} where id = ${room.id}`;
-    return { shareId };
-  });
+/**
+ * The share card's address, made once a game has its result, so tapping Share can open the share
+ * sheet at once (Safari refuses one that waits on a request). Ten characters, so nobody finds a
+ * card by guessing; the room code alone would be too short. `coalesce` keeps concurrent first reads on one id.
+ */
+async function assignShareId(roomId: string): Promise<string> {
+  const [row] = await sql<{ shareId: string }[]>`
+    update rooms set share_id = coalesce(share_id, ${newCode(10)}) where id = ${roomId} returning share_id`;
+  return row!.shareId;
 }
 
 /** One player on the share card: their first name only if they chose to show it. */

@@ -160,6 +160,8 @@ export type RoomView = {
   result: Result | null;
   /** Whether each player lets their name appear on the public share card. */
   shareNames: Pair<boolean>;
+  /** The public share card's id, once the game has its result. */
+  shareId: string | null;
 };
 
 export type ViewInput = {
@@ -173,6 +175,7 @@ export type ViewInput = {
     result?: Result | null;
     hostSharesName?: boolean;
     guestSharesName?: boolean;
+    shareId?: string | null;
   };
   moves: MoveRow[];
   texts: TextRow[];
@@ -217,6 +220,7 @@ export function viewFor({ deck, room, moves, texts, players, viewerId }: ViewInp
     reveal: null,
     result: progress.phase === "done" ? (room.result ?? null) : null,
     shareNames: { host: !!room.hostSharesName, guest: !!room.guestSharesName },
+    shareId: progress.phase === "done" ? (room.shareId ?? null) : null,
   };
 
   if (progress.phase === "lobby") {

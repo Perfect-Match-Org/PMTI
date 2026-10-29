@@ -2,7 +2,7 @@
 
 import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Axis } from "@/game/deck";
 import { useCopy } from "@/client/useCopy";
 
@@ -10,7 +10,6 @@ import { momentMood, momentText } from "@/game/moments";
 import type { Moment, Result } from "@/game/scoring";
 import { duoType, type DuoType } from "@/game/types";
 import { Avatar } from "@/components/ui/avatar";
-import { ErrorNote } from "@/components/ui/error-note";
 import { afterPairName, PairName } from "@/components/ui/pair-name";
 import { BrokenHeart, Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
@@ -213,34 +212,24 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
   const { view, deck, seat, partnerSeat, names, t, busy, act, post } = useRoomContext();
   const router = useRouter();
   const copied = useCopy();
-  const [cardError, setCardError] = useState(false);
   // Shown at once, then the server's answer takes over.
   const [showNameNow, setShowNameNow] = useState<boolean | null>(null);
-  const shareId = useRef<string | null>(null);
   const runnerUp = result.runnerUp ? duoType(result.runnerUp) : undefined;
 
-  /** The public card's address; the server makes it the first time either of you shares. */
-  async function cardUrl() {
-    if (!shareId.current) {
-      const res = await fetch(`/api/rooms/${view.code}/share`, { method: "POST" }).catch(() => null);
-      const data = await res?.json().catch(() => null);
-      setCardError(!res?.ok || !data?.shareId);
-      if (!res?.ok || !data?.shareId) return null;
-      shareId.current = data.shareId as string;
-    }
-    return `${window.location.origin}/card/${shareId.current}`;
-  }
+  /** The public card's address; the server makes it with the result. */
+  const cardUrl = () => (view.shareId ? `${window.location.origin}/card/${view.shareId}` : null);
 
-  async function share() {
-    const url = await cardUrl();
+  // No await before the share sheet: Safari only opens one straight from the tap.
+  function share() {
+    const url = cardUrl();
     if (!url) return;
     const text = `We’re ${type.name} (${type.nickname}). What kind of duo are you two?`;
-    if (navigator.share) await navigator.share({ title: "PMTI", text, url }).catch(() => {});
-    else await copied.copy(`${text} ${url}`);
+    if (navigator.share) navigator.share({ title: "PMTI", text, url }).catch(() => {});
+    else void copied.copy(`${text} ${url}`);
   }
 
-  async function saveImage() {
-    const url = await cardUrl();
+  function saveImage() {
+    const url = cardUrl();
     if (!url) return;
     const link = Object.assign(document.createElement("a"), { href: `${url}/story`, download: "pmti-card.png" });
     link.click();
@@ -323,11 +312,6 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
         <button type="button" onClick={saveImage} className="mt-4 font-bold text-navy underline underline-offset-4">
           Save it as an image
         </button>
-        {cardError && (
-          <ErrorNote on="white" className="mt-3">
-            Couldn’t make your card. Try again.
-          </ErrorNote>
-        )}
       </section>
 
       <ActionBar
