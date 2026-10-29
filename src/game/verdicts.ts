@@ -44,7 +44,7 @@ export function verdictFor(round: Round, reveal: RevealData, viewer: Seat | null
 
   switch (round.format) {
     case "pick":
-      return same() ? { text: "Same brain.", tone: "match" } : { text: "Two different answers.", tone: "between" };
+      return same() ? { text: "Same brain.", tone: "match" } : { text: "Opposites, noted.", tone: "between" };
     case "agree":
       if (!same()) return { text: "No dinner tonight.", tone: "miss" };
       return attempts === 1 ? { text: "Agreed in one try. Suspicious.", tone: "match" } : { text: "Agreed, eventually.", tone: "match" };
@@ -83,7 +83,7 @@ export function verdictFor(round: Round, reveal: RevealData, viewer: Seat | null
     }
     case "speed": {
       const matches = round.items.filter((_, i) => same(i)).length;
-      return { text: `${matches} of ${round.items.length} the same.`, tone: matches >= 4 ? "match" : "between" };
+      return { text: `${matches} of ${round.items.length} the same.`, tone: "between" };
     }
     case "write": {
       const pct = averagePct(reveal.texts.filter((t) => t.slot !== "self").map((t) => t.matchPct));

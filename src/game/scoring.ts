@@ -4,11 +4,11 @@ import { REACTIONS, type Reaction } from "./reactions";
 import { likelyItem } from "./verdicts";
 import { DUO_TYPES, type DuoType, type RoleMetric } from "./types";
 
-export const SCORER_VERSION = 1;
+export const SCORER_VERSION = 2;
 
 /** Tuned with the simulation test so every type lands roughly between 4% and 15% of games. */
 export const THRESHOLDS = {
-  dreamTeam: { sameBrain: 0.7, mindReading: 0.7 },
+  dreamTeam: { mindReading: 0.87 },
   prelims: { mindReading: 0.6 },
   competitors: { claims: 0.66 },
   oppositeGap: 0.85,
@@ -39,7 +39,6 @@ export type Result = {
   /** Index into the type's `halves` for each player. */
   roles: Pair<0 | 1>;
   axes: Pair<Vec>;
-  sameBrain: number;
   mindReading: number;
   features: { center: Vec; gap: Vec; friction: number; claims: number; switches: Pair<number> };
   moments: Moment[];
@@ -85,7 +84,6 @@ export function score(
   const answer = (seat: Seat, round: number, attempt = 0) => answers.get(`${ids[seat]}|${round}|${attempt}`);
 
   const tally: Pair<AxisTally> = { host: new AxisTally(), guest: new AxisTally() };
-  const same: number[] = [];
   const mind: Pair<number[]> = { host: [], guest: [] };
   const switches: Pair<number> = { host: 0, guest: 0 };
   let brags = 0;
@@ -106,7 +104,6 @@ export function score(
           const p = pick(s);
           if (p != null) tally[s].add(round.options[p]?.w, possible);
         }
-        same.push(matched ? 1 : 0);
         if (matched) note(1, { kind: "same-pick", round: r, option: pick("host")! });
         break;
       }
@@ -133,7 +130,6 @@ export function score(
             for (const s of SEATS) tally[s].add(target(voter) === s ? item.nudge : undefined, possible, LIKELY_WEIGHT);
           }
           const landed = likelyItem(pick("host", i), pick("guest", i));
-          same.push(landed?.kind === "agreed" ? 1 : 0);
           if (item.brag) {
             brags++;
             if (landed?.kind === "both-claim") bothClaimed++;
@@ -151,9 +147,6 @@ export function score(
           const v = self(s);
           if (v != null) tally[s].add({ [round.axis]: round.leftWeight * (1 - (2 * v) / span) }, possible);
         }
-        const h = self("host");
-        const g = self("guest");
-        if (h != null && g != null) same.push(1 - Math.abs(h - g) / span);
         for (const s of SEATS) {
           const guess = answer(s, r)?.guesses?.[0];
           const actual = self(other(s));
@@ -164,7 +157,6 @@ export function score(
         break;
       }
       case "agree": {
-        same.push(pick("host", 0, 0) === pick("guest", 0, 0) ? 1 : 0);
         // Who moved first; null when both moved on the same try (or nobody ever did).
         let caved: Seat | null = null;
         let anyMoved = false;
@@ -186,15 +178,13 @@ export function score(
             const p = pick(s, i);
             if (p != null) tally[s].add(pair[p]?.w, possible);
           }
-          const h = pick("host", i);
-          const g = pick("guest", i);
-          if (h != null && g != null) same.push(h === g ? 1 : 0);
         });
         break;
       }
       case "write": {
         const rowsOf = (s: Seat, slot: TextRow["slot"]) =>
           texts.find((t) => t.round === r && t.playerId === ids[s] && t.slot === slot);
+        // Only guessing your partner's answer counts; a shared prompt is just for the reveal.
         if (round.variant === "mirror") {
           for (const s of SEATS) {
             const pct = rowsOf(s, "partner")?.matchPct;
@@ -202,9 +192,6 @@ export function score(
             mind[s].push(pct / 100);
             note(2 + pct / 100, { kind: "mirror", round: r, about: other(s), pct });
           }
-        } else {
-          const pcts = SEATS.map((s) => rowsOf(s, "shared")?.matchPct).filter((p): p is number => p != null);
-          if (pcts.length) same.push(mean(pcts) / 100);
         }
         break;
       }
@@ -228,13 +215,11 @@ export function score(
   const a = agree;
   const friction = a ? (a.failed ? 1 : (a.tries - 1) / a.maxTries) : 0;
   const features = { center, gap, friction: round3(friction), claims: round3(brags ? bothClaimed / brags : 0), switches };
-  const sameBrain = round3(mean(same));
   const mindReading = round3(mean([...mind.host, ...mind.guest]));
 
   const { type, runnerUp } = chooseType({
     center,
     gap,
-    sameBrain,
     mindReading,
     claims: features.claims,
     friction: features.friction,
@@ -262,7 +247,6 @@ export function score(
     runnerUp: runnerUp?.id ?? null,
     roles: hostHigher ? { host: high, guest: low } : { host: low, guest: high },
     axes,
-    sameBrain,
     mindReading,
     features,
     moments: pickMoments(candidates),
@@ -272,7 +256,6 @@ export function score(
 type Features = {
   center: Vec;
   gap: Vec;
-  sameBrain: number;
   mindReading: number;
   claims: number;
   friction: number;
@@ -290,7 +273,8 @@ export function chooseType(f: Features): { type: DuoType; runnerUp: DuoType | nu
   const corner = cornerOf();
   const t = THRESHOLDS;
 
-  if (f.sameBrain >= t.dreamTeam.sameBrain && f.mindReading >= t.dreamTeam.mindReading) {
+  // Earned by knowing each other, not by answering alike: different answers are never a miss.
+  if (f.mindReading >= t.dreamTeam.mindReading) {
     return { type: byId("founders"), runnerUp: corner };
   }
   if (f.hardAgree && f.mindReading < t.prelims.mindReading) return { type: byId("prelims-finals"), runnerUp: corner };

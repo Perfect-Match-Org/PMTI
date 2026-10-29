@@ -62,19 +62,6 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
       ),
     },
     {
-      tone: "bg-pink text-ink",
-      body: (
-        <>
-          <p className="text-[clamp(6rem,36vw,9rem)] leading-[0.85] font-black tracking-[-0.04em]">
-            <CountUp to={Math.round(result.sameBrain * 100)} />
-          </p>
-          <Rise delay={0.5} className="mt-3 text-3xl font-extrabold">
-            same brain
-          </Rise>
-        </>
-      ),
-    },
-    {
       tone: "bg-red text-white",
       body: (
         <>
@@ -265,15 +252,9 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
         </>
       }
     >
-      <div className="grid grid-cols-2 gap-2.5">
-        <div className="px-1">
-          <p className="text-5xl font-black tracking-[-0.03em] text-navy">{Math.round(result.sameBrain * 100)}%</p>
-          <p className="mt-1 font-semibold text-muted">same brain</p>
-        </div>
-        <div className="px-1">
-          <p className="text-5xl font-black tracking-[-0.03em] text-red">{Math.round(result.mindReading * 100)}%</p>
-          <p className="mt-1 font-semibold text-muted">mind reading</p>
-        </div>
+      <div className="px-1">
+        <p className="text-5xl font-black tracking-[-0.03em] text-red">{Math.round(result.mindReading * 100)}%</p>
+        <p className="mt-1 font-semibold text-muted">mind reading: how well you guessed each other</p>
       </div>
 
       <div className="mt-8 flex flex-col gap-5" aria-label="Where you each sit">

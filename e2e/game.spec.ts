@@ -145,7 +145,7 @@ test("two players play a full game in sync", async ({ browser }) => {
   const aliceRole = ((await sentence(alice, "You’re").textContent()) ?? "").replace(/^You’re\s*/, "").trim();
   expect(aliceRole.length).toBeGreaterThan(0);
   await expect(sentence(bob, "Alice is")).toHaveText(`Alice is ${aliceRole}`);
-  await expect(alice.getByText("same brain", { exact: true })).toBeVisible();
+  await expect(alice.getByText(/^mind reading/)).toBeVisible();
   if (process.env.SHOTS) await alice.waitForTimeout(1500);
   await shot(alice, "99-result");
   expect(rounds).toBe(13);

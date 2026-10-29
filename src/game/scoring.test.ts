@@ -47,9 +47,8 @@ function run(plan: Plan, reactions?: Parameters<typeof play>[1]["reactions"]) {
 }
 
 describe("score", () => {
-  it("in-sync pair that reads minds is the Dream Team", () => {
+  it("a pair that reads each other's minds is the Dream Team", () => {
     const r = run({ likely: { host: [1, 0], guest: [0, 1] } });
-    expect(r.sameBrain).toBeGreaterThanOrEqual(0.85);
     expect(r.mindReading).toBe(1);
     expect(r.type).toBe("founders");
   });

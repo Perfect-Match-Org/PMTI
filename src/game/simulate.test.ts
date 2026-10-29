@@ -115,14 +115,11 @@ it.skipIf(!process.env.SIM_QUANTILES)("feature quantiles (tuning aid)", () => {
     return [0.5, 0.75, 0.85, 0.9, 0.95].map((p) => s[Math.floor(p * (s.length - 1))]!.toFixed(2)).join("  ");
   };
   console.log("quantiles      p50   p75   p85   p90   p95");
-  console.log("sameBrain     ", q(rows.map((r) => r.sameBrain)));
   console.log("mindReading   ", q(rows.map((r) => r.mindReading)));
   console.log("1-mindReading ", q(rows.map((r) => 1 - r.mindReading)));
   console.log("maxGap        ", q(rows.map((r) => Math.max(r.features.gap.E, r.features.gap.P, r.features.gap.H))));
   console.log("claims        ", q(rows.map((r) => r.features.claims)));
   console.log("friction      ", q(rows.map((r) => r.features.friction)));
-  const both = rows.filter((r) => r.sameBrain >= 0.7 && r.mindReading >= 0.7).length;
-  console.log("sameBrain>=.7 & mind>=.7:", ((both / GAMES) * 100).toFixed(1) + "%");
 });
 
 it(`type distribution over ${GAMES} simulated couples`, () => {
