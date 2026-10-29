@@ -152,14 +152,14 @@ test("two players play a full game in sync", async ({ browser }) => {
   // Mirror round shows two verdicts and the shared first-date round one; all scored via embeddings.
   expect(vibeVerdicts).toBe(3);
 
-  // The lobby's reaction tally rode along on Alice's ready move.
+  // The lobby's reaction tally rode along on Alice's ready move, keyed by round.
   const sql = postgres(LOCAL_DB);
   const code = url.split("/").pop()!;
   const [row] = await sql`
     select m.payload from moves m join rooms r on r.id = m.room_id join auth.users u on u.id = m.player_id
     where r.code = ${code} and u.email = 'alice@cornell.edu' and m.round = -1 and m.kind = 'ready'`;
   await sql.end();
-  expect(row?.payload).toEqual({ reactions: { "🍅": 5 } });
+  expect(row?.payload).toEqual({ reactions: { "-1": { "🍅": 5 } } });
   const videos = [alice, bob].map((page, i) => page.video()?.saveAs(`test-results/video/${i ? "bob" : "alice"}.webm`));
   await Promise.all([alice.context().close(), bob.context().close(), carol.context().close()]);
   await Promise.all(videos);

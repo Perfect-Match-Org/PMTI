@@ -27,7 +27,7 @@ export function play(deck: Deck, script: Script): { moves: MoveRow[]; texts: Tex
     if (p.phase === "reveal") {
       for (const seat of seats) {
         const reactions = script.reactions?.(seat, p.round);
-        moves.push({ playerId: idOf(seat), round: p.round, attempt: 0, kind: "ready", payload: reactions ? { reactions } : {} });
+        moves.push({ playerId: idOf(seat), round: p.round, attempt: 0, kind: "ready", payload: reactions ? { reactions: { [p.round]: reactions } } : {} });
       }
       continue;
     }

@@ -29,7 +29,9 @@ export function answerSchema(round: Round): z.ZodType<Answer> {
   }
 }
 
-/** A `ready` move may carry how many reactions this player sent during the round. */
+const tally = z.partialRecord(z.enum(REACTIONS), z.number().int().min(1).max(9999));
+
+/** A `ready` move may carry this player's reaction counts not sent yet, keyed by round. */
 export const readyPayloadSchema = z.object({
-  reactions: z.partialRecord(z.enum(REACTIONS), z.number().int().min(1).max(9999)).optional(),
+  reactions: z.record(z.string().regex(/^-?\d{1,3}$/), tally).optional(),
 });

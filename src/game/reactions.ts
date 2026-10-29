@@ -11,3 +11,6 @@ export const REACTION_LABELS: Record<Reaction, string> = {
 };
 
 export type ReactionTally = Partial<Record<Reaction, number>>;
+
+/** Reaction counts keyed by round number: a `ready` move carries every count not sent yet. */
+export type RoundTallies = Record<string, ReactionTally>;

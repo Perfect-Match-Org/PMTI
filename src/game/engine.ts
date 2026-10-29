@@ -1,6 +1,6 @@
 import { samePicks, type Answer } from "./answers";
 import type { Deck } from "./deck";
-import type { ReactionTally } from "./reactions";
+import type { RoundTallies } from "./reactions";
 import type { Result } from "./scoring";
 
 export type Seat = "host" | "guest";
@@ -15,7 +15,7 @@ export type MoveRow = {
   attempt: number;
   kind: MoveKind;
   /** Answers for `answer` moves; reaction counts for `ready` moves. */
-  payload: Answer & { reactions?: ReactionTally };
+  payload: Answer & { reactions?: RoundTallies };
 };
 
 export type TextSlot = "self" | "partner" | "shared";

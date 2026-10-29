@@ -92,7 +92,8 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
   );
 
   // Reactions: batched into one broadcast per emoji every 250ms, and tallied per round so the
-  // counts ride along on the round's `ready` move (no extra writes).
+  // counts ride along on the next `ready` move (no extra writes). Taps made after you're ready,
+  // while you wait, go with your next one; only those after the last round's are never sent.
   const pending = useRef<ReactionTally>({});
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tallies = useRef(new Map<number, ReactionTally>());
@@ -119,9 +120,9 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
   const send = useCallback(
     (move: Move) => {
       if (move.kind !== "ready") return post("moves", move);
-      const reactions = tallies.current.get(move.round);
-      tallies.current.delete(move.round);
-      return post("moves", reactions ? { ...move, payload: { reactions } } : move);
+      const reactions = Object.fromEntries(tallies.current);
+      tallies.current.clear();
+      return post("moves", Object.keys(reactions).length ? { ...move, payload: { reactions } } : move);
     },
     [post]
   );

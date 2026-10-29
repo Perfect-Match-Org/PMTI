@@ -1,10 +1,10 @@
 import type { Axis, Deck, Weights } from "./deck";
-import { other, SEATS, walk, type MoveRow, type Pair, type RoomFacts, type Seat, type TextRow } from "./engine";
+import { LOBBY_ROUND, other, SEATS, walk, type MoveRow, type Pair, type RoomFacts, type Seat, type TextRow } from "./engine";
 import { REACTIONS, type Reaction } from "./reactions";
 import { likelyItem } from "./verdicts";
 import { DUO_TYPES, type DuoType, type RoleMetric } from "./types";
 
-export const SCORER_VERSION = 2;
+export const SCORER_VERSION = 3;
 
 /** Tuned with the simulation test so every type lands roughly between 4% and 15% of games. */
 export const THRESHOLDS = {
@@ -198,15 +198,25 @@ export function score(
     }
   }
 
+  // A round's counts can arrive over two Readys (taps while waiting go with the next one), so add up first.
+  const sent: Extract<Moment, { kind: "reactions" }>[] = [];
   for (const m of moves) {
     const who = seatOf(m.playerId);
     if (m.kind !== "ready" || !who || !m.payload.reactions) continue;
-    for (const emoji of REACTIONS) {
-      const count = m.payload.reactions[emoji] ?? 0;
-      if (count >= THRESHOLDS.reactionsMoment) {
-        note(2 + Math.min(count, 50) / 50, { kind: "reactions", round: m.round, who, emoji, count });
+    for (const [key, tally] of Object.entries(m.payload.reactions)) {
+      const round = Number(key);
+      if (round < LOBBY_ROUND || round > m.round) continue;
+      for (const emoji of REACTIONS) {
+        const n = tally[emoji] ?? 0;
+        if (!n) continue;
+        const seen = sent.find((s) => s.round === round && s.who === who && s.emoji === emoji);
+        if (seen) seen.count += n;
+        else sent.push({ kind: "reactions", round, who, emoji, count: n });
       }
     }
+  }
+  for (const s of sent) {
+    if (s.count >= THRESHOLDS.reactionsMoment) note(2 + Math.min(s.count, 50) / 50, s);
   }
 
   const axes = { host: tally.host.value(), guest: tally.guest.value() };
