@@ -1,3 +1,4 @@
+import type { Viewport } from "next";
 import { currentUser } from "@/server/auth";
 import { GoogleButton } from "@/components/auth/google-button";
 import { DevLogin } from "@/components/auth/dev-login";
@@ -7,16 +8,23 @@ import { StartGame } from "@/components/game/start-game";
 import { Hero } from "@/components/ui/hero";
 import { TypeWall } from "@/components/ui/type-wall";
 
+export const viewport: Viewport = { themeColor: "#24438d" };
+
 export default async function Home() {
   const user = await currentUser();
 
   return (
     <main>
       <Hero title="A Cornell day for two.">
-        <p className="max-w-xl text-xl leading-snug text-white/85">
-          Thirteen quick rounds, each on your own phone. Pick in secret, reveal together, and find out what kind of duo you
-          are.
-        </p>
+        <div className="flex max-w-xl flex-col gap-2">
+          <p className="text-xl leading-snug text-white/85">
+            Thirteen quick rounds, each on your own phone. Pick in secret, reveal together, and find out what kind of duo
+            you are.
+          </p>
+          <p className="text-lg leading-snug text-white/65">
+            Play with your partner, or with a friend as if you’d been dating since O-Week.
+          </p>
+        </div>
         {user ? (
           <div className="flex max-w-xl flex-col gap-3">
             <StartGame />

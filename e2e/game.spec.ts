@@ -47,7 +47,7 @@ test("two players play a full game in sync", async ({ browser }) => {
   test.setTimeout(180_000);
   const alice = await player(browser, "alice@cornell.edu");
   await shot(alice, "00-landing");
-  await alice.getByRole("button", { name: /as a couple/ }).click();
+  await alice.getByRole("button", { name: "Play with my partner" }).click();
   await expect(alice).toHaveURL(/\/play\/[A-Z0-9]{6}$/);
   const url = new URL(alice.url()).pathname;
 
@@ -56,7 +56,6 @@ test("two players play a full game in sync", async ({ browser }) => {
   // Bob joins by typing the code on the home page instead of scanning.
   const bob = await player(browser, "bob@cornell.edu");
   await bob.getByLabel("Game code").fill(url.split("/").pop()!.toLowerCase());
-  await bob.getByRole("button", { name: "Join", exact: true }).click();
   await expect(bob.getByText("Alice & Bob are in.")).toBeVisible();
   await expect(alice.getByText("Alice & Bob are in.")).toBeVisible({ timeout: REALTIME_MS });
 

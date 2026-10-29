@@ -33,7 +33,7 @@ export function StartGame() {
         onClick={() => start("couple")}
         className="btn btn-pink"
       >
-        Start a game as a couple
+        Play with my partner
       </button>
       <button
         type="button"
@@ -41,8 +41,9 @@ export function StartGame() {
         onClick={() => start("friends")}
         className="btn border-2 border-white/40 bg-transparent text-white shadow-none"
       >
-        Start one as friends (parallel universe)
+        Play with a friend
       </button>
+      <p className="-mt-1 text-sm text-white/65">With a friend, you play as a couple in a parallel universe.</p>
       {error && (
         <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep">
           {error}
