@@ -2,6 +2,8 @@
 
 /* Keyboard hints only where there is a mouse; a touch-only iPad in landscape is still wide. */
 @custom-variant pointer-fine (@media (hover: hover) and (pointer: fine));
+/* Wide and tall enough to frame a 9:16 story card; a landscape phone is wide but not tall. */
+@custom-variant story-frame (@media (width >= 48rem) and (height >= 40rem));
 
 /*
  * Calm screens, loud moments. Pages stay white (the Hinge part); everything you touch has a
@@ -34,8 +36,8 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Pages that open on the navy poster keep navy behind an overscroll, instead of a white seam. */
-html:has(#top) {
+/* Navy pages keep navy behind an overscroll, instead of a white seam. */
+html:has([data-navy]) {
   background: var(--color-navy);
 }
 
@@ -220,7 +222,7 @@ a[href] {
 }
 .segment-fill {
   transform-origin: left;
-  animation: segment-fill var(--duration, 4.5s) linear forwards;
+  animation: segment-fill var(--duration) linear forwards;
 }
 
 @keyframes typing {

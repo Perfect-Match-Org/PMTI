@@ -1,22 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useCopy } from "@/client/useCopy";
 
 /**
  * Instagram, Snapchat and the like open links in their own browser, where Google refuses to sign
  * anyone in. Instead of a button that fails, this gets you out to a real browser first.
  */
 export function OpenInBrowser({ app, android }: { app: string; android: boolean }) {
-  const [copied, setCopied] = useState<"yes" | "failed" | null>(null);
+  const { state, copy: copyText } = useCopy();
   const [href, setHref] = useState("");
 
-  async function copy() {
+  function copy() {
     setHref(window.location.href);
-    const ok = await navigator.clipboard?.writeText(window.location.href).then(
-      () => true,
-      () => false
-    );
-    setCopied(ok ? "yes" : "failed");
+    void copyText(window.location.href);
   }
 
   function openChrome() {
@@ -36,9 +33,9 @@ export function OpenInBrowser({ app, android }: { app: string; android: boolean 
         </button>
       )}
       <button type="button" onClick={copy} className={`btn w-full ${android ? "btn-secondary" : "btn-pink"}`}>
-        {copied === "yes" ? "Copied" : "Copy link"}
+        {state === "copied" ? "Copied" : "Copy link"}
       </button>
-      {copied === "failed" && (
+      {state === "failed" && (
         <input readOnly value={href} onFocus={(event) => event.target.select()} aria-label="Link to this page" className="field text-sm" />
       )}
     </div>

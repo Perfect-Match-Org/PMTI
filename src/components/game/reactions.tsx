@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion, type Easing } from "motion/react";
+import { AnimatePresence, motion, type Easing } from "motion/react";
+import { usePrefersReducedMotion } from "@/client/motion";
 import { useCallback, useRef, useState } from "react";
 import type { ReactionBurst } from "@/client/useRoom";
 import type { PlayerInfo } from "@/game/engine";
@@ -134,7 +135,7 @@ function arrivalPoint() {
  * a counter showing who is sending them.
  */
 export function useReactionLayer() {
-  const reduce = useReducedMotion();
+  const reduce = usePrefersReducedMotion();
   const [floaters, setFloaters] = useState<Floater[]>([]);
   const [combo, setCombo] = useState<Combo | null>(null);
   const nextId = useRef(0);

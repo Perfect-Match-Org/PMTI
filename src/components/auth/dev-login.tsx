@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/client/supabase";
+import { ErrorNote } from "@/components/ui/error-note";
 
 // Local-only shortcut so two test players can sign in without Google. Disabled on hosted projects.
 const DEV_PASSWORD = "local-dev-only";
@@ -52,9 +53,7 @@ export function DevLogin() {
         </button>
       </div>
       {error && (
-        <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep">
-          {error}
-        </p>
+        <ErrorNote>{error}</ErrorNote>
       )}
     </form>
   );

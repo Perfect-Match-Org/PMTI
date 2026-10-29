@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/client/supabase";
+import { ErrorNote } from "@/components/ui/error-note";
 
 const RETURNED_ERRORS: Record<string, string> = {
   cornell_only: "PMTI is for Cornell accounts. Sign in with your @cornell.edu email.",
@@ -43,9 +44,7 @@ export function GoogleButton() {
         {busy ? "Opening Google…" : "Continue with Google"}
       </button>
       {shown && (
-        <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep">
-          {shown}
-        </p>
+        <ErrorNote>{shown}</ErrorNote>
       )}
     </>
   );

@@ -4,6 +4,7 @@ import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Axis } from "@/game/deck";
+import { useCopy } from "@/client/useCopy";
 import { getDeck } from "@/game/decks";
 
 import { momentMood, momentText } from "@/game/moments";
@@ -13,6 +14,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { PairName } from "@/components/ui/pair-name";
 import { BrokenHeart, Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
+import { Segments } from "@/components/ui/segments";
 import { ActionBar } from "./action-bar";
 import { useRoomContext } from "./room-context";
 import { Stage } from "./stage";
@@ -22,10 +24,11 @@ const MOMENT_TONES = ["bg-white text-ink", "bg-blush text-ink", "bg-navy text-wh
 
 export function ResultView({ result }: { result: Result }) {
   const [stage, setStage] = useState<"story" | "summary">("story");
+  const toSummary = useCallback(() => setStage("summary"), []);
   const type = duoType(result.type);
   if (!type) return <p className="pt-10 text-xl">Your result is from an older version of the game.</p>;
   return stage === "story" ? (
-    <ResultStory result={result} type={type} onDone={() => setStage("summary")} />
+    <ResultStory result={result} type={type} onDone={toSummary} />
   ) : (
     <ResultSummary result={result} type={type} />
   );
@@ -170,20 +173,13 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
   const slide = slides[index]!;
   return (
     <Portal>
-      <div className={`fixed inset-0 z-30 overflow-hidden transition-colors duration-300 md:grid md:place-items-center ${slide.tone} md:bg-tile`} aria-live="polite">
+      <div className={`fixed inset-0 z-30 overflow-hidden transition-colors duration-300 story-frame:grid story-frame:place-items-center ${slide.tone} story-frame:bg-tile`} aria-live="polite">
         <div
-          className={`relative mx-auto flex h-full max-w-md flex-col px-5 pt-4 pb-10 transition-colors duration-300 md:aspect-[9/16] md:h-[min(calc(100dvh-3rem),56rem)] md:max-w-none md:rounded-[2rem] ${slide.tone}`}
+          className={`relative mx-auto flex h-full max-w-md flex-col px-5 pt-4 pb-10 transition-colors duration-300 story-frame:aspect-[9/16] story-frame:h-[min(calc(100dvh-3rem),56rem)] story-frame:max-w-none story-frame:rounded-[2rem] ${slide.tone}`}
         >
           <div className="flex items-center gap-3">
-            <div className="grid flex-1 gap-1" style={{ gridTemplateColumns: `repeat(${slides.length}, 1fr)` }}>
-              {slides.map((_, i) => (
-                <span key={i} className="h-1 overflow-hidden rounded-full bg-current/25">
-                  {i < index && <span className="block h-full bg-current" />}
-                  {i === index && (
-                    <span key={index} className="segment-fill block h-full bg-current" style={{ ["--duration" as string]: `${SLIDE_MS}ms` }} />
-                  )}
-                </span>
-              ))}
+            <div className="flex-1">
+              <Segments step={index + 1} total={slides.length} tone="current" fillMs={SLIDE_MS} label={`Slide ${index + 1} of ${slides.length}`} />
             </div>
             <button type="button" onClick={onDone} className="relative z-10 font-bold underline-offset-4 hover:underline">
               Skip
@@ -214,7 +210,7 @@ function StoryArrow({ side, onClick, hidden = false }: { side: "left" | "right";
       tabIndex={-1}
       aria-hidden
       onClick={onClick}
-      className={`absolute top-1/2 hidden size-14 -translate-y-1/2 place-items-center rounded-full border-2 border-line bg-white text-ink md:grid ${
+      className={`absolute top-1/2 hidden size-14 -translate-y-1/2 place-items-center rounded-full border-2 border-line bg-white text-ink story-frame:grid ${
         side === "left" ? "-left-20" : "-right-20"
       } ${hidden ? "invisible" : ""}`}
     >
@@ -230,7 +226,7 @@ const AXIS_ENDS: Record<Axis, [string, string]> = { E: ["Out", "In"], P: ["Plan"
 function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
   const { view, seat, partnerSeat, names, t } = useRoomContext();
   const router = useRouter();
-  const [shared, setShared] = useState(false);
+  const copied = useCopy();
   const deck = getDeck(view.deckId);
   const runnerUp = result.runnerUp ? duoType(result.runnerUp) : undefined;
   const mine = type.halves[result.roles[seat]];
@@ -238,12 +234,8 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
   async function share() {
     const text = `I’m ${mine.name} in a ${type.name} duo (${type.nickname}). What kind of duo are you two?`;
     const url = window.location.origin;
-    if (navigator.share) {
-      await navigator.share({ title: "PMTI", text, url }).catch(() => {});
-    } else {
-      await navigator.clipboard.writeText(`${text} ${url}`);
-      setShared(true);
-    }
+    if (navigator.share) await navigator.share({ title: "PMTI", text, url }).catch(() => {});
+    else await copied.copy(`${text} ${url}`);
   }
 
   return (
@@ -308,7 +300,7 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
       <ActionBar
         reactions={false}
         secondary={{ label: "Play again", onClick: () => router.push("/") }}
-        primary={{ label: shared ? "Copied" : "Share my card", onClick: share }}
+        primary={{ label: copied.state === "copied" ? "Copied" : copied.state === "failed" ? "Couldn’t copy" : "Share my card", onClick: share }}
       />
     </Stage>
   );

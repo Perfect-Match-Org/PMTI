@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion, useAnimate, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useAnimate } from "motion/react";
+import { usePrefersReducedMotion } from "@/client/motion";
 import { useEffect, useLayoutEffect, useState } from "react";
 import type { Answer } from "@/game/answers";
 import { promptFor, whoFor } from "@/game/copy";
@@ -24,7 +25,7 @@ const AFTER_FLASH = FLASH_MS / 1000 - 0.15;
 
 export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) {
   const { view, seat, partnerSeat, names, t, busy, act, send } = useRoomContext();
-  const reduce = useReducedMotion();
+  const reduce = usePrefersReducedMotion();
   const delay = reduce ? 0 : AFTER_FLASH;
   const who = whoFor(seat, names);
   const pick = (s: Seat, item = 0) => reveal[s].picks?.[item];

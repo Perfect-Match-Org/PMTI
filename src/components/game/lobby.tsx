@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
-import { useState } from "react";
+import { useCopy } from "@/client/useCopy";
 import { getDeck } from "@/game/decks";
 import { LOBBY_ROUND, type PlayerInfo } from "@/game/engine";
 import { Avatar } from "@/components/ui/avatar";
@@ -13,7 +13,7 @@ import { Stage } from "./stage";
 
 export function Lobby({ link }: { link: string }) {
   const { view, seat, partnerSeat, names, t, busy, act, send, post } = useRoomContext();
-  const [copied, setCopied] = useState(false);
+  const invite = useCopy();
   const guest = view.players.guest;
   const deck = getDeck(view.deckId);
 
@@ -49,11 +49,8 @@ export function Lobby({ link }: { link: string }) {
         <ActionBar
           reactions={false}
           primary={{
-            label: copied ? "Link copied" : "Copy invite link",
-            onClick: async () => {
-              await navigator.clipboard.writeText(link);
-              setCopied(true);
-            },
+            label: invite.state === "copied" ? "Link copied" : invite.state === "failed" ? "Couldn’t copy: use the code" : "Copy invite link",
+            onClick: () => invite.copy(link),
           }}
         />
       </Stage>

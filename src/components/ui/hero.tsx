@@ -21,7 +21,7 @@ export function Pitch({ children }: { children?: React.ReactNode }) {
  */
 export function Hero({ eyebrow, children }: { eyebrow?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section id="top" className="overflow-x-clip bg-navy text-white">
+    <section id="top" data-navy className="overflow-x-clip bg-navy text-white">
       <div className="frame pt-5 pb-14 lg:pt-8 lg:pb-24">
         <BrandHeader />
         <div className="grid pt-12 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-x-16 lg:pt-14 xl:grid-cols-[minmax(0,1fr)_30rem] xl:gap-x-20">

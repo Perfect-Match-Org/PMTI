@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useInView } from "motion/react";
+import { usePrefersReducedMotion } from "@/client/motion";
 import { useEffect, useRef, useState } from "react";
 import { DUO_TYPES, type DuoType } from "@/game/types";
 import { Avatar } from "./avatar";
@@ -17,7 +18,7 @@ const STAY_MS = 3600;
 export function DuoShowcase() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.4 });
-  const still = !!useReducedMotion();
+  const still = usePrefersReducedMotion();
   const [active, setActive] = useState(() => DUO_TYPES.findIndex((t) => t.id === "slope-mcgraw"));
   const [held, setHeld] = useState(false);
   useEffect(() => {

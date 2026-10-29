@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatePresence, MotionConfig, motion, useInView, useReducedMotion } from "motion/react";
+import { AnimatePresence, MotionConfig, motion, useInView } from "motion/react";
+import { usePrefersReducedMotion } from "@/client/motion";
 import { useEffect, useRef, useState } from "react";
 import type { Answer } from "@/game/answers";
 import { say, whoFor } from "@/game/copy";
@@ -12,6 +13,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
 import { SAMPLE_NAMES, SAMPLE_PLAYERS } from "@/components/ui/sample-couple";
 import { Segments } from "@/components/ui/segments";
+import { TypingDots } from "@/components/ui/typing-dots";
 import { TONE_BG, TONE_TEXT } from "./tones";
 
 const NAMES = SAMPLE_NAMES;
@@ -147,7 +149,7 @@ const EXIT: Record<Tone, { x: number | string; y: number; rotate: number; scale?
 export function DayDeck() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { amount: 0.4 });
-  const still = !!useReducedMotion();
+  const still = usePrefersReducedMotion();
   const playing = inView && !still;
   const [n, setN] = useState(0);
   useEffect(() => {
@@ -378,11 +380,7 @@ function FaceBody({ body, step, wash, fly }: { body: Body; step: number; wash: b
                     {note.text}
                   </motion.span>
                 ) : (
-                  <span className="flex gap-1 pt-2">
-                    {[0, 1, 2].map((i) => (
-                      <i key={i} className="typing-dot block size-1.5 rounded-full bg-current" style={{ animationDelay: `${i * 0.15}s` }} />
-                    ))}
-                  </span>
+                  <TypingDots className="pt-2" />
                 )}
               </span>
             </div>

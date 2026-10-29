@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion, useAnimate, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useAnimate } from "motion/react";
+import { usePrefersReducedMotion } from "@/client/motion";
 import { useEffect, useRef, useState } from "react";
 import { REACTION_LABELS, REACTIONS, type Reaction } from "@/game/reactions";
 import { Portal } from "@/components/ui/portal";
@@ -89,7 +90,7 @@ const RING: Record<Reaction, string> = {
 /** Every tap squashes the emoji, sends out a ring, and counts the streak while you keep mashing. */
 function ReactionButton({ emoji }: { emoji: Reaction }) {
   const { react } = useRoomContext();
-  const reduce = useReducedMotion();
+  const reduce = usePrefersReducedMotion();
   const [scope, animate] = useAnimate<HTMLSpanElement>();
   const [streak, setStreak] = useState(0);
   const idle = useRef<ReturnType<typeof setTimeout>>(undefined);

@@ -3,7 +3,7 @@ import { BrandHeader } from "./brand-header";
 /** A plain navy page under the brand header, for the moments between the landing and a game. */
 export function NavyPage({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex min-h-dvh flex-col bg-navy text-white">
+    <main data-navy className="flex min-h-dvh flex-col bg-navy text-white">
       <div className="frame pt-5 lg:pt-8">
         <BrandHeader />
       </div>
