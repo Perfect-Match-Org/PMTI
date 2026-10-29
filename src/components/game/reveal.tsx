@@ -11,6 +11,7 @@ import { averagePct, likelyItem, verdictFor, vibeWord, type Tone } from "@/game/
 import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
+import { Rise } from "@/components/ui/rise";
 import { ActionBar } from "./action-bar";
 import { ScaleEnds } from "./choices";
 import { useRoomContext } from "./room-context";
@@ -76,10 +77,10 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
                   ? "You both claim it."
                   : `You say ${who(partnerSeat)}. ${names[partnerSeat]} says ${who(seat)}.`;
             return (
-              <Arrive key={i} delay={delay + i * 0.08} className={`rounded-[1.125rem] px-4 py-3.5 ${agreed ? "bg-blush" : "bg-tile"}`}>
+              <Rise as="div" key={i} delay={delay + i * 0.08} className={`rounded-[1.125rem] px-4 py-3.5 ${agreed ? "bg-blush" : "bg-tile"}`}>
                 <p className="text-balance text-muted">{t(item.text)}</p>
                 <p className="mt-1 text-lg font-bold">{line}</p>
-              </Arrive>
+              </Rise>
             );
           })}
         </div>
@@ -89,7 +90,7 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
       const self = (s: Seat) => pick(s) ?? 0;
       const guessOf = (s: Seat) => reveal[other(s)].guesses?.[0] ?? 0;
       body = (
-        <Arrive delay={delay} className="flex flex-col gap-5 rounded-[1.125rem] bg-tile p-4">
+        <Rise as="div" delay={delay} className="flex flex-col gap-5 rounded-[1.125rem] bg-tile p-4">
           {[seat, partnerSeat].map((s) => (
             <div key={s} className="flex flex-col gap-2">
               <p className="flex justify-between gap-3">
@@ -104,7 +105,7 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
             </div>
           ))}
           <ScaleEnds left={t(round.left)} right={t(round.right)} />
-        </Arrive>
+        </Rise>
       );
       break;
     }
@@ -114,7 +115,7 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
           {round.items.map((pair, i) => {
             const same = pick("host", i) != null && pick("host", i) === pick("guest", i);
             return (
-              <Arrive key={i} delay={delay + i * 0.06} className={`grid grid-cols-2 gap-2 rounded-2xl p-2 ${same ? "bg-blush" : "bg-tile"}`}>
+              <Rise as="div" key={i} delay={delay + i * 0.06} className={`grid grid-cols-2 gap-2 rounded-2xl p-2 ${same ? "bg-blush" : "bg-tile"}`}>
                 {pair.map((option, j) => {
                   const byMe = pick(seat, i) === j;
                   const byThem = pick(partnerSeat, i) === j;
@@ -128,7 +129,7 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
                     </span>
                   );
                 })}
-              </Arrive>
+              </Rise>
             );
           })}
         </div>
@@ -258,19 +259,6 @@ function Burst({ className, color, onClick, children }: { className: string; col
   );
 }
 
-function Arrive({ delay, className, children }: { delay: number; className?: string; children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, type: "spring", stiffness: 420, damping: 30 }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
 type Mark = { seat: Seat; at: number | null | undefined; caption?: string };
 
 /**
@@ -286,7 +274,8 @@ function Landed({ options, marks, delay }: { options: Option[]; marks: Mark[]; d
         const both = here.length === 2;
         const caption = here.length === 1 ? here[0]!.caption : undefined;
         return (
-          <Arrive
+          <Rise
+            as="div"
             key={i}
             delay={delay + i * 0.05}
             className={`flex min-h-[3.75rem] items-center gap-3 rounded-[1.125rem] border-2 px-4 py-2.5 ${
@@ -315,7 +304,7 @@ function Landed({ options, marks, delay }: { options: Option[]; marks: Mark[]; d
                 )}
               </span>
             )}
-          </Arrive>
+          </Rise>
         );
       })}
     </div>
@@ -354,10 +343,10 @@ function Vibe({ pct, delay }: { pct: number | null | undefined; delay: number })
   const word = vibeWord(pct);
   if (!word) return null;
   return (
-    <Arrive delay={delay} className="mt-3 flex items-baseline gap-2">
+    <Rise as="div" delay={delay} className="mt-3 flex items-baseline gap-2">
       <span className="text-xl font-black">{word}</span>
       <span className="text-sm text-muted">{pct}% vibe match</span>
-    </Arrive>
+    </Rise>
   );
 }
 

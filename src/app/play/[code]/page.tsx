@@ -1,30 +1,32 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
+import { BRAND } from "@/brand";
 import { currentUser } from "@/server/auth";
+import { codeOf } from "@/server/http";
 import { invitation, loadView, RoomError } from "@/server/rooms";
 import { SignIn } from "@/components/auth/sign-in";
 import { Game } from "@/components/game/game";
 import { GameClosed } from "@/components/game/game-closed";
 import { JoinGate } from "@/components/game/join-gate";
 import { Avatar } from "@/components/ui/avatar";
-import { Hero, Pitch } from "@/components/ui/hero";
+import { Hero, Pitch } from "@/components/landing/hero";
 
 type Props = { params: Promise<{ code: string }> };
 
 // Signed out, this is the navy invitation; signed in, the white game.
 export async function generateViewport(): Promise<Viewport> {
-  return { themeColor: (await currentUser()) ? "#ffffff" : "#24438d" };
+  return { themeColor: (await currentUser()) ? BRAND.white : BRAND.navy };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const invite = await invitation((await params).code.toUpperCase());
+  const invite = await invitation(await codeOf({ params }));
   if ("closed" in invite) return {};
   const title = `${invite.host.name} invited you to a Cornell day for two`;
   return { title, openGraph: { title }, twitter: { card: "summary_large_image", title } };
 }
 
 export default async function PlayPage({ params }: Props) {
-  const code = (await params).code.toUpperCase();
+  const code = await codeOf({ params });
   const user = await currentUser();
 
   if (!user) {

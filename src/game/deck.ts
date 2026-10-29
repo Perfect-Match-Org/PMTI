@@ -9,7 +9,7 @@ export type Scene = { time: string; title: Copy };
 export type Option = { label: Copy; w?: Weights };
 
 type RoundBase = {
-  /** Stable within a deck; used by `ifPrev` and analytics. */
+  /** Stable within a deck; used by `ifPrev`. */
   id: string;
   scene: Scene;
   /** Only play this round if an earlier round's two picks matched / didn't match. */

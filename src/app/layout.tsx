@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Bodoni_Moda, Gabarito } from "next/font/google";
+import { BRAND } from "@/brand";
 import "./globals.css";
 
 const gabarito = Gabarito({ subsets: ["latin"], variable: "--font-gabarito" });
-// Only the "&" and "vs." in pair names use it.
+// Only the "&" in pair names uses it.
 const bodoni = Bodoni_Moda({ subsets: ["latin"], style: "italic", weight: "500", variable: "--font-bodoni" });
 
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image" },
 };
 
-export const viewport: Viewport = { themeColor: "#ffffff" };
+export const viewport: Viewport = { themeColor: BRAND.white };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

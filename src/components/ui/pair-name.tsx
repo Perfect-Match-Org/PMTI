@@ -7,6 +7,11 @@ import { motion } from "motion/react";
  * always looks like a pair ("vs." stays in the sans, where the serif's v reads as an r). `stack` puts
  * each place on its own line; `spring` rises the words in one by one, as the result reveals them.
  */
+const WORD_STAGGER = 0.12;
+
+/** When a springing name started at `delay` has finished arriving, for whatever comes in after it. */
+export const afterPairName = (name: string, delay: number) => delay + name.split(" ").length * WORD_STAGGER;
+
 export function PairName({ name, stack = false, spring }: { name: string; stack?: boolean; spring?: { delay: number } }) {
   const [first = name, joiner, second] = name.split(/ (&|vs\.) /);
   let n = 0;
@@ -25,7 +30,7 @@ export function PairName({ name, stack = false, spring }: { name: string; stack?
           className={`mr-[0.25em] inline-block ${className ?? ""}`}
           initial={{ y: 40, opacity: 0, rotate: 4 }}
           animate={{ y: 0, opacity: 1, rotate: 0 }}
-          transition={{ delay: spring.delay + i * 0.12, type: "spring", stiffness: 380, damping: 18 }}
+          transition={{ delay: spring.delay + i * WORD_STAGGER, type: "spring", stiffness: 380, damping: 18 }}
         >
           {word}
         </motion.span>

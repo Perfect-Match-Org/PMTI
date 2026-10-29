@@ -1,123 +1,21 @@
 "use client";
 
 import { AnimatePresence, MotionConfig, motion, useInView } from "motion/react";
-import { usePrefersReducedMotion } from "@/client/motion";
 import { useEffect, useRef, useState } from "react";
-import type { Answer } from "@/game/answers";
-import { say, whoFor } from "@/game/copy";
-import type { Copy, Option, Round } from "@/game/deck";
+import { BRAND } from "@/brand";
+import { usePrefersReducedMotion } from "@/client/motion";
 import { CURRENT_DECK } from "@/game/decks";
-import { other, plannedLength, SEATS, type Pair, type Seat, type ViewText } from "@/game/engine";
-import { verdictFor, type Tone } from "@/game/verdicts";
+import { plannedLength, SEATS } from "@/game/engine";
+import type { Tone } from "@/game/verdicts";
+import { TONE_BG, TONE_TEXT } from "@/components/game/tones";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
-import { SAMPLE_NAMES, SAMPLE_PLAYERS } from "@/components/ui/sample-couple";
 import { Segments } from "@/components/ui/segments";
 import { TypingDots } from "@/components/ui/typing-dots";
-import { TONE_BG, TONE_TEXT } from "./tones";
+import { BEATS, SAMPLE_NAMES, SAMPLE_PLAYERS, type Beat, type Body, type Mark } from "./sample-day";
 
 const NAMES = SAMPLE_NAMES;
 const PLAYERS = SAMPLE_PLAYERS;
-const s = (copy: Copy) => say(copy, "couple", { p: NAMES.guest, s: NAMES.host });
-
-type Mark = { by: Seat; at: number; guess?: boolean };
-type Body =
-  | { kind: "rows"; rows: string[]; marks: Mark[] }
-  | { kind: "pairs"; items: { text: string; marks: Mark[] }[] }
-  | { kind: "rail"; steps: number; left: string; right: string; tracks: { owner: Seat; note: string; marks: Mark[] }[] }
-  | { kind: "notes"; notes: { by: Seat; caption: string; text: string }[] };
-type Beat = { round: number; time: string; scene: string; ask: string; body: Body; verdict: string; tone: Tone; land: number };
-type Sample = { id: string; answers: Pair<Answer>; texts?: ViewText[]; show: (round: Round, answers: Pair<Answer>) => Body | null };
-
-const picked = (answers: Pair<Answer>, item = 0): Mark[] => SEATS.map((by) => ({ by, at: answers[by].picks![item]! }));
-const optionRows = (options: Option[], answers: Pair<Answer>): Body => ({ kind: "rows", rows: options.map((o) => s(o.label)), marks: picked(answers) });
-
-/**
- * Real rounds from the current deck with made-up answers. The verdict comes from the game's own
- * rules, so the landing can't promise a line the game never says.
- */
-const SAMPLES: Sample[] = [
-  {
-    id: "prelim-morning",
-    answers: { host: { picks: [0] }, guest: { picks: [0] } },
-    show: (r, a) => (r.format === "pick" ? optionRows(r.options, a) : null),
-  },
-  {
-    id: "group-project",
-    answers: { host: { picks: [1, 1, 1] }, guest: { picks: [1, 1, 1] } },
-    show: (r, a) =>
-      r.format === "likely"
-        ? {
-            kind: "pairs",
-            // A pick of 0 names yourself and 1 names the other; `at` is the seat named, host first.
-            items: r.items.map((item, i) => ({
-              text: s(item.text),
-              marks: SEATS.map((by) => ({ by, at: (a[by].picks![i] === 0 ? by : other(by)) === "host" ? 0 : 1 })),
-            })),
-          }
-        : null,
-  },
-  {
-    id: "dinner",
-    answers: { host: { picks: [0] }, guest: { picks: [0] } },
-    show: (r, a) => (r.format === "agree" ? optionRows(r.options, a) : null),
-  },
-  {
-    id: "comfort-order",
-    answers: { host: {}, guest: {} },
-    texts: [
-      { seat: "host", slot: "self", body: "Spicy noodles from Collegetown, extra chili oil", matchPct: null },
-      { seat: "guest", slot: "partner", body: "Grilled cheese and tomato soup", matchPct: 21 },
-    ],
-    show: (r) =>
-      r.format === "write"
-        ? {
-            kind: "notes",
-            notes: [
-              { by: "host", caption: NAMES.host, text: "Spicy noodles from Collegetown, extra chili oil" },
-              { by: "guest", caption: `${NAMES.guest}’s guess`, text: "Grilled cheese and tomato soup" },
-            ],
-          }
-        : null,
-  },
-  {
-    id: "slope-night",
-    answers: { host: { picks: [4], guesses: [3] }, guest: { picks: [5], guesses: [2] } },
-    show: (r, a) =>
-      r.format === "scale"
-        ? {
-            kind: "rail",
-            steps: r.steps,
-            left: s(r.left),
-            right: s(r.right),
-            tracks: SEATS.map((owner) => {
-              const at = a[owner].picks![0]!;
-              const guess = a[other(owner)].guesses![0]!;
-              return {
-                owner,
-                note: `${NAMES[other(owner)]} was ${Math.abs(guess - at)} off`,
-                marks: [
-                  { by: owner, at },
-                  { by: other(owner), at: guess, guess: true },
-                ],
-              };
-            }),
-          }
-        : null,
-  },
-];
-
-const BEATS: Beat[] = SAMPLES.flatMap((sample) => {
-  const round = CURRENT_DECK.rounds.find((r) => r.id === sample.id);
-  const body = round && sample.show(round, sample.answers);
-  if (!round || !body) return [];
-  const verdict = verdictFor(round, { ...sample.answers, texts: sample.texts ?? [] }, "host", whoFor("host", NAMES), 1);
-  // Option rows read fastest; cards with more words on them hold the question longer.
-  const land = body.kind === "rows" ? 2200 : 2600;
-  // Its place in a game as played: the rounds up to it, with branch alternatives counted once.
-  const step = plannedLength({ ...CURRENT_DECK, rounds: CURRENT_DECK.rounds.slice(0, CURRENT_DECK.rounds.indexOf(round) + 1) });
-  return [{ round: step, time: round.scene.time, scene: s(round.scene.title), ask: s(round.prompt), body, verdict: verdict.text, tone: verdict.tone, land }];
-});
 
 /** A card's steps: 0 the question, 1–2 each player locked in (picks still hidden), 3 both answers landed, 4 the verdict. */
 const LANDED = 3;
@@ -130,7 +28,7 @@ const beatMs = (beat: Beat) => beat.land + VERDICT_AFTER_MS + HOLD_MS;
 
 /** Front card, then the two waiting behind it, fanned so their edges show. */
 const POSES = [
-  { x: 0, y: 0, rotate: 0, scale: 1, backgroundColor: "#ffffff" },
+  { x: 0, y: 0, rotate: 0, scale: 1, backgroundColor: BRAND.white },
   { x: 9, y: -14, rotate: 3, scale: 0.95, backgroundColor: "#dfe4ef" },
   { x: -8, y: -26, rotate: -4, scale: 0.9, backgroundColor: "#bcc6dd" },
 ];
@@ -215,7 +113,7 @@ function Card({ id, beat, depth, playing, still }: { id: number; beat: Beat; dep
       <motion.div
         className="relative h-full"
         initial={false}
-        animate={{ opacity: front ? 1 : 0, color: flooded ? TONE_TEXT[beat.tone] : "#1a2550" }}
+        animate={{ opacity: front ? 1 : 0, color: flooded ? TONE_TEXT[beat.tone] : BRAND.ink }}
         transition={{ duration: 0.3, delay: front && !flooded ? 0.2 : 0.05 }}
       >
         <Face beat={beat} step={shown} fly={`card-${id}`} />

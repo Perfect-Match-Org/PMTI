@@ -14,11 +14,13 @@ type Reveal = Pair<Answer> & { texts: ViewText[] };
  */
 export type LikelyItem = { kind: "agreed"; named: Seat } | { kind: "both-claim" } | { kind: "denial" };
 
+/** Who a "likely" pick names: 0 is yourself, 1 is your partner. */
+export const namedBy = (voter: Seat, pick: number): Seat => (pick === 0 ? voter : other(voter));
+
 export function likelyItem(hostPick: number | null | undefined, guestPick: number | null | undefined): LikelyItem | null {
   if (hostPick == null || guestPick == null) return null;
-  const named = (s: Seat, p: number) => (p === 0 ? s : other(s));
-  const host = named("host", hostPick);
-  if (host === named("guest", guestPick)) return { kind: "agreed", named: host };
+  const host = namedBy("host", hostPick);
+  if (host === namedBy("guest", guestPick)) return { kind: "agreed", named: host };
   return hostPick === 0 ? { kind: "both-claim" } : { kind: "denial" };
 }
 

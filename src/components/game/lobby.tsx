@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
+import { BRAND } from "@/brand";
 import { useCopy } from "@/client/useCopy";
 import { getDeck } from "@/game/decks";
 import { LOBBY_ROUND, type PlayerInfo } from "@/game/engine";
@@ -42,7 +43,7 @@ export function Lobby({ link }: { link: string }) {
           className="mt-1 grid place-items-center lg:mt-0 lg:place-items-start"
         >
           <div className="lg:rounded-[2rem] lg:bg-tile lg:p-10">
-            <QRCodeSVG value={link} size={232} marginSize={0} fgColor="#1a2550" title={`QR code that opens ${link}`} className="lg:size-80" />
+            <QRCodeSVG value={link} size={232} marginSize={0} fgColor={BRAND.ink} title={`QR code that opens ${link}`} className="lg:size-80" />
           </div>
         </motion.div>
         <p className="mt-7 text-center text-lg text-balance lg:hidden">{orCode}</p>

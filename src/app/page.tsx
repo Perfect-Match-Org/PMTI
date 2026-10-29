@@ -1,14 +1,15 @@
 import type { Viewport } from "next";
+import { BRAND } from "@/brand";
 import { currentUser } from "@/server/auth";
 import { SignIn } from "@/components/auth/sign-in";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { JoinWithCode } from "@/components/game/join-with-code";
 import { StartGame } from "@/components/game/start-game";
-import { DuoShowcase } from "@/components/ui/duo-showcase";
-import { Hero, Pitch } from "@/components/ui/hero";
+import { DuoShowcase } from "@/components/landing/duo-showcase";
+import { Hero, Pitch } from "@/components/landing/hero";
 import { PmLogo } from "@/components/ui/pm-logo";
 
-export const viewport: Viewport = { themeColor: "#24438d" };
+export const viewport: Viewport = { themeColor: BRAND.navy };
 
 export default async function Home() {
   const user = await currentUser();

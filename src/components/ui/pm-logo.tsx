@@ -1,8 +1,10 @@
+import { BRAND } from "@/brand";
+
 /**
  * The Perfect Match "Pm" mark. Letters take the text color; the heart is its own color. `gap` must
  * match the background: it paints the notch where the p's stem passes behind the m.
  */
-export function PmLogo({ gap, heart = "#f30020", ...svg }: { gap: string; heart?: string } & React.SVGProps<SVGSVGElement>) {
+export function PmLogo({ gap, heart = BRAND.red, ...svg }: { gap: string; heart?: string } & React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 226 158" role="img" aria-label="Perfect Match" {...svg}>
       <path

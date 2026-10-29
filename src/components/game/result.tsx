@@ -11,9 +11,10 @@ import { momentMood, momentText } from "@/game/moments";
 import type { Moment, Result } from "@/game/scoring";
 import { duoType, type DuoType } from "@/game/types";
 import { Avatar } from "@/components/ui/avatar";
-import { PairName } from "@/components/ui/pair-name";
+import { afterPairName, PairName } from "@/components/ui/pair-name";
 import { BrokenHeart, Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
+import { Rise } from "@/components/ui/rise";
 import { Segments } from "@/components/ui/segments";
 import { ActionBar } from "./action-bar";
 import { useRoomContext } from "./room-context";
@@ -49,7 +50,6 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
   const deck = getDeck(view.deckId);
   const say = (m: Moment) => (deck ? momentText(m, { deck, names, viewer: seat, t }) : "");
   const mindMoment = mindMomentFor(result);
-  const words = type.name.split(" ");
 
   const slides: Slide[] = [
     {
@@ -117,10 +117,10 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
           <h2 className="mt-3 text-[clamp(2.75rem,13vw,4rem)] leading-[0.95] font-black tracking-[-0.03em]">
             <PairName name={type.name} spring={{ delay: 0.6 }} />
           </h2>
-          <Rise delay={0.8 + words.length * 0.12} className="mt-5 text-2xl font-bold text-pink">
+          <Rise delay={afterPairName(type.name, 0.8)} className="mt-5 text-2xl font-bold text-pink">
             {type.nickname}
           </Rise>
-          <Rise delay={1 + words.length * 0.12} className="mt-1 text-xl text-white/80">
+          <Rise delay={afterPairName(type.name, 1)} className="mt-1 text-xl text-white/80">
             {type.tagline}
           </Rise>
         </>
@@ -338,19 +338,6 @@ function AxisRail({ axis, result }: { axis: Axis; result: Result }) {
         })}
       </div>
     </div>
-  );
-}
-
-function Rise({ delay = 0, className, children }: { delay?: number; className?: string; children: React.ReactNode }) {
-  return (
-    <motion.p
-      initial={{ y: 24, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay, type: "spring", stiffness: 300, damping: 24 }}
-      className={className}
-    >
-      {children}
-    </motion.p>
   );
 }
 

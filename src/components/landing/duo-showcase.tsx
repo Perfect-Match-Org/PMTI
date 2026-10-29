@@ -4,9 +4,10 @@ import { AnimatePresence, motion, useInView } from "motion/react";
 import { usePrefersReducedMotion } from "@/client/motion";
 import { useEffect, useRef, useState } from "react";
 import { DUO_TYPES, type DuoType } from "@/game/types";
-import { Avatar } from "./avatar";
-import { PairName } from "./pair-name";
-import { SAMPLE_PLAYERS } from "./sample-couple";
+import { Avatar } from "@/components/ui/avatar";
+import { afterPairName, PairName } from "@/components/ui/pair-name";
+import { Rise } from "@/components/ui/rise";
+import { SAMPLE_PLAYERS } from "./sample-day";
 
 const PLAYERS = [SAMPLE_PLAYERS.host, SAMPLE_PLAYERS.guest];
 const STAY_MS = 3600;
@@ -93,9 +94,6 @@ function DuoCard({ type }: { type: DuoType }) {
 }
 
 function CardFace({ type, live = false }: { type: DuoType; live?: boolean }) {
-  const words = type.name.split(" ").length;
-  const rise = (delay: number) =>
-    live ? { initial: { y: 16, opacity: 0 }, animate: { y: 0, opacity: 1 }, transition: { delay, type: "spring" as const, stiffness: 300, damping: 24 } } : {};
   return (
     <div className="flex h-full flex-col">
       <p className="text-[0.95rem] leading-snug lg:text-lg">
@@ -107,12 +105,12 @@ function CardFace({ type, live = false }: { type: DuoType; live?: boolean }) {
         <h3 className="mt-2 text-[2.4rem] leading-[0.95] font-black tracking-[-0.03em] text-balance lg:text-[2.5rem] xl:text-[3rem]">
           <PairName name={type.name} stack spring={live ? { delay: 0.05 } : undefined} />
         </h3>
-        <motion.p {...rise(0.2 + words * 0.12)} className="mt-4 text-xl font-bold text-pink">
+        <Rise delay={afterPairName(type.name, 0.2)} className="mt-4 text-xl font-bold text-pink">
           {type.nickname}
-        </motion.p>
-        <motion.p {...rise(0.3 + words * 0.12)} className="mt-1 text-lg leading-snug text-white/75">
+        </Rise>
+        <Rise delay={afterPairName(type.name, 0.3)} className="mt-1 text-lg leading-snug text-white/75">
           {type.tagline}
-        </motion.p>
+        </Rise>
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         {type.halves.map((half, i) => (

@@ -1,7 +1,7 @@
-import { DayDeck } from "@/components/game/day-deck";
+import { DayDeck } from "./day-deck";
 import { plannedLength } from "@/game/engine";
 import { CURRENT_DECK } from "@/game/decks";
-import { BrandHeader } from "./brand-header";
+import { BrandHeader } from "@/components/ui/brand-header";
 
 /** What the game is, in one breath. Pages can add a sentence of their own. */
 export function Pitch({ children }: { children?: React.ReactNode }) {
