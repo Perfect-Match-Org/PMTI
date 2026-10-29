@@ -12,15 +12,15 @@ const font = (file: string) => readFile(join(process.cwd(), "assets/fonts", file
 /** The line above the pair's name: both names only when both players chose to show them. */
 export function cardLead(card: Card): string {
   const [a, b] = card.people;
-  const who = a.name && b.name ? `${a.name} & ${b.name} are` : "We’re";
-  return card.mode === "friends" ? `In a parallel universe, ${who.charAt(0).toLowerCase()}${who.slice(1)}` : who;
+  const names = a.name && b.name ? `${a.name} & ${b.name} are` : null;
+  return card.mode === "friends" ? `In a parallel universe, ${names ?? "we’re"}` : (names ?? "We’re");
 }
 
 export const CARD_SIZES = { wide: { width: 1200, height: 630 }, story: { width: 1080, height: 1920 } } as const;
 
 /**
  * The share card as an image: `wide` is the link preview, `story` the tall one to save for a story.
- * Names appear only for players who chose to show them; otherwise their circle stays empty.
+ * Names appear only for players who chose to show them; otherwise nothing is shown beside their half.
  */
 export async function cardImage(card: Card, format: keyof typeof CARD_SIZES, site: string) {
   const type = duoType(card.typeId);
@@ -41,7 +41,7 @@ export async function cardImage(card: Card, format: keyof typeof CARD_SIZES, sit
           // Tall: pills line up on the right. Wide: each sits right after its place, so it doesn't drift off.
           <div key={i} style={{ display: "flex", justifyContent: story ? "space-between" : "flex-start", alignItems: "flex-start", gap: s(20, 28), width }}>
             <div style={{ display: "flex", flexDirection: "column", flexShrink: 1 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: s(12, 22), fontSize: s(52, 100), fontWeight: 900, lineHeight: 0.98, letterSpacing: "-0.03em" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: s(12, 22), fontSize: s(52, 100), fontWeight: 900, lineHeight: 0.98, letterSpacing: "-0.03em" }}>
                 {i === 1 && joiner && (
                   <span style={joiner === "&" ? { fontFamily: "Bodoni", fontWeight: 500, letterSpacing: 0 } : { fontSize: "0.8em", fontWeight: 700 }}>{joiner}</span>
                 )}

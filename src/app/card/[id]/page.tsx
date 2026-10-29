@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BRAND } from "@/brand";
 import { duoType } from "@/game/types";
 import { cardLead } from "@/server/card-image";
 import { cardFor, type Card } from "@/server/rooms";
@@ -9,6 +10,8 @@ import { Pitch } from "@/components/landing/hero";
 import { BrandHeader } from "@/components/ui/brand-header";
 
 type Props = { params: Promise<{ id: string }> };
+
+export const viewport: Viewport = { themeColor: BRAND.navy };
 
 const person = (p: Card["people"][number]): CardPerson => ({ name: p.name, tone: p.seat === "host" ? "me" : "partner" });
 
