@@ -8,6 +8,7 @@ import { say } from "@/game/copy";
 import type { Copy } from "@/game/deck";
 import type { PlayerInfo, RoomView, Seat } from "@/game/engine";
 import { Avatar } from "@/components/ui/avatar";
+import { Segments } from "@/components/ui/segments";
 import { ActionBar } from "./action-bar";
 import { Lobby } from "./lobby";
 import { useReactionLayer } from "./reactions";
@@ -131,26 +132,6 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
 }
 
 /** Story-style progress: one segment per round, the current one fills in red. */
-function Segments({ step, total }: { step: number; total: number }) {
-  return (
-    <div role="img" aria-label={`Round ${step} of ${total}`} className="grid gap-1" style={{ gridTemplateColumns: `repeat(${total}, 1fr)` }}>
-      {Array.from({ length: total }, (_, i) => (
-        <span key={i} className="h-1 overflow-hidden rounded-full bg-line">
-          {i + 1 < step && <span className="block h-full bg-navy" />}
-          {i + 1 === step && (
-            <motion.span
-              className="block h-full origin-left bg-red"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-            />
-          )}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function LiveLine(props: { partner: PlayerInfo; online: boolean; lockedIn: boolean; choosing: boolean; connection: Connection }) {
   const { partner, online, lockedIn, choosing, connection } = props;
   const state = !online ? "offline" : lockedIn ? "locked" : choosing ? "choosing" : "here";

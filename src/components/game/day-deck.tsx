@@ -6,10 +6,11 @@ import type { Answer } from "@/game/answers";
 import { say, whoFor } from "@/game/copy";
 import type { Copy, Option, Round } from "@/game/deck";
 import { CURRENT_DECK } from "@/game/decks";
-import type { Pair, PlayerInfo, Seat, ViewText } from "@/game/engine";
+import { plannedLength, type Pair, type PlayerInfo, type Seat, type ViewText } from "@/game/engine";
 import { verdictFor, type Tone } from "@/game/verdicts";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
+import { Segments } from "@/components/ui/segments";
 
 const NAMES: Pair<string> = { host: "Sam", guest: "Jordan" };
 const PLAYERS: Pair<PlayerInfo> = { host: { name: NAMES.host, avatarUrl: null }, guest: { name: NAMES.guest, avatarUrl: null } };
@@ -23,7 +24,7 @@ type Body =
   | { kind: "pairs"; items: { text: string; marks: Mark[] }[] }
   | { kind: "rail"; steps: number; left: string; right: string; tracks: { owner: Seat; note: string; marks: Mark[] }[] }
   | { kind: "notes"; notes: { by: Seat; caption: string; text: string }[] };
-type Beat = { time: string; scene: string; ask: string; body: Body; verdict: string; tone: Tone; land: number };
+type Beat = { round: number; time: string; scene: string; ask: string; body: Body; verdict: string; tone: Tone; land: number };
 type Sample = { id: string; answers: Pair<Answer>; texts?: ViewText[]; show: (round: Round, answers: Pair<Answer>) => Body | null };
 
 const picked = (answers: Pair<Answer>, item = 0): Mark[] => SEATS.map((by) => ({ by, at: answers[by].picks![item]! }));
@@ -111,13 +112,16 @@ const BEATS: Beat[] = SAMPLES.flatMap((sample) => {
   const verdict = verdictFor(round, { ...sample.answers, texts: sample.texts ?? [] }, "host", whoFor("host", NAMES), 1);
   // Option rows read fastest; cards with more words on them hold the question longer.
   const land = body.kind === "rows" ? 2200 : 2600;
-  return [{ time: round.scene.time, scene: s(round.scene.title), ask: s(round.prompt), body, verdict: verdict.text, tone: verdict.tone, land }];
+  // Its place in a game as played: the rounds up to it, with branch alternatives counted once.
+  const step = plannedLength({ ...CURRENT_DECK, rounds: CURRENT_DECK.rounds.slice(0, CURRENT_DECK.rounds.indexOf(round) + 1) });
+  return [{ round: step, time: round.scene.time, scene: s(round.scene.title), ask: s(round.prompt), body, verdict: verdict.text, tone: verdict.tone, land }];
 });
 
 /** A card's steps: 0 the question, 1–2 each player locked in (picks still hidden), 3 both answers landed, 4 the verdict. */
 const LANDED = 3;
 const LAST_STEP = 4;
 const LOCK_MS = [1200, 1700];
+const ROUNDS = plannedLength(CURRENT_DECK);
 const VERDICT_AFTER_MS = 700;
 const HOLD_MS = 2000;
 const beatMs = (beat: Beat) => beat.land + VERDICT_AFTER_MS + HOLD_MS;
@@ -125,8 +129,8 @@ const beatMs = (beat: Beat) => beat.land + VERDICT_AFTER_MS + HOLD_MS;
 /** Front card, then the two waiting behind it, fanned so their edges show. */
 const POSES = [
   { x: 0, y: 0, rotate: 0, scale: 1, backgroundColor: "#ffffff" },
-  { x: 14, y: -14, rotate: 4, scale: 0.95, backgroundColor: "#dfe4ef" },
-  { x: -12, y: -26, rotate: -5, scale: 0.9, backgroundColor: "#bcc6dd" },
+  { x: 9, y: -14, rotate: 3, scale: 0.95, backgroundColor: "#dfe4ef" },
+  { x: -8, y: -26, rotate: -4, scale: 0.9, backgroundColor: "#bcc6dd" },
 ];
 // Navy is the page color, so a navy verdict card uses the deeper navy to keep its edge.
 const FLOOD: Record<Tone, string> = { pink: "bg-pink", navy: "bg-navy-deep", red: "bg-red" };
@@ -155,10 +159,11 @@ export function DayDeck() {
     return () => clearTimeout(id);
   }, [playing, n]);
 
+  const beat = BEATS[n % BEATS.length]!;
   return (
     <MotionConfig reducedMotion="user">
       {/* Every beat is laid out invisibly in one grid cell, so the deck is as tall as its tallest card at any width. */}
-      <div ref={ref} aria-hidden className="relative mt-14 grid w-full lg:mt-0">
+      <div ref={ref} aria-hidden className="relative grid w-full">
         {BEATS.map((beat, i) => (
           <div key={i} className="invisible [grid-area:1/1]">
             <Face beat={beat} step={LAST_STEP} />
@@ -169,6 +174,12 @@ export function DayDeck() {
             <Card key={k} id={k} beat={BEATS[k % BEATS.length]!} depth={k - n} playing={playing} still={still} />
           ))}
         </AnimatePresence>
+      </div>
+      <div aria-hidden className="mt-6 lg:mt-8">
+        <Segments step={beat.round} total={ROUNDS} tone="dark" fillMs={playing ? beatMs(beat) : undefined} />
+        <p className="mt-2.5 text-sm font-semibold text-white/60">
+          Round {beat.round} of {ROUNDS}
+        </p>
       </div>
     </MotionConfig>
   );
@@ -228,7 +239,7 @@ function Face({ beat, step, fly }: { beat: Beat; step: number; fly?: string }) {
       </div>
       <div className="grid flex-1 items-center py-4 lg:py-6">
         <motion.p
-          className="text-[1.125rem] leading-snug font-bold text-balance [grid-area:1/1] lg:text-[1.5rem]"
+          className="text-[1.125rem] leading-snug font-bold text-balance [grid-area:1/1] lg:text-[1.5rem] xl:text-[1.625rem]"
           initial={false}
           animate={{ opacity: flooded ? 0 : 1, y: flooded ? -10 : 0 }}
           transition={{ duration: 0.2 }}
@@ -236,7 +247,7 @@ function Face({ beat, step, fly }: { beat: Beat; step: number; fly?: string }) {
           {beat.ask}
         </motion.p>
         <motion.p
-          className="origin-bottom-left text-[2.25rem] leading-[0.95] font-black tracking-[-0.03em] text-balance [grid-area:1/1] lg:text-[3rem]"
+          className="origin-bottom-left text-[2.25rem] leading-[0.95] font-black tracking-[-0.03em] text-balance [grid-area:1/1] lg:text-[3rem] xl:text-[3.5rem]"
           initial={false}
           animate={flooded ? { scale: 1, opacity: 1, rotate: 0 } : { scale: 0.6, opacity: 0, rotate: -4 }}
           transition={flooded ? { delay: 0.12, type: "spring", stiffness: 320, damping: 14 } : { duration: 0 }}
@@ -289,6 +300,8 @@ function FaceBody({ body, step, fly }: { body: Body; step: number; fly?: string 
   const fill = (marked: boolean, both = false) =>
     flooded ? (marked ? "bg-white text-ink" : "bg-white/15") : landed && both ? "bg-blush" : "bg-tile";
   const fade = (marked: boolean) => (landed && !marked ? "opacity-60" : "");
+  // Hold the tint until the faces flying in from their seats have arrived.
+  const tint = landed && !flooded ? "delay-300" : "";
 
   switch (body.kind) {
     case "rows":
@@ -297,8 +310,8 @@ function FaceBody({ body, step, fly }: { body: Body; step: number; fly?: string 
           {body.rows.map((label, i) => {
             const here = body.marks.filter((m) => m.at === i);
             return (
-              <li key={i} className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 py-2 transition-colors duration-300 ${fill(here.length > 0, here.length === 2)}`}>
-                <span className={`flex-1 text-[0.95rem] leading-tight lg:text-base ${landed && here.length ? "font-bold" : "font-medium"} ${fade(here.length > 0)}`}>
+              <li key={i} className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 py-2 transition-colors duration-300 ${tint} ${fill(here.length > 0, here.length === 2)}`}>
+                <span className={`flex-1 text-[0.95rem] leading-tight lg:text-base xl:text-[1.0625rem] ${landed && here.length ? "font-bold" : "font-medium"} ${fade(here.length > 0)}`}>
                   {label}
                 </span>
                 {landed && <Faces marks={here} fly={fly} />}
@@ -317,7 +330,7 @@ function FaceBody({ body, step, fly }: { body: Body; step: number; fly?: string 
                 {SEATS.map((named, j) => {
                   const here = item.marks.filter((m) => m.at === j);
                   return (
-                    <span key={named} className={`flex min-h-11 items-center justify-between gap-2 rounded-2xl px-3.5 py-1.5 transition-colors duration-300 ${fill(here.length > 0, here.length === 2)}`}>
+                    <span key={named} className={`flex min-h-11 items-center justify-between gap-2 rounded-2xl px-3.5 py-1.5 transition-colors duration-300 ${tint} ${fill(here.length > 0, here.length === 2)}`}>
                       <span className={`font-bold ${fade(here.length > 0)}`}>{NAMES[named]}</span>
                       {landed && <Faces marks={here} fly={i === 0 ? fly : undefined} />}
                     </span>
@@ -402,7 +415,7 @@ function Faces({ marks, fly }: { marks: Mark[]; fly?: string }) {
         </motion.span>
       ))}
       {marks.length === 2 && !marks.some((m) => m.guess) && (
-        <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.4, 1] }} transition={{ delay: 0.5, duration: 0.45 }} className="ml-1.5 text-red">
+        <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.4, 1] }} transition={{ delay: 0.6, duration: 0.45 }} className="ml-1.5 text-red">
           <Heart size={20} />
         </motion.span>
       )}
