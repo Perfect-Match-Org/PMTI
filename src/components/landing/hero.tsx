@@ -7,7 +7,7 @@ import { BrandHeader } from "@/components/ui/brand-header";
 export function Pitch({ children }: { children?: React.ReactNode }) {
   return (
     <p className="max-w-[30rem] text-[1.1875rem] leading-[1.4] text-white/85 lg:text-[1.375rem]">
-      {plannedLength(CURRENT_DECK)} quick rounds, each on your own phone (Laptop welcome as well
+      {plannedLength(CURRENT_DECK)} quick rounds, each on your own phone (Laptop welcome as well ofc
       :D). Pick in secret, reveal together, and find out what kind of duo you are.
       {children}
     </p>
