@@ -30,13 +30,15 @@ export async function vibeMatch(db: Db, anchor: TextRef, candidate: TextRef, roo
   const [row] = await db<{ n: number; typical: number | null; sim: number | null }[]>`
     with x as (select embedding from texts where id = ${anchor.id}),
          c as (select embedding from texts where id = ${candidate.id}),
-         pool as (
-           select embedding from texts
+         -- Each distinct answer once: a popular answer repeated by many players would otherwise
+         -- become "typical" and score everyone who wrote something like it as no match at all.
+         distinct_answers as (
+           select distinct on (lower(trim(body))) embedding, created_at from texts
            where prompt_id = ${candidate.promptId}
              and embedding is not null
              and room_id is distinct from ${roomId}
-           order by created_at desc
-           limit ${POOL_SIZE}),
+           order by lower(trim(body)), created_at desc),
+         pool as (select embedding from distinct_answers order by created_at desc limit ${POOL_SIZE}),
          sims as (select 1 - (pool.embedding <=> x.embedding) as s from pool, x)
     select (select count(*) from sims)::int as n,
            (select percentile_cont(0.5) within group (order by s) from sims) as typical,
