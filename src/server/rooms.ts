@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import type postgres from "postgres";
 import { z } from "zod";
 import { answerSchema } from "@/game/answers";
@@ -80,6 +81,15 @@ function deckOf(room: RoomRow): Deck {
 
 const isPlayer = (room: RoomRow, userId: string) => userId === room.hostId || userId === room.guestId;
 
+/** Why someone not yet in the room can't join it, or null if they can. Joining and the invitation share it. */
+function closedReason(room: RoomRow): RoomError | null {
+  if (room.endedAt || Date.now() - room.createdAt.getTime() > ROOM_TTL_MS) {
+    return new RoomError(410, "This game has ended. Start a new one.");
+  }
+  if (room.guestId) return new RoomError(409, "This game already has two players.");
+  return null;
+}
+
 async function loadLog(db: Db, roomId: string) {
   const moves = await db<MoveRow[]>`
     select player_id, round, attempt, kind, payload from moves where room_id = ${roomId}`;
@@ -101,10 +111,8 @@ export async function joinRoom(code: string, userId: string): Promise<void> {
   await sql.begin(async (tx) => {
     const room = await findRoom(tx, code, true);
     if (isPlayer(room, userId)) return;
-    if (room.endedAt || Date.now() - room.createdAt.getTime() > ROOM_TTL_MS) {
-      throw new RoomError(410, "This game has ended. Start a new one.");
-    }
-    if (room.guestId) throw new RoomError(409, "This game already has two players.");
+    const closed = closedReason(room);
+    if (closed) throw closed;
     await bump(tx, room.id, { guestId: userId });
   });
 }
@@ -274,6 +282,27 @@ async function ensureResult(deck: Deck, room: RoomRow, moves: MoveRow[], texts: 
     return null;
   }
 }
+
+export type Invitation = { host: PlayerInfo; mode: Mode } | { closed: string; full: boolean };
+
+/**
+ * What someone holding the link sees before signing in: who is inviting them and to which kind of
+ * game, or why they can't join. The host shared the link, so their first name and photo are fair to show.
+ * A full game may still be theirs (signed out on another device), so it says so instead of just closing.
+ */
+export const invitation = cache(async (code: string): Promise<Invitation> => {
+  try {
+    const room = await findRoom(sql, code);
+    deckOf(room);
+    const closed = closedReason(room);
+    if (closed) return { closed: closed.message, full: closed.status === 409 };
+    const host = (await playerInfo([room.hostId])).get(room.hostId) ?? { name: "Your partner", avatarUrl: null };
+    return { host, mode: room.mode };
+  } catch (error) {
+    if (error instanceof RoomError) return { closed: error.message, full: false };
+    throw error;
+  }
+});
 
 /** Whether the user already belongs to the room; used by the page to decide join vs. render. */
 export async function isInRoom(code: string, userId: string): Promise<boolean> {

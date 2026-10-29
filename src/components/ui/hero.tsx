@@ -19,13 +19,13 @@ export function Pitch({ children }: { children?: React.ReactNode }) {
  * deck follows the actions. It sizes to its content, so the next section peeks in below.
  * `eyebrow` is a pink line above the headline, like "You two are" above a result.
  */
-export function Hero({ eyebrow, children }: { eyebrow?: string; children: React.ReactNode }) {
+export function Hero({ eyebrow, children }: { eyebrow?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section id="top" className="overflow-x-clip bg-navy text-white">
       <div className="frame pt-5 pb-14 lg:pt-8 lg:pb-24">
         <BrandHeader />
         <div className="grid pt-12 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-x-16 lg:pt-14 xl:grid-cols-[minmax(0,1fr)_30rem] xl:gap-x-20">
-          {eyebrow && <p className="mb-3 text-xl font-bold text-pink lg:col-span-2 lg:mb-4 lg:text-2xl">{eyebrow}</p>}
+          {eyebrow && <p className="mb-4 flex items-center gap-3 text-xl font-bold text-pink lg:col-span-2 lg:mb-5 lg:text-2xl">{eyebrow}</p>}
           <h1 className="text-[clamp(3.25rem,17vw,5rem)] leading-[0.88] font-black tracking-[-0.04em] lg:col-span-2 lg:text-[clamp(5rem,11vw,8.75rem)]">
             A Cornell day <br className="max-lg:hidden" />
             for two.
