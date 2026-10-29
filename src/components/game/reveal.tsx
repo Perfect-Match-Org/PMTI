@@ -14,7 +14,7 @@ import { ActionBar } from "./action-bar";
 import { ScaleEnds } from "./choices";
 import { useRoomContext } from "./room-context";
 import { Stage } from "./stage";
-import { TONES } from "./tones";
+import { TONE_BG, TONE_TEXT } from "./tones";
 
 type RevealData = Pair<Answer> & { texts: ViewText[] };
 
@@ -222,7 +222,7 @@ function Flash({ text, tone }: { text: string; tone: Tone }) {
     <Portal>
       <AnimatePresence>
         {show && (
-          <Burst key="flash" className={TONES[tone]} onClick={() => setShow(false)}>
+          <Burst key="flash" className={TONE_BG[tone]} color={TONE_TEXT[tone]} onClick={() => setShow(false)}>
             <motion.p
               initial={{ scale: 0.5, opacity: 0, rotate: -4 }}
               animate={{ scale: 1, opacity: 1, rotate: 0 }}
@@ -239,7 +239,7 @@ function Flash({ text, tone }: { text: string; tone: Tone }) {
 }
 
 /** A full-screen layer that opens as a circle from the action button (measured once it's on screen). */
-function Burst({ className, onClick, children }: { className: string; onClick: () => void; children: React.ReactNode }) {
+function Burst({ className, color, onClick, children }: { className: string; color: string; onClick: () => void; children: React.ReactNode }) {
   const [scope, animate] = useAnimate<HTMLDivElement>();
   useLayoutEffect(() => {
     const r = document.querySelector("[data-primary-action]")?.getBoundingClientRect();
@@ -250,7 +250,7 @@ function Burst({ className, onClick, children }: { className: string; onClick: (
     <motion.div
       ref={scope}
       className={`fixed inset-0 z-30 grid place-items-center px-6 ${className}`}
-      style={{ clipPath: "circle(0% at 50% 90%)" }}
+      style={{ clipPath: "circle(0% at 50% 90%)", color }}
       exit={{ opacity: 0, transition: { duration: 0.2 } }}
       onClick={onClick}
     >

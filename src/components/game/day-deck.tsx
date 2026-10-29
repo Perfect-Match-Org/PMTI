@@ -11,6 +11,7 @@ import { verdictFor, type Tone } from "@/game/verdicts";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
 import { Segments } from "@/components/ui/segments";
+import { TONE_BG, TONE_TEXT } from "./tones";
 
 const NAMES: Pair<string> = { host: "Sam", guest: "Jordan" };
 const PLAYERS: Pair<PlayerInfo> = { host: { name: NAMES.host, avatarUrl: null }, guest: { name: NAMES.guest, avatarUrl: null } };
@@ -132,15 +133,12 @@ const POSES = [
   { x: 9, y: -14, rotate: 3, scale: 0.95, backgroundColor: "#dfe4ef" },
   { x: -8, y: -26, rotate: -4, scale: 0.9, backgroundColor: "#bcc6dd" },
 ];
-// Navy is the page color, so a navy verdict card uses the deeper navy to keep its edge.
-const FLOOD: Record<Tone, string> = { pink: "bg-pink", navy: "bg-navy-deep", red: "bg-red" };
-const TEXT: Record<Tone, string> = { pink: "#1a2550", navy: "#ffffff", red: "#ffffff" };
 const ORIGIN = "at 86% 86%";
 // A match is swiped right and a miss left; an in-between just sinks. The left swipe is short and fades, so it never crosses the headline.
 const EXIT: Record<Tone, { x: number | string; y: number; rotate: number; scale?: number; opacity?: number }> = {
-  pink: { x: "125%", y: 40, rotate: 16 },
-  red: { x: "-45%", y: 30, rotate: -14, opacity: 0 },
-  navy: { x: 0, y: 70, rotate: 2, scale: 0.88, opacity: 0 },
+  match: { x: "125%", y: 40, rotate: 16 },
+  miss: { x: "-45%", y: 30, rotate: -14, opacity: 0 },
+  between: { x: 0, y: 70, rotate: 2, scale: 0.88, opacity: 0 },
 };
 
 /**
@@ -208,7 +206,7 @@ function Card({ id, beat, depth, playing, still }: { id: number; beat: Beat; dep
       transition={{ type: "spring", stiffness: 260, damping: 26 }}
     >
       <motion.div
-        className={`absolute inset-0 ${FLOOD[beat.tone]}`}
+        className={`absolute inset-0 ${TONE_BG[beat.tone]}`}
         initial={false}
         animate={{ clipPath: `circle(${flooded ? 150 : 0}% ${ORIGIN})` }}
         transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
@@ -216,7 +214,7 @@ function Card({ id, beat, depth, playing, still }: { id: number; beat: Beat; dep
       <motion.div
         className="relative h-full"
         initial={false}
-        animate={{ opacity: front ? 1 : 0, color: flooded ? TEXT[beat.tone] : "#1a2550" }}
+        animate={{ opacity: front ? 1 : 0, color: flooded ? TONE_TEXT[beat.tone] : "#1a2550" }}
         transition={{ duration: 0.3, delay: front && !flooded ? 0.2 : 0.05 }}
       >
         <Face beat={beat} step={shown} fly={`card-${id}`} />
@@ -255,7 +253,7 @@ function Face({ beat, step, fly }: { beat: Beat; step: number; fly?: string }) {
           {beat.verdict}
         </motion.p>
       </div>
-      <FaceBody body={beat.body} step={step} fly={fly} />
+      <FaceBody body={beat.body} step={step} wash={flooded && beat.tone !== "between"} fly={fly} />
     </div>
   );
 }
@@ -293,13 +291,14 @@ function Locks({ step, fly }: { step: number; fly?: string }) {
   );
 }
 
-function FaceBody({ body, step, fly }: { body: Body; step: number; fly?: string }) {
+/** `wash` is the verdict color filling the card: answers someone landed on go white over it, the rest fade into it. */
+function FaceBody({ body, step, wash, fly }: { body: Body; step: number; wash: boolean; fly?: string }) {
   const landed = step >= LANDED;
   const flooded = step === LAST_STEP;
-  // Answers someone landed on go white over the verdict color; the rest fade into it.
   const fill = (marked: boolean, both = false) =>
-    flooded ? (marked ? "bg-white text-ink" : "bg-white/15") : landed && both ? "bg-blush" : "bg-tile";
-  const fade = (marked: boolean) => (landed && !marked ? "opacity-60" : "");
+    wash ? (marked ? "bg-white text-ink" : "bg-white/15") : landed && both ? "bg-blush" : "bg-tile";
+  // Over a verdict color, a fainter fade would mix the text into it.
+  const fade = (marked: boolean) => (landed && !marked ? (wash ? "opacity-80" : "opacity-60") : "");
   // Hold the tint until the faces flying in from their seats have arrived.
   const tint = landed && !flooded ? "delay-300" : "";
 
@@ -352,7 +351,7 @@ function FaceBody({ body, step, fly }: { body: Body; step: number; fly?: string 
               </p>
               <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${body.steps}, 1fr)` }}>
                 {Array.from({ length: body.steps }, (_, i) => (
-                  <span key={i} className={`grid aspect-square place-items-center rounded-full transition-colors duration-300 ${flooded ? "bg-white/15" : "bg-tile"}`}>
+                  <span key={i} className={`grid aspect-square place-items-center rounded-full transition-colors duration-300 ${wash ? "bg-white/15" : "bg-tile"}`}>
                     {landed && <Faces marks={track.marks.filter((m) => m.at === i)} fly={fly} />}
                   </span>
                 ))}
