@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Mode } from "@/game/engine";
+import { ErrorNote } from "@/components/ui/error-note";
 
 export function StartGame() {
   const router = useRouter();
@@ -16,13 +17,11 @@ export function StartGame() {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ mode }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok) router.push(`/play/${data.code}`);
-    else {
-      setError(data.error ?? "Couldn't start a game.");
-      setBusy(false);
-    }
+    }).catch(() => null);
+    const data = await res?.json().catch(() => ({}));
+    if (res?.ok) return router.push(`/play/${data.code}`);
+    setError(res ? (data.error ?? "Couldn’t start a game.") : "Couldn’t reach the server. Check your connection and try again.");
+    setBusy(false);
   }
 
   return (
@@ -44,9 +43,7 @@ export function StartGame() {
         Play with a friend
       </button>
       {error && (
-        <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep lg:col-span-2">
-          {error}
-        </p>
+        <ErrorNote className="lg:col-span-2">{error}</ErrorNote>
       )}
     </div>
   );

@@ -1,15 +1,19 @@
 "use client";
 
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRoom, type Connection } from "@/client/useRoom";
 import { say } from "@/game/copy";
 import type { Copy } from "@/game/deck";
-import type { PlayerInfo, RoomView, Seat } from "@/game/engine";
+import { other, waitingOnPartner, type PlayerInfo, type RoomView } from "@/game/engine";
 import { Avatar } from "@/components/ui/avatar";
+import { ErrorNote } from "@/components/ui/error-note";
 import { Segments } from "@/components/ui/segments";
+import { TypingDots } from "@/components/ui/typing-dots";
 import { ActionBar } from "./action-bar";
+import { GameClosed } from "./game-closed";
 import { Lobby } from "./lobby";
 import { useReactionLayer } from "./reactions";
 import { ResultView } from "./result";
@@ -18,19 +22,22 @@ import { RoomProvider, type RoomContextValue } from "./room-context";
 import { RoundInput } from "./round-input";
 import { Stage } from "./stage";
 
-const OFFLINE_END_AFTER_MS = 2 * 60 * 1000;
+/** How long we wait on a partner with nothing changing before offering to end the game. */
+const STALL_MS = 2 * 60 * 1000;
 
 export function Game({ initial, origin }: { initial: RoomView; origin: string }) {
   const router = useRouter();
   const { spawn, overlay } = useReactionLayer();
-  const { view, connection, presence, error, send, post, react, refresh } = useRoom(initial, spawn);
-  useResultRetry(view, refresh);
+  const { view, connection, presence, error, gone, changedAt, send, post, react, refresh } = useRoom(initial, spawn);
+  const unscored = useResultRetry(view, refresh);
   const [busy, setBusy] = useState(false);
-  const now = useNow(!!presence && !presence.online);
-  const offlineFor = presence && !presence.online && view.players.guest ? now - presence.since : 0;
+  // Measured from the last change, not from presence: presence can't see a partner whose realtime is down.
+  const waiting = waitingOnPartner(view);
+  const now = useNow(waiting);
+  const stalled = waiting && now - changedAt >= STALL_MS;
 
   const seat = view.seat;
-  const partnerSeat: Seat = seat === "host" ? "guest" : "host";
+  const partnerSeat = other(seat);
   const names = { host: view.players.host.name, guest: view.players.guest?.name ?? "your partner" };
   const round = view.round;
   const subject = round?.format === "mind" ? names[round.subject] : names[partnerSeat];
@@ -46,6 +53,9 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
   const ctx: RoomContextValue = { view, seat, partnerSeat, names, t, busy, act, send, post, react };
 
   const progress = view.progress;
+  if (gone) return <GameClosed message={gone} />;
+  if (progress.phase === "ended") return <GameClosed message="This game was ended." />;
+
   let key: string;
   let screen: React.ReactNode;
   if (progress.phase === "lobby") {
@@ -57,21 +67,26 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
   } else if (progress.phase === "reveal" && round && view.reveal) {
     key = `reveal-${progress.round}`;
     screen = <Reveal key={key} round={round} reveal={view.reveal} />;
-  } else if (progress.phase === "done") {
-    key = "done";
-    screen = view.result ? <ResultView result={view.result} /> : <Stage aside={<p className="text-3xl font-extrabold">Working out your duo type…</p>} />;
   } else {
-    key = "ended";
-    screen = (
+    key = "done";
+    screen = view.result ? (
+      <ResultView result={view.result} />
+    ) : unscored.gaveUp ? (
       <Stage
         aside={
           <>
-            <h1 className="text-4xl leading-tight font-extrabold lg:text-5xl">This game was ended.</h1>
-            <p className="mt-3 text-lg text-muted">Start a new one whenever you’re both ready.</p>
-            <ActionBar reactions={false} primary={{ label: "Start a new game", onClick: () => router.push("/") }} />
+            <h1 className="text-4xl leading-tight font-extrabold lg:text-5xl">Couldn’t work out your duo type.</h1>
+            <p className="mt-3 text-lg text-muted">Your answers are saved. Try again in a moment.</p>
+            <ActionBar
+              reactions={false}
+              secondary={{ label: "Start a new game", onClick: () => router.push("/") }}
+              primary={{ label: "Try again", onClick: unscored.retry }}
+            />
           </>
         }
       />
+    ) : (
+      <Stage aside={<p className="text-3xl font-extrabold">Working out your duo type…</p>} />
     );
   }
 
@@ -86,7 +101,9 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
           <div className="frame flex flex-col pt-4 pb-44 md:pt-8 lg:pt-6 lg:pb-36">
             {/* Mounted in every phase so the desktop row never reflows between lobby, rounds and result. */}
             <header className="flex flex-col lg:min-h-8 lg:flex-row lg:items-center lg:gap-10">
-              <p className="hidden text-xl font-black text-navy lg:block">PMTI</p>
+              <Link href="/" className="hidden text-xl font-black text-navy lg:block">
+                PMTI
+              </Link>
               <div className="lg:flex-1">{inRound && <Segments step={progress.step} total={view.totalSteps} />}</div>
               <div className="lg:flex lg:w-72 lg:justify-end">
                 {showLive && partner && (
@@ -101,13 +118,16 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
               </div>
             </header>
             {error && (
-              <p role="alert" className="mt-4 rounded-2xl bg-blush px-4 py-3 font-semibold text-red-deep">
+              <ErrorNote on="white" className="mt-4">
                 {error}
-              </p>
+              </ErrorNote>
             )}
-            {partner && progress.phase !== "done" && progress.phase !== "ended" && offlineFor >= OFFLINE_END_AFTER_MS && (
+            {partner && stalled && (
               <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-tile px-4 py-3">
-                <p className="font-medium">{partner.name} has been offline a while. They can rejoin with the same link.</p>
+                <p className="font-medium">
+                  {presence?.online === false ? `${partner.name} has been offline a while.` : `Still waiting on ${partner.name}.`} They can
+                  rejoin with the same link.
+                </p>
                 <button type="button" className="font-bold text-navy underline" onClick={() => act(() => post("end"))}>
                   End game
                 </button>
@@ -131,7 +151,7 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
   );
 }
 
-/** Story-style progress: one segment per round, the current one fills in red. */
+/** The partner's status beside the round bar: here, choosing, locked in, or offline. */
 function LiveLine(props: { partner: PlayerInfo; online: boolean; lockedIn: boolean; choosing: boolean; connection: Connection }) {
   const { partner, online, lockedIn, choosing, connection } = props;
   const state = !online ? "offline" : lockedIn ? "locked" : choosing ? "choosing" : "here";
@@ -156,11 +176,7 @@ function LiveLine(props: { partner: PlayerInfo; online: boolean; lockedIn: boole
               <span>
                 <b className="font-bold text-ink">{partner.name}</b> is choosing
               </span>
-              <span aria-hidden className="flex gap-0.5">
-                {[0, 1, 2].map((i) => (
-                  <i key={i} className="typing-dot block size-1.5 rounded-full bg-muted" style={{ animationDelay: `${i * 0.15}s` }} />
-                ))}
-              </span>
+              <TypingDots className="gap-0.5" />
             </>
           ) : (
             <span>
@@ -174,18 +190,30 @@ function LiveLine(props: { partner: PlayerInfo; online: boolean; lockedIn: boole
   );
 }
 
-/** If the game is done but unscored (scoring failed or raced), ask again a few times. */
+/**
+ * If the game is done but unscored (scoring failed or raced), ask again a few times, then say so
+ * and leave a Try again button rather than a spinner that never ends.
+ */
 function useResultRetry(view: RoomView, refresh: () => Promise<void>) {
   const missing = view.progress.phase === "done" && !view.result;
+  const [attempt, setAttempt] = useState(0);
+  const [gaveUp, setGaveUp] = useState(false);
   useEffect(() => {
     if (!missing) return;
     let tries = 0;
     const id = setInterval(() => {
-      if (++tries > 5) clearInterval(id);
-      else void refresh();
+      if (++tries <= 5) return void refresh();
+      clearInterval(id);
+      setGaveUp(true);
     }, 2000);
     return () => clearInterval(id);
-  }, [missing, refresh]);
+  }, [missing, refresh, attempt]);
+  const retry = () => {
+    setGaveUp(false);
+    setAttempt((a) => a + 1);
+    void refresh();
+  };
+  return { gaveUp: missing && gaveUp, retry };
 }
 
 /** A clock that ticks every 10s while `active`, for "offline for 2 minutes" checks. */

@@ -12,9 +12,10 @@ export function JoinGate({ code }: { code: string }) {
 
   useEffect(() => {
     void (async () => {
-      const res = await fetch(`/api/rooms/${code}/join`, { method: "POST" });
-      if (res.ok) router.refresh();
-      else setError((await res.json().catch(() => ({}))).error ?? "Couldn't join this game.");
+      const res = await fetch(`/api/rooms/${code}/join`, { method: "POST" }).catch(() => null);
+      if (!res) setError("Couldn’t reach the server. Check your connection and reload.");
+      else if (res.ok) router.refresh();
+      else setError((await res.json().catch(() => ({}))).error ?? "Couldn’t join this game.");
     })();
   }, [code, router]);
 

@@ -82,6 +82,10 @@ function deckOf(room: RoomRow): Deck {
 
 const isPlayer = (room: RoomRow, userId: string) => userId === room.hostId || userId === room.guestId;
 
+/** Someone acting on a room they're not in; a removed guest is told why. */
+const notPlayer = (room: RoomRow, userId: string) =>
+  new RoomError(403, room.kicked.includes(userId) ? "The host removed you from this game." : "You’re not in this game.");
+
 /** A room nobody joined within a day is over. Once both are in, the game has no deadline. */
 const expired = (room: RoomRow) => !room.guestId && Date.now() - room.createdAt.getTime() > ROOM_TTL_MS;
 
@@ -144,7 +148,7 @@ export async function kickGuest(code: string, userId: string, body: unknown): Pr
 export async function endRoom(code: string, userId: string): Promise<void> {
   await sql.begin(async (tx) => {
     const room = await findRoom(tx, code, true);
-    if (!isPlayer(room, userId)) throw new RoomError(403, "You’re not in this game.");
+    if (!isPlayer(room, userId)) throw notPlayer(room, userId);
     if (room.endedAt) return;
     // A partner may have finished the game a moment ago; ending it now would throw away the result.
     const deck = getDeck(room.deckId);
@@ -275,7 +279,7 @@ async function playerInfo(ids: string[]): Promise<Map<string, PlayerInfo>> {
 
 export async function loadView(code: string, userId: string): Promise<RoomView> {
   const room = await findRoom(sql, code);
-  if (!isPlayer(room, userId)) throw new RoomError(403, "You’re not in this game.");
+  if (!isPlayer(room, userId)) throw notPlayer(room, userId);
   const deck = deckOf(room);
   const [{ moves, texts }, info] = await Promise.all([
     loadLog(sql, room.id),

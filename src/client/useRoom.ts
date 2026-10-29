@@ -3,11 +3,14 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Answer } from "@/game/answers";
-import { LOBBY_ROUND, waitingOnPartner, type MoveKind, type RoomView } from "@/game/engine";
+import { LOBBY_ROUND, other, waitingOnPartner, type MoveKind, type RoomView } from "@/game/engine";
 import { REACTIONS, type Reaction, type ReactionTally } from "@/game/reactions";
 import { supabaseBrowser } from "./supabase";
 
 const POLL_MS = 5000;
+const NETWORK_ERROR = "Couldn’t reach the server. Check your connection and try again.";
+/** Answers that mean this game is over for us: removed (403), gone (404), or a version that no longer exists (410). */
+const GONE = new Set([403, 404, 410]);
 const REACTION_FLUSH_MS = 250;
 const MAX_BURST = 12;
 
@@ -26,9 +29,13 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
   /** Null until the first presence sync, so the UI doesn't flash "offline" on load. */
   const [presence, setPresence] = useState<{ online: boolean; since: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Set when the server says this game is over for us; the screen then offers a way out. */
+  const [gone, setGone] = useState<string | null>(null);
+  /** When the game last moved, so a stall shows however the partner is connected. */
+  const [changedAt, setChangedAt] = useState(() => Date.now());
   const version = useRef(initial.version);
   const { code, roomId, seat } = initial;
-  const partnerSeat = seat === "host" ? "guest" : "host";
+  const partnerSeat = other(seat);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const viewRef = useRef(view);
@@ -40,13 +47,16 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
 
   const accept = useCallback((next: RoomView) => {
     if (next.version < version.current) return;
+    if (next.version > version.current) setChangedAt(Date.now());
     version.current = next.version;
     setView(next);
   }, []);
 
   const refresh = useCallback(async () => {
-    const res = await fetch(`/api/rooms/${code}`, { cache: "no-store" });
-    if (res.ok) accept(await res.json());
+    // A failed fetch is left to the next poll or ping.
+    const res = await fetch(`/api/rooms/${code}`, { cache: "no-store" }).catch(() => null);
+    if (res?.ok) accept(await res.json());
+    else if (res && GONE.has(res.status)) setGone((await res.json().catch(() => ({}))).error ?? "This game is no longer available.");
   }, [code, accept]);
 
   const post = useCallback(
@@ -56,13 +66,16 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
         method: "POST",
         headers: { "content-type": "application/json" },
         body: body === undefined ? undefined : JSON.stringify(body),
-      });
+      }).catch(() => null);
+      if (!res) return setError(NETWORK_ERROR);
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         if (data && typeof data.version === "number") accept(data);
         else await refresh();
       } else if (res.status === 409) {
         await refresh();
+      } else if (GONE.has(res.status)) {
+        setGone(data.error ?? "This game is no longer available.");
       } else {
         setError(data.error ?? "Something went wrong. Try again.");
       }
@@ -168,5 +181,5 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [refresh]);
 
-  return { view, connection, presence, error, send, post, refresh, react };
+  return { view, connection, presence, error, gone, changedAt, send, post, refresh, react };
 }
