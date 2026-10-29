@@ -13,11 +13,15 @@ type Props = { params: Promise<{ id: string }> };
 const person = (p: Card["people"][number]): CardPerson => ({ name: p.name, tone: p.seat === "host" ? "me" : "partner" });
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const card = await cardFor((await params).id);
+  const id = (await params).id;
+  const card = await cardFor(id);
   const type = card && duoType(card.typeId);
   if (!type) return {};
   const title = `${type.name}: ${type.nickname}`;
-  return { title, description: type.tagline, openGraph: { title, description: type.tagline }, twitter: { card: "summary_large_image", title } };
+  // Apps cache a preview by its address, so the address changes when a name is shown or hidden.
+  const names = card.people.map((p) => (p.name ? 1 : 0)).join("");
+  const images = [{ url: `/card/${id}/preview?names=${names}`, width: 1200, height: 630, alt: title }];
+  return { title, description: type.tagline, openGraph: { title, description: type.tagline, images }, twitter: { card: "summary_large_image", title, images } };
 }
 
 /** A shared result, public to anyone with the link: the duo, each half, and how well they read each other. */

@@ -126,6 +126,8 @@ export async function cardImage(card: Card, format: keyof typeof CARD_SIZES, sit
     ),
     {
       ...CARD_SIZES[format],
+      // Never cached: a player can take their name off the card at any time.
+      headers: { "cache-control": "no-store" },
       fonts: [
         { name: "Gabarito", data: bold, weight: 700, style: "normal" },
         { name: "Gabarito", data: black, weight: 900, style: "normal" },

@@ -317,7 +317,8 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
           Show my first name on it
         </label>
         <p className="mt-2 text-sm text-muted">
-          {names[partnerSeat]} {view.shareNames[partnerSeat] ? "shows their name too." : "keeps their name off for now."}
+          {names[partnerSeat]} {view.shareNames[partnerSeat] ? "shows their name too." : "keeps their name off for now."} Either of you can
+          change this any time, here; images already saved or sent keep what they showed.
         </p>
         <button type="button" onClick={saveImage} className="mt-4 font-bold text-navy underline underline-offset-4">
           Save it as an image
