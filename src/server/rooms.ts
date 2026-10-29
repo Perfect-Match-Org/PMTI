@@ -20,7 +20,7 @@ import {
 } from "@/game/engine";
 import { sql, type Db } from "./db";
 import { embed, toVector } from "./embed";
-import { matchPercentile, type TextRef } from "./similarity";
+import { vibeMatch, type TextRef } from "./similarity";
 
 type RoomRow = {
   id: string;
@@ -219,7 +219,7 @@ async function scoreRoundTexts(db: Db, roomId: string, round: number) {
     const anchorSlot = candidate.slot === "shared" ? "shared" : candidate.slot === "partner" ? "self" : null;
     const anchor = rows.find((t) => t.slot === anchorSlot && t.playerId !== candidate.playerId);
     if (!anchor) continue;
-    const pct = await matchPercentile(db, anchor, candidate, roomId);
+    const pct = await vibeMatch(db, anchor, candidate, roomId);
     await db`update texts set match_pct = ${pct} where id = ${candidate.id}`;
   }
 }

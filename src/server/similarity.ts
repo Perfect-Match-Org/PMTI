@@ -13,21 +13,21 @@ export function sameWords(a: string, b: string): boolean {
   return bag(a) === bag(b);
 }
 
+// gte-small puts the same dish at 0.94-0.98 ("mac and cheese" ~ "mac n cheese" is 0.94) and an
+// unrelated one at 0.76-0.80, measured against the comfort-order pool.
+const NEAR_IDENTICAL = 0.95;
+
 /**
- * How close `candidate` is to `anchor`, ranked against other people's answers to the candidate's
- * prompt. Ranking sidesteps gte-small's high baseline similarity, which differs per prompt.
- * The rank is curved (squared) so a random answer (~50th percentile) shows as ~25%, not ~50%,
- * while real matches stay near 100%.
+ * How close `candidate` is to `anchor`, 0-100: how far it rises above a typical answer to the same
+ * prompt toward a near-identical one. The typical answer is the pool's median similarity to the
+ * anchor, which absorbs gte-small's high floor that differs per prompt. Rank alone was too kind: with
+ * few close answers in the pool, "pizza" for "pineapple pasta" outranked nearly everything and scored
+ * 90. Curved (^0.7) so a related answer reads as close ("spaghetti" 63) and a different dish fails ("pizza" 28).
  */
-export async function matchPercentile(
-  db: Db,
-  anchor: TextRef,
-  candidate: TextRef,
-  roomId: string
-): Promise<number | null> {
+export async function vibeMatch(db: Db, anchor: TextRef, candidate: TextRef, roomId: string): Promise<number | null> {
   if (sameWords(anchor.body, candidate.body)) return 100;
   if (!anchor.hasEmbedding || !candidate.hasEmbedding) return null;
-  const [row] = await db<{ n: number; beaten: number }[]>`
+  const [row] = await db<{ n: number; typical: number | null; sim: number | null }[]>`
     with x as (select embedding from texts where id = ${anchor.id}),
          c as (select embedding from texts where id = ${candidate.id}),
          pool as (
@@ -36,10 +36,12 @@ export async function matchPercentile(
              and embedding is not null
              and room_id is distinct from ${roomId}
            order by created_at desc
-           limit ${POOL_SIZE})
-    select count(*)::int as n,
-           (count(*) filter (where (pool.embedding <=> x.embedding) > (c.embedding <=> x.embedding)))::int as beaten
-    from pool, x, c`;
-  if (!row || row.n < MIN_POOL) return null;
-  return Math.round((row.beaten / row.n) ** 2 * 100);
+           limit ${POOL_SIZE}),
+         sims as (select 1 - (pool.embedding <=> x.embedding) as s from pool, x)
+    select (select count(*) from sims)::int as n,
+           (select percentile_cont(0.5) within group (order by s) from sims) as typical,
+           (select 1 - (c.embedding <=> x.embedding) from c, x) as sim`;
+  if (!row || row.n < MIN_POOL || row.typical == null || row.sim == null) return null;
+  const lift = (row.sim - row.typical) / Math.max(NEAR_IDENTICAL - row.typical, 0.01);
+  return Math.round(Math.min(1, Math.max(0, lift)) ** 0.7 * 100);
 }
