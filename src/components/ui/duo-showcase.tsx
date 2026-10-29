@@ -12,7 +12,7 @@ const STAY_MS = 3600;
 
 /**
  * Where the day ends: the result card, cycling through every pair a game can end on, beside an index
- * of all of them. Sam and Jordan are the couple from the deck above.
+ * of all of them, played by the same sample couple as the deck above.
  */
 export function DuoShowcase() {
   const ref = useRef<HTMLDivElement>(null);

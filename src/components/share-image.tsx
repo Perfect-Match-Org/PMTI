@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { PmLogo } from "@/components/ui/pm-logo";
+import { SAMPLE_NAMES } from "@/components/ui/sample-couple";
 
 // The image renderer can't read CSS variables or the woff2 that next/font serves, hence hex values and .ttf files.
 const NAVY = "#24438d";
@@ -67,9 +68,9 @@ function Deck() {
         <div style={{ marginTop: "auto", fontSize: 58, fontWeight: 900, letterSpacing: "-0.03em" }}>Same brain.</div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 20, padding: "14px 16px", borderRadius: 18, background: "white", color: INK }}>
           <div style={{ flex: 1, fontSize: 19, fontWeight: 700, lineHeight: 1.25 }}>CTB bagels, then a slow walk down to the Commons</div>
-          <Face letter="S" fill={NAVY} color="white" />
+          <Face letter={SAMPLE_NAMES.host.charAt(0)} fill={NAVY} color="white" />
           <div style={{ display: "flex", marginLeft: -16 }}>
-            <Face letter="J" fill={PINK} color={INK} />
+            <Face letter={SAMPLE_NAMES.guest.charAt(0)} fill={PINK} color={INK} />
           </div>
           <svg width="22" height="22" viewBox="0 0 24 24">
             <path fill={RED} d={HEART} />
