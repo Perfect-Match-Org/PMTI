@@ -8,23 +8,25 @@ type Context = { deck: Deck; names: Pair<string>; viewer: Seat; t: (copy: Copy) 
 
 const stripLead = (text: string) => text.replace(/^…\s*/, "");
 
+/** A quote that ends its sentence: a label already ending in ".", "?" or "!" gets no second period. */
+const quoteEnd = (text: string) => `“${text}”${/[.?!]$/.test(text) ? "" : "."}`;
+
 /** Turns a scored moment into one line of copy, from the viewer's side. Selection is code; wording lives here. */
 export function momentText(m: Moment, { deck, names, viewer, t }: Context): string {
   const who = whoFor(viewer, names);
   const partner = other(viewer);
   const round = deck.rounds[m.round];
-  const scene = round ? t(round.scene.title) : "the lobby";
   const optionLabel = (i: number) => (round && "options" in round ? t(round.options[i]!.label) : "?");
   const itemText = (i: number) => (round?.format === "likely" ? stripLead(t(round.items[i]!.text)) : "?");
 
   switch (m.kind) {
     case "same-pick":
-      return `Same brain: you both picked “${optionLabel(m.option)}”.`;
+      return `Same brain: you both picked ${quoteEnd(optionLabel(m.option))}`;
     case "mind": {
       const subject = other(m.guesser);
       return m.hit
         ? `${who(m.guesser, true)} knew exactly what ${who(subject)} would pick.`
-        : `${who(m.guesser, true)} guessed “${optionLabel(m.guess)}”. ${who(subject, true)} said “${optionLabel(m.actual)}”. Talk later.`;
+        : `${who(m.guesser, true)} guessed ${quoteEnd(optionLabel(m.guess))} ${who(subject, true)} said ${quoteEnd(optionLabel(m.actual))} Talk later.`;
     }
     case "undisputed":
       return `Undisputed: ${who(m.who)} ${m.who === viewer ? "are" : "is"} more likely to ${itemText(m.item)}.`;
@@ -48,7 +50,7 @@ export function momentText(m: Moment, { deck, names, viewer, t }: Context): stri
       return `${who(other(m.about), true)} guessed ${whose} ${topic}. ${vibeWord(m.pct) ?? ""}`.trim();
     }
     case "reactions":
-      return `${who(m.who, true)} sent ${m.count} ${m.emoji} during “${scene}”.`;
+      return `${who(m.who, true)} sent ${m.count} ${m.emoji} ${round ? `during ${quoteEnd(t(round.scene.title))}` : "in the lobby."}`;
   }
 }
 
