@@ -2,15 +2,12 @@
 
 import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import type { PlayerInfo } from "@/game/engine";
 import { DUO_TYPES, type DuoType } from "@/game/types";
 import { Avatar } from "./avatar";
 import { PairName } from "./pair-name";
+import { SAMPLE_PLAYERS } from "./sample-couple";
 
-const PLAYERS: [PlayerInfo, PlayerInfo] = [
-  { name: "Sam", avatarUrl: null },
-  { name: "Jordan", avatarUrl: null },
-];
+const PLAYERS = [SAMPLE_PLAYERS.host, SAMPLE_PLAYERS.guest];
 const STAY_MS = 3600;
 
 /**
