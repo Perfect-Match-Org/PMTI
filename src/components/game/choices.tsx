@@ -35,13 +35,11 @@ export function Choices({ label, options, value, onChange, disabled, layout = "s
       {options.map((option, i) => {
         const checked = value === i;
         return (
-          <motion.button
+          // The entrance and the selection pop move a wrapper: motion's inline transform on the tile
+          // itself would cancel its pressed state (.tile:active).
+          <motion.div
             key={i}
-            type="button"
-            role="radio"
-            aria-checked={checked}
-            disabled={disabled}
-            onClick={() => onChange(i)}
+            className="flex"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0, scale: checked ? [1, 1.025, 1] : 1 }}
             transition={{
@@ -52,6 +50,13 @@ export function Choices({ label, options, value, onChange, disabled, layout = "s
               // Springs only take two keyframes; the selection pop uses a short tween instead.
               scale: { type: "tween", duration: 0.25, ease: "easeOut", delay: 0 },
             }}
+          >
+          <button
+            type="button"
+            role="radio"
+            aria-checked={checked}
+            disabled={disabled}
+            onClick={() => onChange(i)}
             className={`tile ${layout === "scale" ? "tile-dot" : ""} ${layout === "pair" ? "min-h-[4.25rem] text-center text-balance" : ""} ${layout === "stack" ? "flex items-center gap-3" : ""}`}
           >
             {hotkeys && (
@@ -79,7 +84,8 @@ export function Choices({ label, options, value, onChange, disabled, layout = "s
                 )}
               </AnimatePresence>
             )}
-          </motion.button>
+          </button>
+          </motion.div>
         );
       })}
     </div>

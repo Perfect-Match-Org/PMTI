@@ -119,7 +119,8 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
                 PMTI
               </Link>
               <div className="lg:flex-1">{inRound && <Segments step={progress.step} total={view.totalSteps} />}</div>
-              <div className="lg:flex lg:w-72 lg:justify-end">
+              {/* Holds the line's height through reveals too, so phone screens don't jump between rounds. */}
+              <div className={`lg:flex lg:w-72 lg:justify-end ${inRound ? "min-h-11 lg:min-h-0" : ""}`}>
                 {showLive && partner && (
                   <LiveLine
                     partner={partner}

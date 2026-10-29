@@ -170,7 +170,7 @@ function Likely({ ctx, items, pick }: { ctx: Ctx; items: { text: Copy }[]; pick:
                     at={i * 0.08}
                     className={`flex items-center justify-between gap-2 px-3.5 ${ctx.compact ? "min-h-11 rounded-2xl py-1.5" : "min-h-13 rounded-[1.125rem] py-2"} ${fill(ctx, by.length > 0, by.length === 2)}`}
                   >
-                    <span className={`font-bold ${quiet(ctx, by.length > 0)}`}>{who(named, true)}</span>
+                    <span className={`min-w-0 truncate font-bold ${quiet(ctx, by.length > 0)}`}>{who(named, true)}</span>
                     <Faces ctx={ctx} seats={by} />
                   </Item>
                 );
@@ -299,7 +299,7 @@ function Write({ ctx, mirror, texts }: { ctx: Ctx; mirror: boolean; texts: ViewT
                   <Avatar player={ctx.players[note.seat]} tone={toneOf(ctx, note.seat)} size={ctx.compact ? 24 : 32} />
                   {note.caption}
                 </span>
-                <span className={`leading-snug font-bold ${ctx.compact ? "min-h-[5.2em] text-base lg:text-lg" : "text-lg"}`}>
+                <span className={`leading-snug font-bold wrap-anywhere ${ctx.compact ? "min-h-[5.2em] text-base lg:text-lg" : "text-lg"}`}>
                   {ctx.landed ? (
                     <motion.span className="block" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
                       {note.text}
