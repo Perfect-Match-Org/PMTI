@@ -63,4 +63,4 @@ returns them to the page they started on. It needs the Google client ID and secr
 
 ## Contact
 
-perfectmatch@cornell.edu
+cornell.perfectmatch@gmail.com

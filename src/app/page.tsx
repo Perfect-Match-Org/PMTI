@@ -50,8 +50,8 @@ export default async function Home() {
             <a href="https://perfectmatch.ai" className="font-semibold underline-offset-4 hover:underline">
               perfectmatch.ai
             </a>
-            <a href="mailto:perfectmatch@cornell.edu" className="font-semibold underline-offset-4 hover:underline">
-              perfectmatch@cornell.edu
+            <a href="mailto:cornell.perfectmatch@gmail.com" className="font-semibold underline-offset-4 hover:underline">
+              cornell.perfectmatch@gmail.com
             </a>
           </p>
         </div>
