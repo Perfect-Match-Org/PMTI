@@ -136,4 +136,5 @@ it(`type distribution over ${GAMES} simulated couples`, () => {
     expect(share(t.id), t.name).toBeGreaterThanOrEqual(0.04);
     expect(share(t.id), t.name).toBeLessThanOrEqual(0.15);
   }
-});
+  // About 2.5s warm; a cold first run under load went past the 5s default.
+}, 30_000);
