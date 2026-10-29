@@ -32,7 +32,7 @@ export default async function PlayPage({ params }: { params: Promise<{ code: str
     );
   }
 
-  if (!(await isInRoom(code, user.id))) return <JoinGate code={code} />;
+  if (!(await isInRoom(code, user.id))) return <JoinGate key={code} code={code} />;
 
   const loaded = await loadView(code, user.id).then(
     (view) => ({ view }),

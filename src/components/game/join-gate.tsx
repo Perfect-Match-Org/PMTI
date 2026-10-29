@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { JoinWithCode } from "./join-with-code";
 
 /** Joins on mount (never on a server GET, so link prefetching can't join anyone by accident). */
 export function JoinGate({ code }: { code: string }) {
@@ -25,6 +26,10 @@ export function JoinGate({ code }: { code: string }) {
             <p role="alert" className="text-4xl leading-tight font-black tracking-[-0.02em]">
               {error}
             </p>
+            <div className="flex flex-col gap-2">
+              <p className="font-semibold text-muted">Have a different code?</p>
+              <JoinWithCode tone="white" placeholder="Six letters and numbers" />
+            </div>
             <Link href="/" className="btn btn-primary self-start">
               Start your own game
             </Link>

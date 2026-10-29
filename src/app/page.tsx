@@ -21,14 +21,18 @@ export default async function Home() {
             Thirteen quick rounds, each on your own phone. Pick in secret, reveal together, and find out what kind of duo
             you are.
           </p>
-          <p className="text-lg leading-snug text-white/65">
-            Play with your partner, or with a friend as if you’d been dating since O-Week.
-          </p>
+          {!user && (
+            <p className="text-lg leading-snug text-white/65">
+              Play with your partner, or with a friend as if you’d been dating since O-Week.
+            </p>
+          )}
         </div>
         {user ? (
           <div className="flex max-w-xl flex-col gap-3">
             <StartGame />
-            <JoinWithCode />
+            <div className="mt-3">
+              <JoinWithCode />
+            </div>
             <p className="flex flex-wrap items-center gap-x-3 pt-2 text-white/70">
               Signed in as {user.email}
               <SignOutButton />
