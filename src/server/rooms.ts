@@ -112,9 +112,9 @@ async function loadLog(db: Db, roomId: string) {
 async function bump(db: Db, roomId: string, changes: Record<string, unknown> = {}) {
   // postgres.js can't expand db(object) inside a nested fragment, hence two inline queries.
   if (Object.keys(changes).length) {
-    await db`update rooms set ${db(changes)}, seq = seq + 1, updated_at = now() where id = ${roomId}`;
+    await db`update rooms set ${db(changes)}, seq = seq + 1 where id = ${roomId}`;
   } else {
-    await db`update rooms set seq = seq + 1, updated_at = now() where id = ${roomId}`;
+    await db`update rooms set seq = seq + 1 where id = ${roomId}`;
   }
 }
 
@@ -161,7 +161,7 @@ export async function endRoom(code: string, userId: string): Promise<void> {
     if (deck && derive(deck, room, (await loadLog(tx, room.id)).moves).phase === "done") {
       throw new RoomError(409, "This game already finished.");
     }
-    await bump(tx, room.id, { endedAt: new Date(), endedBy: userId });
+    await bump(tx, room.id, { endedAt: new Date() });
   });
 }
 
