@@ -28,8 +28,11 @@ Requires Node 22+, pnpm, and Docker. The Supabase CLI comes with the dev depende
    ```
 4. `pnpm db:start`, then `pnpm db:reset` (applies migrations), then `pnpm db:seed-pool` (seeds the
    free-text scoring pool; rerun it after every reset).
-5. `pnpm dev`, then open http://localhost:3000. Use the dev sign-in with any `@cornell.edu` address.
-   Two browser profiles make two players.
+5. `pnpm dev`, then open http://localhost:3000. The dev sign-in takes any name (`Bob` signs in as
+   `bob@cornell.edu`; nothing is checked, no Google needed). For the second player, open
+   http://127.0.0.1:3000 in another tab of the same browser: a different address keeps a separate
+   sign-in, so you can watch both screens sync side by side. Typing a full address such as
+   `someone@gmail.com` tries the Cornell-only rule.
 
 ## Google sign-in
 

@@ -9,7 +9,7 @@ const DEV_PASSWORD = "local-dev-only";
 
 export function DevLogin() {
   const router = useRouter();
-  const [email, setEmail] = useState("alice@cornell.edu");
+  const [who, setWho] = useState("Alice");
   const [error, setError] = useState<string | null>(null);
 
   if (process.env.NEXT_PUBLIC_DEV_LOGIN !== "1") return null;
@@ -17,6 +17,8 @@ export function DevLogin() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    // A bare name becomes name@cornell.edu; a full address is used as is, so the Cornell-only rule can be tried too.
+    const email = who.includes("@") ? who.trim() : `${who.trim().toLowerCase().replace(/[^a-z0-9.]/g, "")}@cornell.edu`;
     const auth = supabaseBrowser().auth;
     let { error } = await auth.signInWithPassword({ email, password: DEV_PASSWORD });
     if (error?.code === "invalid_credentials") {
@@ -39,9 +41,10 @@ export function DevLogin() {
       <div className="flex gap-3">
         <input
           id="dev-email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          value={who}
+          onChange={(event) => setWho(event.target.value)}
+          placeholder="Any name, like Bob"
+          autoComplete="off"
           className="field flex-1"
         />
         <button type="submit" className="btn btn-pink">
