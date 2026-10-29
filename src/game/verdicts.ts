@@ -89,7 +89,9 @@ export function verdictFor(round: Round, reveal: RevealData, viewer: Seat | null
       const pct = averagePct(reveal.texts.filter((t) => t.slot !== "self").map((t) => t.matchPct));
       const word = vibeWord(pct);
       if (!word) return { text: "Two takes.", tone: "between" };
-      return { text: word, tone: pct! >= VIBE.same ? "match" : pct! >= VIBE.close ? "between" : "miss" };
+      // Guessing your partner can miss; two answers to the same prompt just differ, like two picks.
+      const far = round.variant === "mirror" ? "miss" : "between";
+      return { text: word, tone: pct! >= VIBE.same ? "match" : pct! >= VIBE.close ? "between" : far };
     }
   }
 }
