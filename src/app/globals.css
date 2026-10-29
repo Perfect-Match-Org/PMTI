@@ -21,6 +21,7 @@
   --color-tile: #f3f5fa;
   --color-line: #e2e6f0;
   --font-sans: var(--font-gabarito), system-ui, sans-serif;
+  --font-pair: var(--font-bodoni), Georgia, serif;
 }
 
 body {

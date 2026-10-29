@@ -10,6 +10,7 @@ import { momentMood, momentText } from "@/game/moments";
 import type { Moment, Result } from "@/game/scoring";
 import { duoType, type DuoType } from "@/game/types";
 import { Avatar } from "@/components/ui/avatar";
+import { PairName } from "@/components/ui/pair-name";
 import { BrokenHeart, Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
 import { ActionBar } from "./action-bar";
@@ -113,17 +114,7 @@ function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; 
             {view.mode === "friends" ? "In a parallel universe where you two date, you’d be" : "You two are"}
           </Rise>
           <h2 className="mt-3 text-[clamp(2.75rem,13vw,4rem)] leading-[0.95] font-black tracking-[-0.03em]">
-            {words.map((word, i) => (
-              <motion.span
-                key={i}
-                className="mr-[0.25em] inline-block"
-                initial={{ y: 40, opacity: 0, rotate: 4 }}
-                animate={{ y: 0, opacity: 1, rotate: 0 }}
-                transition={{ delay: 0.6 + i * 0.12, type: "spring", stiffness: 380, damping: 18 }}
-              >
-                {word}
-              </motion.span>
-            ))}
+            <PairName name={type.name} spring={{ delay: 0.6 }} />
           </h2>
           <Rise delay={0.8 + words.length * 0.12} className="mt-5 text-2xl font-bold text-pink">
             {type.nickname}
@@ -263,7 +254,7 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
         <>
       <p className="text-lg font-semibold text-muted">{view.mode === "friends" ? "In a parallel universe, you two are" : "You two are"}</p>
       <h1 className="mt-1 text-[clamp(2.5rem,12vw,3.25rem)] leading-[0.98] font-black tracking-[-0.03em] text-balance lg:text-[4rem] lg:leading-[0.95]">
-        {type.name}
+        <PairName name={type.name} />
       </h1>
       <p className="mt-3 text-lg">
         <b className="font-extrabold">{type.nickname}.</b> <span className="text-muted">{type.tagline}</span>

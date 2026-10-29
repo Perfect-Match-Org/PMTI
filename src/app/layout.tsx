@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Gabarito } from "next/font/google";
+import { Bodoni_Moda, Gabarito } from "next/font/google";
 import "./globals.css";
 
 const gabarito = Gabarito({ subsets: ["latin"], variable: "--font-gabarito" });
+// Only the "&" and "vs." in pair names use it.
+const bodoni = Bodoni_Moda({ subsets: ["latin"], style: "italic", weight: "500", variable: "--font-bodoni" });
 
 export const metadata: Metadata = {
   title: "PMTI · Perfect Match Type Indicator",
@@ -13,7 +15,7 @@ export const viewport: Viewport = { themeColor: "#ffffff" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={gabarito.variable}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${gabarito.variable} ${bodoni.variable}`}>
       <body>{children}</body>
     </html>
   );
