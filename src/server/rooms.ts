@@ -284,13 +284,14 @@ async function playerInfo(ids: string[]): Promise<Map<string, PlayerInfo>> {
 }
 
 export async function loadView(code: string, userId: string): Promise<RoomView> {
-  const room = await findRoom(sql, code);
+  // One snapshot, so the version a client is sent always matches the moves it's shown.
+  const { room, moves, texts } = await sql.begin("isolation level repeatable read", async (tx) => {
+    const room = await findRoom(tx, code);
+    return { room, ...(await loadLog(tx, room.id)) };
+  });
   if (!isPlayer(room, userId)) throw notPlayer(room, userId);
   const deck = deckOf(room);
-  const [{ moves, texts }, info] = await Promise.all([
-    loadLog(sql, room.id),
-    playerInfo([room.hostId, ...(room.guestId ? [room.guestId] : [])]),
-  ]);
+  const info = await playerInfo([room.hostId, ...(room.guestId ? [room.guestId] : [])]);
   const unknown: PlayerInfo = { name: "Player", avatarUrl: null };
   const result = room.result ?? (await ensureResult(deck, room, moves, texts));
   // An expired lobby reads as ended, so the host isn't left waiting on a link that no longer works.
