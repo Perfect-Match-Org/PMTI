@@ -4,6 +4,8 @@ import type { ReactionTally } from "./reactions";
 import type { Result } from "./scoring";
 
 export type Seat = "host" | "guest";
+export const SEATS: Seat[] = ["host", "guest"];
+export const other = (seat: Seat): Seat => (seat === "host" ? "guest" : "host");
 export type Mode = "couple" | "friends";
 export type MoveKind = "ready" | "answer";
 

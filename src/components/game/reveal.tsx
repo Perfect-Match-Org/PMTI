@@ -5,8 +5,8 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import type { Answer } from "@/game/answers";
 import { promptFor, whoFor } from "@/game/copy";
 import type { Option, Round } from "@/game/deck";
-import type { Pair, Seat, ViewText } from "@/game/engine";
-import { averagePct, verdictFor, vibeWord, type Tone } from "@/game/verdicts";
+import { other, type Pair, type Seat, type ViewText } from "@/game/engine";
+import { averagePct, likelyItem, verdictFor, vibeWord, type Tone } from "@/game/verdicts";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
@@ -21,7 +21,6 @@ type RevealData = Pair<Answer> & { texts: ViewText[] };
 const FLASH_MS = 1100;
 /** Content starts arriving as the flash clears. */
 const AFTER_FLASH = FLASH_MS / 1000 - 0.15;
-const other = (seat: Seat): Seat => (seat === "host" ? "guest" : "host");
 
 export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) {
   const { view, seat, partnerSeat, names, t, busy, act, send } = useRoomContext();
@@ -67,15 +66,14 @@ export function Reveal({ round, reveal }: { round: Round; reveal: RevealData }) 
       body = (
         <div className="flex flex-col gap-2.5">
           {round.items.map((item, i) => {
-            const named = (s: Seat) => (pick(s, i) === 0 ? s : other(s));
-            const mine = named(seat);
-            const theirs = named(partnerSeat);
-            const agreed = mine === theirs;
-            const line = agreed
-              ? `${who(mine, true)}, undisputed.`
-              : mine === seat && theirs === partnerSeat
-                ? "You both claim it."
-                : `You say ${who(mine)}. ${names[partnerSeat]} says ${who(theirs)}.`;
+            const landed = likelyItem(pick("host", i), pick("guest", i));
+            const agreed = landed?.kind === "agreed";
+            const line =
+              landed?.kind === "agreed"
+                ? `${who(landed.named, true)}, undisputed.`
+                : landed?.kind === "both-claim"
+                  ? "You both claim it."
+                  : `You say ${who(partnerSeat)}. ${names[partnerSeat]} says ${who(seat)}.`;
             return (
               <Arrive key={i} delay={delay + i * 0.08} className={`rounded-[1.125rem] px-4 py-3.5 ${agreed ? "bg-blush" : "bg-tile"}`}>
                 <p className="text-balance text-muted">{t(item.text)}</p>

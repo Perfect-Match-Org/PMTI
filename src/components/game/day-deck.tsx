@@ -6,7 +6,7 @@ import type { Answer } from "@/game/answers";
 import { say, whoFor } from "@/game/copy";
 import type { Copy, Option, Round } from "@/game/deck";
 import { CURRENT_DECK } from "@/game/decks";
-import { plannedLength, type Pair, type Seat, type ViewText } from "@/game/engine";
+import { other, plannedLength, SEATS, type Pair, type Seat, type ViewText } from "@/game/engine";
 import { verdictFor, type Tone } from "@/game/verdicts";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
@@ -16,8 +16,6 @@ import { TONE_BG, TONE_TEXT } from "./tones";
 
 const NAMES = SAMPLE_NAMES;
 const PLAYERS = SAMPLE_PLAYERS;
-const SEATS = ["host", "guest"] as const;
-const other = (seat: Seat): Seat => (seat === "host" ? "guest" : "host");
 const s = (copy: Copy) => say(copy, "couple", { p: NAMES.guest, s: NAMES.host });
 
 type Mark = { by: Seat; at: number; guess?: boolean };

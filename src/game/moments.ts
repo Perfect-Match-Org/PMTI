@@ -1,12 +1,11 @@
 import { whoFor } from "./copy";
 import type { Copy, Deck } from "./deck";
-import type { Pair, Seat } from "./engine";
+import { other, type Pair, type Seat } from "./engine";
 import type { Moment } from "./scoring";
 import { VIBE, vibeWord } from "./verdicts";
 
 type Context = { deck: Deck; names: Pair<string>; viewer: Seat; t: (copy: Copy) => string };
 
-const other = (seat: Seat): Seat => (seat === "host" ? "guest" : "host");
 const stripLead = (text: string) => text.replace(/^…\s*/, "");
 
 /** Turns a scored moment into one line of copy, from the viewer's side. Selection is code; wording lives here. */
@@ -34,13 +33,15 @@ export function momentText(m: Moment, { deck, names, viewer, t }: Context): stri
     case "both-claim":
       return `You both claim you’d ${itemText(m.item)}.`;
     case "dinner":
-      if (m.failed) return "Dinner took every try and nobody budged. Nobody ate.";
+      if (m.failed) return m.budged === false ? "Dinner took every try and nobody budged. Nobody ate." : "Dinner took every try and you never landed on the same place. Nobody ate.";
       if (m.tries === 1) return "Dinner decided in one try. Suspicious.";
       return m.caved
         ? `Dinner took ${m.tries} tries. ${who(m.caved, true)} caved first.`
         : `Dinner took ${m.tries} tries. You both caved at the same time.`;
     case "close-call":
-      return `${who(m.guesser, true)} placed ${who(other(m.guesser))} exactly right on “${scene}”`;
+      return round?.format === "scale"
+        ? `${who(m.guesser, true)} placed ${who(other(m.guesser))} exactly right between “${t(round.left)}” and “${t(round.right)}”.`
+        : `${who(m.guesser, true)} placed ${who(other(m.guesser))} exactly right.`;
     case "mirror": {
       const topic = (round?.format === "write" && round.topic) || "answer";
       const whose = m.about === viewer ? "your" : `${names[m.about]}’s`;

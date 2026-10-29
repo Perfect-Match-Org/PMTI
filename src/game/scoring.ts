@@ -1,6 +1,7 @@
 import type { Axis, Deck, Weights } from "./deck";
-import { walk, type MoveRow, type Pair, type RoomFacts, type Seat, type TextRow } from "./engine";
+import { other, SEATS, walk, type MoveRow, type Pair, type RoomFacts, type Seat, type TextRow } from "./engine";
 import { REACTIONS, type Reaction } from "./reactions";
+import { likelyItem } from "./verdicts";
 import { DUO_TYPES, type DuoType, type RoleMetric } from "./types";
 
 export const SCORER_VERSION = 1;
@@ -18,7 +19,6 @@ export const THRESHOLDS = {
 const LIKELY_WEIGHT = 0.5;
 
 const AXES: Axis[] = ["E", "P", "H"];
-const SEATS: Seat[] = ["host", "guest"];
 export type Vec = Record<Axis, number>;
 
 export type Moment =
@@ -27,7 +27,7 @@ export type Moment =
   | { kind: "undisputed"; round: number; item: number; who: Seat }
   | { kind: "denial"; round: number; item: number }
   | { kind: "both-claim"; round: number; item: number }
-  | { kind: "dinner"; round: number; tries: number; failed: boolean; caved: Seat | null }
+  | { kind: "dinner"; round: number; tries: number; failed: boolean; caved: Seat | null; budged?: boolean }
   | { kind: "close-call"; round: number; guesser: Seat }
   | { kind: "mirror"; round: number; about: Seat; pct: number }
   | { kind: "reactions"; round: number; who: Seat; emoji: Reaction; count: number };
@@ -49,7 +49,6 @@ const zero = (): Vec => ({ E: 0, P: 0, H: 0 });
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const round3 = (x: number) => Math.round(x * 1000) / 1000;
 const mapVec = (f: (a: Axis) => number): Vec => ({ E: round3(f("E")), P: round3(f("P")), H: round3(f("H")) });
-const other = (seat: Seat): Seat => (seat === "host" ? "guest" : "host");
 
 /** Largest |weight| per axis among the choices on offer: the most a single answer could move you. */
 function reach(choices: (Weights | undefined)[], scale = 1): Vec {
@@ -92,6 +91,7 @@ export function score(
   let brags = 0;
   let bothClaimed = 0;
   let agree: { tries: number; maxTries: number; failed: boolean } | null = null;
+  let cavedFirst: Seat | null = null;
   const candidates: { interest: number; moment: Moment }[] = [];
   const note = (interest: number, moment: Moment) => candidates.push({ interest, moment });
 
@@ -132,17 +132,15 @@ export function score(
           for (const voter of SEATS) {
             for (const s of SEATS) tally[s].add(target(voter) === s ? item.nudge : undefined, possible, LIKELY_WEIGHT);
           }
-          const byHost = target("host");
-          const byGuest = target("guest");
-          same.push(byHost === byGuest ? 1 : 0);
-          const claimed = pick("host", i) === 0 && pick("guest", i) === 0;
+          const landed = likelyItem(pick("host", i), pick("guest", i));
+          same.push(landed?.kind === "agreed" ? 1 : 0);
           if (item.brag) {
             brags++;
-            if (claimed) bothClaimed++;
+            if (landed?.kind === "both-claim") bothClaimed++;
           }
-          if (claimed && item.brag) note(2.5, { kind: "both-claim", round: r, item: i });
-          else if (byHost && byHost === byGuest) note(2, { kind: "undisputed", round: r, item: i, who: byHost });
-          else if (pick("host", i) === 1 && pick("guest", i) === 1) note(3, { kind: "denial", round: r, item: i });
+          if (landed?.kind === "both-claim" && item.brag) note(2.5, { kind: "both-claim", round: r, item: i });
+          else if (landed?.kind === "agreed") note(2, { kind: "undisputed", round: r, item: i, who: landed.named });
+          else if (landed?.kind === "denial") note(3, { kind: "denial", round: r, item: i });
         });
         break;
       case "scale": {
@@ -167,14 +165,18 @@ export function score(
       }
       case "agree": {
         same.push(pick("host", 0, 0) === pick("guest", 0, 0) ? 1 : 0);
+        // Who moved first; null when both moved on the same try (or nobody ever did).
         let caved: Seat | null = null;
+        let anyMoved = false;
         for (let a = 0; a + 1 < attempts; a++) {
           const moved = SEATS.filter((s) => pick(s, 0, a + 1) !== pick(s, 0, a));
           for (const s of moved) switches[s]++;
-          if (caved === null && moved.length === 1) caved = moved[0]!;
+          if (!anyMoved && moved.length) caved = moved.length === 1 ? moved[0]! : null;
+          anyMoved ||= moved.length > 0;
         }
+        cavedFirst = caved;
         agree = { tries: attempts, maxTries: round.tries, failed: !matched };
-        note(!matched ? 3 : attempts > 1 ? 2.5 : 1.5, { kind: "dinner", round: r, tries: attempts, failed: !matched, caved });
+        note(!matched ? 3 : attempts > 1 ? 2.5 : 1.5, { kind: "dinner", round: r, tries: attempts, failed: !matched, caved, budged: anyMoved });
         break;
       }
       case "speed": {
@@ -241,7 +243,16 @@ export function score(
 
   const metric = (seat: Seat, by: RoleMetric) =>
     by === "sharper" ? mean(mind[seat]) : by === "steadier" ? -switches[seat] : axes[seat][by];
-  const hostHigher = metric("host", type.role.by) >= metric("guest", type.role.by);
+  const byHost = metric("host", type.role.by);
+  const byGuest = metric("guest", type.role.by);
+  // A tie never defaults to a seat: whoever caved first at dinner is the less steady one, and
+  // otherwise the ids decide, which is arbitrary but the same on every read.
+  const hostHigher =
+    byHost !== byGuest
+      ? byHost > byGuest
+      : type.role.by === "steadier" && cavedFirst
+        ? cavedFirst === "guest"
+        : room.hostId < room.guestId;
   const high = type.role.higherGets;
   const low = (1 - high) as 0 | 1;
 
@@ -273,7 +284,8 @@ export function chooseType(f: Features): { type: DuoType; runnerUp: DuoType | nu
   const byId = (id: string) => DUO_TYPES.find((t) => t.id === id)!;
   const cornerOf = (flip?: Axis) =>
     DUO_TYPES.find(
-      (t) => t.kind === "corner" && AXES.every((a) => t.lean[a] === ((flip === a ? -f.center[a] : f.center[a]) >= 0 ? 1 : -1))
+      // Sign first, then flip: negating a centre of exactly 0 gives -0, which still counts as >= 0.
+      (t) => t.kind === "corner" && AXES.every((a) => t.lean[a] === (flip === a ? -1 : 1) * (f.center[a] >= 0 ? 1 : -1))
     )!;
   const corner = cornerOf();
   const t = THRESHOLDS;

@@ -136,7 +136,7 @@ it(`type distribution over ${GAMES} simulated couples`, () => {
     DUO_TYPES.map((t) => `${(share(t.id) * 100).toFixed(1).padStart(5)}%  ${t.name}`).join("\n")
   );
   for (const t of DUO_TYPES) {
-    expect(share(t.id), t.name).toBeGreaterThanOrEqual(0.02);
-    expect(share(t.id), t.name).toBeLessThanOrEqual(0.2);
+    expect(share(t.id), t.name).toBeGreaterThanOrEqual(0.04);
+    expect(share(t.id), t.name).toBeLessThanOrEqual(0.15);
   }
 });

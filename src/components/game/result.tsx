@@ -33,10 +33,8 @@ export function ResultView({ result }: { result: Result }) {
 
 /** A moment that backs up the mind-reading number instead of contradicting it. */
 function mindMomentFor(result: Result): Moment | undefined {
-  const good = result.mindReading >= 0.5;
-  return result.moments.find((m) =>
-    m.kind === "mind" ? m.hit === good : m.kind === "mirror" ? m.pct >= 60 === good : m.kind === "close-call" && good
-  );
+  const mood = result.mindReading >= 0.5 ? "hit" : "miss";
+  return result.moments.find((m) => (m.kind === "mind" || m.kind === "mirror" || m.kind === "close-call") && momentMood(m) === mood);
 }
 
 type Slide = { tone: string; body: React.ReactNode };

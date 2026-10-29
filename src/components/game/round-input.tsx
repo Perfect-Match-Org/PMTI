@@ -139,8 +139,8 @@ export function RoundInput({ round }: { round: Round }) {
           <p className="text-[0.95rem] font-medium text-muted">{t(round.scene.title)}</p>
           {lastTry && round.format === "agree" && (
             <p className="mt-4 rounded-2xl bg-blush px-4 py-3 font-semibold">
-              Not the same yet. {names.host} picked “{t(round.options[lastTry.host.picks?.[0] ?? 0]!.label)}”, {names.guest} picked “
-              {t(round.options[lastTry.guest.picks?.[0] ?? 0]!.label)}”. Try {attempt + 1} of {round.tries}.
+              Not the same yet. You picked “{t(round.options[lastTry[seat].picks?.[0] ?? 0]!.label)}”, {names[partnerSeat]} picked “
+              {t(round.options[lastTry[partnerSeat].picks?.[0] ?? 0]!.label)}”. Try {attempt + 1} of {round.tries}.
             </p>
           )}
           <h1 className="mt-3 text-[1.9rem] leading-[1.08] font-extrabold tracking-[-0.015em] text-balance lg:mt-4 lg:text-[2.75rem] lg:leading-[1.04]">
