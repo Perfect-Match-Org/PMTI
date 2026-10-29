@@ -1,4 +1,5 @@
 import { sql } from "@/server/db";
+import { deleteAbandonedRooms } from "@/server/rooms";
 import { pruneEmbeddings } from "@/server/similarity";
 
 // Daily Vercel cron: keeps the free Supabase project awake (it pauses after 7 idle days), and keeps the
@@ -10,5 +11,6 @@ export async function GET(request: Request) {
   }
   await sql`select 1`;
   const prunedVectors = await pruneEmbeddings(sql);
-  return Response.json({ ok: true, prunedVectors });
+  const deletedRooms = await deleteAbandonedRooms();
+  return Response.json({ ok: true, prunedVectors, deletedRooms });
 }

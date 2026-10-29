@@ -367,6 +367,15 @@ export const cardFor = cache(async (shareId: string): Promise<Card | null> => {
   return { typeId: room.result.type, mode: room.mode, mindReading: room.result.mindReading, people: [person(0), person(1)] };
 });
 
+/**
+ * Daily: games nobody joined, a week after they expired. Deleting frees a code to come round again,
+ * but with 887 million codes the odds of an old link meeting a new game are about one in a billion.
+ */
+export async function deleteAbandonedRooms(): Promise<number> {
+  const rows = await sql`delete from rooms where guest_id is null and created_at < now() - interval '8 days' returning id`;
+  return rows.length;
+}
+
 export type Invitation = { host: PlayerInfo; mode: Mode } | { closed: string; full: boolean };
 
 /**
