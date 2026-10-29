@@ -91,7 +91,12 @@ export function Lobby({ link }: { link: string }) {
         <ReadyRow player={partner} tone="partner" label={partner.name} ready={view.partner.ready} />
       </div>
       {seat === "host" && (
-        <button type="button" onClick={() => act(() => post("kick"))} className="mt-6 font-semibold text-muted underline underline-offset-4">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => act(() => post("kick", { version: view.version }))}
+          className="mt-6 font-semibold text-muted underline underline-offset-4"
+        >
           Not who you invited? Remove {partner.name}
         </button>
       )}

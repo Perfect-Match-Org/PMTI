@@ -1,4 +1,4 @@
-import type { Answer } from "./answers";
+import { slotsFor, type Answer } from "./answers";
 import type { Deck, Round } from "./deck";
 import { derive, LOBBY_ROUND, type MoveRow, type RoomFacts, type Seat, type TextRow } from "./engine";
 import type { ReactionTally } from "./reactions";
@@ -36,7 +36,7 @@ export function play(deck: Deck, script: Script): { moves: MoveRow[]; texts: Tex
     for (const seat of seats) {
       const answer = script.answer(seat, round, p.round, p.attempt);
       if (round.format === "write") {
-        const slots: TextRow["slot"][] = round.variant === "mirror" ? ["self", "partner"] : ["shared"];
+        const slots = slotsFor(round);
         slots.forEach((slot, i) =>
           texts.push({
             playerId: idOf(seat),

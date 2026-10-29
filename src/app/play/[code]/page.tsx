@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import { currentUser } from "@/server/auth";
-import { invitation, isInRoom, loadView, RoomError } from "@/server/rooms";
+import { invitation, loadView, RoomError } from "@/server/rooms";
 import { SignIn } from "@/components/auth/sign-in";
 import { Game } from "@/components/game/game";
 import { GameClosed } from "@/components/game/game-closed";
@@ -54,16 +54,16 @@ export default async function PlayPage({ params }: Props) {
     );
   }
 
-  if (!(await isInRoom(code, user.id))) return <JoinGate key={code} code={code} />;
-
   const loaded = await loadView(code, user.id).then(
     (view) => ({ view }),
     (error: unknown) => {
-      if (error instanceof RoomError) return { error: error.message };
+      if (error instanceof RoomError) return { error };
       throw error;
     }
   );
-  if ("error" in loaded) return <GameClosed message={loaded.error} />;
+  if ("error" in loaded) {
+    return loaded.error.status === 403 ? <JoinGate key={code} code={code} /> : <GameClosed message={loaded.error.message} />;
+  }
 
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;

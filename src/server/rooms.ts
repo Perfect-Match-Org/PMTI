@@ -2,8 +2,8 @@ import "server-only";
 import { cache } from "react";
 import type postgres from "postgres";
 import { z } from "zod";
-import { answerSchema } from "@/game/answers";
-import { readyPayloadSchema } from "@/game/reactions";
+import { slotsFor } from "@/game/answers";
+import { answerSchema, readyPayloadSchema } from "@/game/schemas";
 import type { Deck } from "@/game/deck";
 import { CURRENT_DECK, getDeck } from "@/game/decks";
 import { score, type Result } from "@/game/scoring";
@@ -32,6 +32,7 @@ type RoomRow = {
   seq: number;
   createdAt: Date;
   endedAt: Date | null;
+  kicked: string[];
   result: Result | null;
 };
 
@@ -81,11 +82,13 @@ function deckOf(room: RoomRow): Deck {
 
 const isPlayer = (room: RoomRow, userId: string) => userId === room.hostId || userId === room.guestId;
 
+/** A room nobody joined within a day is over. Once both are in, the game has no deadline. */
+const expired = (room: RoomRow) => !room.guestId && Date.now() - room.createdAt.getTime() > ROOM_TTL_MS;
+
 /** Why someone not yet in the room can't join it, or null if they can. Joining and the invitation share it. */
-function closedReason(room: RoomRow): RoomError | null {
-  if (room.endedAt || Date.now() - room.createdAt.getTime() > ROOM_TTL_MS) {
-    return new RoomError(410, "This game has ended. Start a new one.");
-  }
+function closedReason(room: RoomRow, userId?: string): RoomError | null {
+  if (userId && room.kicked.includes(userId)) return new RoomError(403, "The host removed you from this game.");
+  if (room.endedAt || expired(room)) return new RoomError(410, "This game has ended. Start a new one.");
   if (room.guestId) return new RoomError(409, "This game already has two players.");
   return null;
 }
@@ -111,21 +114,30 @@ export async function joinRoom(code: string, userId: string): Promise<void> {
   await sql.begin(async (tx) => {
     const room = await findRoom(tx, code, true);
     if (isPlayer(room, userId)) return;
-    const closed = closedReason(room);
+    const closed = closedReason(room, userId);
     if (closed) throw closed;
     await bump(tx, room.id, { guestId: userId });
   });
 }
 
-export async function kickGuest(code: string, userId: string): Promise<void> {
+const kickBody = z.object({ version: z.number().int() });
+
+/** Removes the guest the host was looking at, and keeps them out: reloading the link won't rejoin them. */
+export async function kickGuest(code: string, userId: string, body: unknown): Promise<void> {
+  const seen = kickBody.safeParse(body);
+  if (!seen.success) throw new RoomError(400, "Malformed request.");
   await sql.begin(async (tx) => {
     const room = await findRoom(tx, code, true);
     if (room.hostId !== userId) throw new RoomError(403, "Only the host can remove a player.");
+    // A stale screen or a double tap must not remove someone who joined since.
+    if (room.seq !== seen.data.version) throw new RoomError(409, "The game moved on.");
     const { moves } = await loadLog(tx, room.id);
     if (derive(deckOf(room), room, moves).phase !== "lobby") {
       throw new RoomError(409, "The game already started.");
     }
-    if (room.guestId) await bump(tx, room.id, { guestId: null });
+    if (!room.guestId) return;
+    await tx`update rooms set kicked = array_append(kicked, ${room.guestId}::uuid) where id = ${room.id}`;
+    await bump(tx, room.id, { guestId: null });
   });
 }
 
@@ -133,7 +145,13 @@ export async function endRoom(code: string, userId: string): Promise<void> {
   await sql.begin(async (tx) => {
     const room = await findRoom(tx, code, true);
     if (!isPlayer(room, userId)) throw new RoomError(403, "You’re not in this game.");
-    if (!room.endedAt) await bump(tx, room.id, { endedAt: new Date(), endedBy: userId });
+    if (room.endedAt) return;
+    // A partner may have finished the game a moment ago; ending it now would throw away the result.
+    const deck = getDeck(room.deckId);
+    if (deck && derive(deck, room, (await loadLog(tx, room.id)).moves).phase === "done") {
+      throw new RoomError(409, "This game already finished.");
+    }
+    await bump(tx, room.id, { endedAt: new Date(), endedBy: userId });
   });
 }
 
@@ -143,8 +161,6 @@ const moveBody = z.object({
   kind: z.enum(["ready", "answer"]),
   payload: z.unknown().optional(),
 });
-
-const MIRROR_SLOTS: TextSlot[] = ["self", "partner"];
 
 export async function submitMove(code: string, userId: string, body: unknown): Promise<RoomView> {
   const parsed = moveBody.safeParse(body);
@@ -161,13 +177,14 @@ export async function submitMove(code: string, userId: string, body: unknown): P
   if (pre === "duplicate") return loadView(code, userId);
 
   let payload: Record<string, unknown> = {};
-  let texts: string[] = [];
+  let texts: { body: string; slot: TextSlot; promptId: string }[] = [];
   if (kind === "answer") {
     const round = deck.rounds[r]!;
     const answer = answerSchema(round).safeParse(parsed.data.payload);
     if (!answer.success) throw new RoomError(400, "That answer doesn’t fit this round.");
-    if (round.format === "write") texts = answer.data.texts ?? [];
-    else payload = answer.data;
+    if (round.format === "write") {
+      texts = slotsFor(round).map((slot, i) => ({ body: answer.data.texts![i]!, slot, promptId: `${round.poolKey}:${slot}` }));
+    } else payload = answer.data;
   } else {
     // Reaction tallies are a nice-to-have; a bad tally never blocks the game.
     const ready = readyPayloadSchema.safeParse(parsed.data.payload ?? {});
@@ -175,7 +192,7 @@ export async function submitMove(code: string, userId: string, body: unknown): P
   }
 
   // Embed before taking the lock (it can take seconds on a cold start); null means "no score".
-  const vectors = texts.length ? await embed(texts) : null;
+  const vectors = texts.length ? await embed(texts.map((x) => x.body)) : null;
 
   await sql.begin(async (tx) => {
     // READ COMMITTED: the moves read below is a separate statement, so it sees the partner's
@@ -190,12 +207,11 @@ export async function submitMove(code: string, userId: string, body: unknown): P
       insert into moves (room_id, player_id, round, attempt, kind, payload)
       values (${locked.id}, ${userId}, ${r}, ${attempt}, ${kind}, ${tx.json(payload as postgres.JSONValue)})
       on conflict do nothing`;
-    for (const [i, body] of texts.entries()) {
-      const slot = texts.length === 2 ? MIRROR_SLOTS[i]! : "shared";
+    for (const [i, { body, slot, promptId }] of texts.entries()) {
       const vector = vectors?.[i] ? toVector(vectors[i]) : null;
       await tx`
         insert into texts (prompt_id, body, embedding, room_id, player_id, round, slot)
-        values (${promptId(deck, r, slot)}, ${body}, ${vector}::extensions.vector,
+        values (${promptId}, ${body}, ${vector}::extensions.vector,
                 ${locked.id}, ${userId}, ${r}, ${slot})`;
     }
     if (texts.length) await scoreRoundTexts(tx, locked.id, r);
@@ -224,23 +240,37 @@ async function scoreRoundTexts(db: Db, roomId: string, round: number) {
   }
 }
 
-function promptId(deck: Deck, round: number, slot: TextSlot): string {
-  const r = deck.rounds[round];
-  return r?.format === "write" ? `${r.poolKey}:${slot}` : `${deck.id}:${round}:${slot}`;
-}
+type Profile = { name: string | null; avatarUrl: string | null; email: string };
 
-async function playerInfo(ids: string[]): Promise<Map<string, PlayerInfo>> {
-  const rows = await sql<{ id: string; name: string | null; avatarUrl: string | null; email: string }[]>`
-    select id, email,
-      coalesce(raw_user_meta_data->>'full_name', raw_user_meta_data->>'name') as name,
-      coalesce(raw_user_meta_data->>'avatar_url', raw_user_meta_data->>'picture') as avatar_url
-    from auth.users where id in ${sql(ids)}`;
+/**
+ * First name and photo as Google gave them. User metadata is editable by the user, so it's only read
+ * for accounts with no Google identity (local dev sign-ins). Photos only from Google's image host.
+ */
+async function profiles(ids: string[]): Promise<Map<string, Profile>> {
+  const rows = await sql<{ id: string; email: string; name: string | null; avatarUrl: string | null }[]>`
+    select u.id, u.email,
+      case when g.id is null
+        then coalesce(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name')
+        else coalesce(g.identity_data->>'full_name', g.identity_data->>'name') end as name,
+      coalesce(g.identity_data->>'avatar_url', g.identity_data->>'picture') as avatar_url
+    from auth.users u
+    left join auth.identities g on g.user_id = u.id and g.provider = 'google'
+    where u.id in ${sql(ids)}`;
   return new Map(
     rows.map((u) => [
       u.id,
-      { name: u.name?.split(" ")[0] || u.email.split("@")[0]!, avatarUrl: u.avatarUrl },
+      {
+        name: u.name?.trim().split(/\s+/)[0]?.slice(0, 24) || null,
+        avatarUrl: u.avatarUrl?.startsWith("https://lh3.googleusercontent.com/") ? u.avatarUrl : null,
+        email: u.email,
+      },
     ])
   );
+}
+
+async function playerInfo(ids: string[]): Promise<Map<string, PlayerInfo>> {
+  const found = await profiles(ids);
+  return new Map([...found].map(([id, p]) => [id, { name: p.name ?? p.email.split("@")[0]!, avatarUrl: p.avatarUrl }]));
 }
 
 export async function loadView(code: string, userId: string): Promise<RoomView> {
@@ -253,9 +283,11 @@ export async function loadView(code: string, userId: string): Promise<RoomView> 
   ]);
   const unknown: PlayerInfo = { name: "Player", avatarUrl: null };
   const result = room.result ?? (await ensureResult(deck, room, moves, texts));
+  // An expired lobby reads as ended, so the host isn't left waiting on a link that no longer works.
+  const endedAt = room.endedAt ?? (expired(room) ? new Date(room.createdAt.getTime() + ROOM_TTL_MS) : null);
   return viewFor({
     deck,
-    room: { ...room, result },
+    room: { ...room, endedAt, result },
     moves,
     texts,
     viewerId: userId,
@@ -296,16 +328,12 @@ export const invitation = cache(async (code: string): Promise<Invitation> => {
     deckOf(room);
     const closed = closedReason(room);
     if (closed) return { closed: closed.message, full: closed.status === 409 };
-    const host = (await playerInfo([room.hostId])).get(room.hostId) ?? { name: "Your partner", avatarUrl: null };
-    return { host, mode: room.mode };
+    // Before sign-in, a name only if Google gave one: never the email's NetID.
+    const profile = (await profiles([room.hostId])).get(room.hostId);
+    return { host: { name: profile?.name ?? "Your partner", avatarUrl: profile?.avatarUrl ?? null }, mode: room.mode };
   } catch (error) {
     if (error instanceof RoomError) return { closed: error.message, full: false };
     throw error;
   }
 });
 
-/** Whether the user already belongs to the room; used by the page to decide join vs. render. */
-export async function isInRoom(code: string, userId: string): Promise<boolean> {
-  const rows = await sql`select 1 from rooms where code = ${code} and ${userId} in (host_id, guest_id)`;
-  return rows.length > 0;
-}

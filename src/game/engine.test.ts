@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { answerSchema, type Answer } from "./answers";
+import type { Answer } from "./answers";
+import { answerSchema } from "./schemas";
 import type { Deck, Round } from "./deck";
 import { CURRENT_DECK } from "./decks";
 import {

@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { MAX_TEXT_LENGTH, type Round } from "./deck";
+import type { Round } from "./deck";
+import type { TextSlot } from "./engine";
 
 /**
  * What a player submits for a round. Option rounds use `picks` (one index per item; for
@@ -8,29 +8,9 @@ import { MAX_TEXT_LENGTH, type Round } from "./deck";
  */
 export type Answer = { picks?: (number | null)[]; guesses?: number[]; texts?: string[] };
 
-const index = (count: number) => z.number().int().min(0).max(count - 1);
-const text = z.string().trim().min(1).max(MAX_TEXT_LENGTH);
-
-export function answerSchema(round: Round): z.ZodType<Answer> {
-  switch (round.format) {
-    case "pick":
-    case "mind":
-    case "agree":
-      return z.object({ picks: z.tuple([index(round.options.length)]) });
-    case "likely":
-      return z.object({ picks: z.array(index(2)).length(round.items.length) });
-    case "scale":
-      return z.object({
-        picks: z.tuple([index(round.steps)]),
-        guesses: z.tuple([index(round.steps)]),
-      });
-    case "speed":
-      return z.object({ picks: z.array(index(2).nullable()).length(round.items.length) });
-    case "write":
-      return z.object({
-        texts: round.variant === "mirror" ? z.tuple([text, text]) : z.tuple([text]),
-      });
-  }
+/** The text boxes a write round asks for, in order: a mirror round is about you, then your partner. */
+export function slotsFor(round: Extract<Round, { format: "write" }>): TextSlot[] {
+  return round.variant === "mirror" ? ["self", "partner"] : ["shared"];
 }
 
 export function samePicks(a: Answer | undefined, b: Answer | undefined): boolean {
