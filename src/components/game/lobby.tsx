@@ -4,7 +4,6 @@ import { motion } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BRAND } from "@/brand";
 import { useCopy } from "@/client/useCopy";
-import { getDeck } from "@/game/decks";
 import { LOBBY_ROUND, type PlayerInfo } from "@/game/engine";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart } from "@/components/ui/heart";
@@ -13,10 +12,9 @@ import { useRoomContext } from "./room-context";
 import { Stage } from "./stage";
 
 export function Lobby({ link }: { link: string }) {
-  const { view, seat, partnerSeat, names, t, busy, act, send, post } = useRoomContext();
+  const { view, deck, seat, partnerSeat, names, t, busy, act, send, post } = useRoomContext();
   const invite = useCopy();
   const guest = view.players.guest;
-  const deck = getDeck(view.deckId);
 
   if (!guest) {
     const orCode = (
@@ -80,7 +78,7 @@ export function Lobby({ link }: { link: string }) {
           <h1 className="mt-5 text-[2.6rem] leading-[1] font-black tracking-[-0.025em] text-balance lg:text-[3.5rem]">
             {names.host} &amp; {names.guest} are in.
           </h1>
-          {deck && <p className="mt-4 text-xl leading-snug text-muted">{t(deck.intro)}</p>}
+          <p className="mt-4 text-xl leading-snug text-muted">{t(deck.intro)}</p>
         </>
       }
     >

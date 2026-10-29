@@ -1,5 +1,5 @@
 import { samePicks, type Answer } from "./answers";
-import type { Deck, Round } from "./deck";
+import type { Deck } from "./deck";
 import type { ReactionTally } from "./reactions";
 import type { Result } from "./scoring";
 
@@ -148,8 +148,6 @@ export type RoomView = {
   players: { host: PlayerInfo; guest: PlayerInfo | null };
   progress: Progress;
   totalSteps: number;
-  /** Content of the current round, so a client on an older build renders the server's text. */
-  round: Round | null;
   mine: { answer: Answer | null; texts: ViewText[]; ready: boolean };
   partner: { answered: boolean; ready: boolean };
   /** Must Agree: earlier attempts of the current round, shown to both by design. */
@@ -199,7 +197,6 @@ export function viewFor({ deck, room, moves, texts, players, viewerId }: ViewInp
     players,
     progress,
     totalSteps: plannedLength(deck),
-    round: null,
     mine: { answer: null, texts: [], ready: false },
     partner: { answered: false, ready: false },
     tries: [],
@@ -226,7 +223,6 @@ export function viewFor({ deck, room, moves, texts, players, viewerId }: ViewInp
       matchPct,
     }));
 
-  view.round = deck.rounds[r] ?? null;
   view.mine.answer = answerOf(viewerId, attempt) ?? null;
   view.mine.texts = roundTexts.filter((t) => t.seat === seat);
   view.partner.answered = !!answerOf(partnerId, attempt);

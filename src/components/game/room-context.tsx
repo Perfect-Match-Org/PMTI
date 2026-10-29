@@ -2,12 +2,14 @@
 
 import { createContext, useContext } from "react";
 import type { Move } from "@/client/useRoom";
-import type { Copy } from "@/game/deck";
+import type { Copy, Deck } from "@/game/deck";
 import type { Pair, RoomView, Seat } from "@/game/engine";
 import type { Reaction } from "@/game/reactions";
 
 export type RoomContextValue = {
   view: RoomView;
+  /** This build's copy of the room's deck; the game only renders when it has one. */
+  deck: Deck;
   seat: Seat;
   partnerSeat: Seat;
   names: Pair<string>;

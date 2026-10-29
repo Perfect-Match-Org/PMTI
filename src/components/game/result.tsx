@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Axis } from "@/game/deck";
 import { useCopy } from "@/client/useCopy";
-import { getDeck } from "@/game/decks";
 
 import { momentMood, momentText } from "@/game/moments";
 import type { Moment, Result } from "@/game/scoring";
@@ -45,10 +44,9 @@ type Slide = { tone: string; body: React.ReactNode };
 
 /** Wrapped-style story: full-screen color slides that advance on their own; tap to move, or skip. */
 function ResultStory({ result, type, onDone }: { result: Result; type: DuoType; onDone: () => void }) {
-  const { view, seat, partnerSeat, names, t } = useRoomContext();
+  const { view, deck, seat, partnerSeat, names, t } = useRoomContext();
   const [index, setIndex] = useState(0);
-  const deck = getDeck(view.deckId);
-  const say = (m: Moment) => (deck ? momentText(m, { deck, names, viewer: seat, t }) : "");
+  const say = (m: Moment) => momentText(m, { deck, names, viewer: seat, t });
   const mindMoment = mindMomentFor(result);
 
   const slides: Slide[] = [
@@ -224,10 +222,9 @@ function StoryArrow({ side, onClick, hidden = false }: { side: "left" | "right";
 const AXIS_ENDS: Record<Axis, [string, string]> = { E: ["Out", "In"], P: ["Plan", "Wing it"], H: ["Say it", "Show it"] };
 
 function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
-  const { view, seat, partnerSeat, names, t } = useRoomContext();
+  const { view, deck, seat, partnerSeat, names, t } = useRoomContext();
   const router = useRouter();
   const copied = useCopy();
-  const deck = getDeck(view.deckId);
   const runnerUp = result.runnerUp ? duoType(result.runnerUp) : undefined;
   const mine = type.halves[result.roles[seat]];
 
@@ -286,7 +283,7 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
         {runnerUp && <p className="text-muted">With a streak of {runnerUp.name}.</p>}
       </div>
 
-      {deck && result.moments.length > 0 && (
+      {result.moments.length > 0 && (
         <ul className="mt-8 flex flex-col gap-3">
           {result.moments.map((m, i) => (
             <li key={i} className="flex gap-3 text-lg leading-snug">

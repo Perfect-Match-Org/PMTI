@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRoom, type Connection } from "@/client/useRoom";
 import { say } from "@/game/copy";
+import { getDeck } from "@/game/decks";
 import type { Copy } from "@/game/deck";
 import { other, waitingOnPartner, type PlayerInfo, type RoomView } from "@/game/engine";
 import { Avatar } from "@/components/ui/avatar";
+import { NavyHeadline, NavyPage } from "@/components/ui/navy-page";
 import { ErrorNote } from "@/components/ui/error-note";
 import { Segments } from "@/components/ui/segments";
 import { TypingDots } from "@/components/ui/typing-dots";
@@ -38,8 +40,9 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
 
   const seat = view.seat;
   const partnerSeat = other(seat);
+  const deck = getDeck(view.deckId);
   const names = { host: view.players.host.name, guest: view.players.guest?.name ?? "your partner" };
-  const round = view.round;
+  const round = deck && (view.progress.phase === "answer" || view.progress.phase === "reveal") ? deck.rounds[view.progress.round] : undefined;
   const subject = round?.format === "mind" ? names[round.subject] : names[partnerSeat];
   const t = (copy: Copy) => say(copy, view.mode, { p: names[partnerSeat], s: subject });
   const act = async (fn: () => Promise<void>) => {
@@ -50,7 +53,8 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
       setBusy(false);
     }
   };
-  const ctx: RoomContextValue = { view, seat, partnerSeat, names, t, busy, act, send, post, react };
+  if (!deck) return <NewVersion />;
+  const ctx: RoomContextValue = { view, deck, seat, partnerSeat, names, t, busy, act, send, post, react };
 
   const progress = view.progress;
   if (gone) return <GameClosed message={gone} />;
@@ -148,6 +152,22 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
         </main>
       </RoomProvider>
     </MotionConfig>
+  );
+}
+
+/**
+ * This tab is running an older build than the game it's showing (a new deck shipped since it loaded).
+ * Reloading picks up the new build; the game itself is saved on the server.
+ */
+function NewVersion() {
+  return (
+    <NavyPage>
+      <NavyHeadline>PMTI has a new version.</NavyHeadline>
+      <p className="text-xl text-white/80">Reload to keep playing. Your game is saved.</p>
+      <button type="button" onClick={() => window.location.reload()} className="btn btn-pink self-start">
+        Reload
+      </button>
+    </NavyPage>
   );
 }
 
