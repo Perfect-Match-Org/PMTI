@@ -21,9 +21,8 @@ export async function GET(request: NextRequest) {
   if (code && !failed) {
     const { error } = await (await supabaseServer()).auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(back);
-    back.searchParams.set("signin_error", error.message);
-  } else {
-    back.searchParams.set("signin_error", failed ?? "Sign-in didn’t finish. Try again.");
   }
+  // A code, not the message: the page maps it to fixed copy, so a link can't put words in the alert.
+  back.searchParams.set("signin_error", failed && /cornell/i.test(failed) ? "cornell_only" : "failed");
   return NextResponse.redirect(back);
 }

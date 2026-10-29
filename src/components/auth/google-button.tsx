@@ -4,12 +4,17 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/client/supabase";
 
+const RETURNED_ERRORS: Record<string, string> = {
+  cornell_only: "PMTI is for Cornell accounts. Sign in with your @cornell.edu email.",
+  failed: "Sign-in didn’t finish. Try again.",
+};
+
 /**
  * Sends you to Google's sign-in page and back to the page you were on (through /auth/callback).
- * A sign-in that failed on the way, like a non-Cornell account, comes back as `?signin_error=`.
+ * A sign-in that failed on the way, like a non-Cornell account, comes back as `?signin_error=<code>`.
  */
 export function GoogleButton() {
-  const returned = useSearchParams().get("signin_error");
+  const returned = RETURNED_ERRORS[useSearchParams().get("signin_error") ?? ""] ?? null;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
