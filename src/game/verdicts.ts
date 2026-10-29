@@ -1,12 +1,10 @@
-import type { Answer } from "./answers";
 import type { Who } from "./copy";
 import type { Round } from "./deck";
-import { other, type Pair, type Seat, type ViewText } from "./engine";
+import { other, type RevealData, type Seat } from "./engine";
 
 /** How a round went, which the screens turn into a color. */
 export type Tone = "match" | "between" | "miss";
 export type Verdict = { text: string; tone: Tone };
-type Reveal = Pair<Answer> & { texts: ViewText[] };
 
 /**
  * Where one "who's more likely" item lands. With two players there are only four outcomes: both name
@@ -39,7 +37,8 @@ export function averagePct(pcts: (number | null | undefined)[]): number | null {
 }
 
 /** One verdict per round: the reveal flash shows it, then the headline keeps it. */
-export function verdictFor(round: Round, reveal: Reveal, viewer: Seat, who: Who, attempts: number): Verdict {
+/** `viewer` null is the landing's view of its sample couple: both named, nobody "you". */
+export function verdictFor(round: Round, reveal: RevealData, viewer: Seat | null, who: Who, attempts: number): Verdict {
   const pick = (s: Seat, i = 0) => reveal[s].picks?.[i];
   const same = (i = 0) => pick("host", i) != null && pick("host", i) === pick("guest", i);
 
@@ -53,9 +52,9 @@ export function verdictFor(round: Round, reveal: Reveal, viewer: Seat, who: Who,
       const subject = round.subject;
       const guesser = other(subject);
       if (same()) {
-        return guesser === viewer
-          ? { text: `You read ${who(subject)}’s mind.`, tone: "match" }
-          : { text: `${who(guesser, true)} read your mind.`, tone: "match" };
+        return subject === viewer
+          ? { text: `${who(guesser, true)} read your mind.`, tone: "match" }
+          : { text: `${who(guesser, true)} read ${who(subject)}’s mind.`, tone: "match" };
       }
       return { text: `${who(guesser, true)} guessed wrong.`, tone: "between" };
     }
@@ -64,22 +63,23 @@ export function verdictFor(round: Round, reveal: Reveal, viewer: Seat, who: Who,
       const agreed = items.filter((k) => k === "agreed").length;
       if (agreed === items.length) return { text: "Fully agreed.", tone: "match" };
       if (items.every((k) => k === "denial")) return { text: "Total denial.", tone: "miss" };
-      if (items.every((k) => k === "both-claim")) return { text: "You both claim everything.", tone: "miss" };
+      if (items.every((k) => k === "both-claim")) return { text: `${viewer ? "You both" : "Both"} claim everything.`, tone: "miss" };
       return { text: `${agreed} of ${items.length} agreed.`, tone: agreed ? "between" : "miss" };
     }
     case "scale": {
       const offBy = (about: Seat) => Math.abs((reveal[other(about)].guesses?.[0] ?? 0) - (pick(about) ?? 0));
-      const partner = other(viewer);
+      const me = viewer ?? "host";
+      const partner = other(me);
       const mine = offBy(partner);
-      const theirs = offBy(viewer);
-      if (mine === 0 && theirs === 0) return { text: "You both nailed it.", tone: "match" };
-      if (mine === 0) return { text: "You nailed it.", tone: "match" };
+      const theirs = offBy(me);
+      if (mine === 0 && theirs === 0) return { text: `${viewer ? "You both" : "Both"} nailed it.`, tone: "match" };
+      if (mine === 0) return { text: `${who(me, true)} nailed it.`, tone: "match" };
       if (theirs === 0) return { text: `${who(partner, true)} nailed it.`, tone: "match" };
       // Name the closer guess: a bare "Off by 1" read as wrong to whoever was 6 off.
       const best = Math.min(mine, theirs);
       const tone = best * 2 >= round.steps - 1 ? "miss" : "between";
       if (mine === theirs) return { text: `Both off by ${best}.`, tone };
-      return { text: `${mine < theirs ? "You" : who(partner, true)} came closest: off by ${best}.`, tone };
+      return { text: `${who(mine < theirs ? me : partner, true)} came closest: off by ${best}.`, tone };
     }
     case "speed": {
       const matches = round.items.filter((_, i) => same(i)).length;

@@ -7,15 +7,11 @@ import { usePrefersReducedMotion } from "@/client/motion";
 import { CURRENT_DECK } from "@/game/decks";
 import { plannedLength, SEATS } from "@/game/engine";
 import type { Tone } from "@/game/verdicts";
+import { RevealBody } from "@/components/game/reveal-body";
 import { TONE_BG, TONE_TEXT } from "@/components/game/tones";
 import { Avatar } from "@/components/ui/avatar";
-import { Heart } from "@/components/ui/heart";
 import { Segments } from "@/components/ui/segments";
-import { TypingDots } from "@/components/ui/typing-dots";
-import { BEATS, SAMPLE_NAMES, SAMPLE_PLAYERS, type Beat, type Body, type Mark } from "./sample-day";
-
-const NAMES = SAMPLE_NAMES;
-const PLAYERS = SAMPLE_PLAYERS;
+import { BEATS, SAMPLE_NAMES, SAMPLE_PLAYERS, sampleSay, sampleWho, type Beat } from "./sample-day";
 
 /** A card's steps: 0 the question, 1–2 each player locked in (picks still hidden), 3 both answers landed, 4 the verdict. */
 const LANDED = 3;
@@ -73,9 +69,9 @@ export function DayDeck() {
         </AnimatePresence>
       </div>
       <div aria-hidden className="mt-6 lg:mt-8">
-        <Segments step={beat.round} total={ROUNDS} tone="dark" fillMs={playing ? beatMs(beat) : undefined} />
+        <Segments step={beat.step} total={ROUNDS} tone="dark" fillMs={playing ? beatMs(beat) : undefined} />
         <p className="mt-2.5 text-sm font-semibold text-white/60">
-          Round {beat.round} of {ROUNDS}
+          Round {beat.step} of {ROUNDS}
         </p>
       </div>
     </MotionConfig>
@@ -132,7 +128,7 @@ function Face({ beat, step, fly }: { beat: Beat; step: number; fly?: string }) {
           <b className="font-bold">{beat.time}</b>
           <span className="block opacity-75">{beat.scene}</span>
         </p>
-        <Locks step={step} fly={beat.body.kind === "notes" ? undefined : fly} />
+        <Locks step={step} fly={beat.round.format === "write" ? undefined : fly} />
       </div>
       <div className="grid flex-1 items-center py-4 lg:py-6">
         <motion.p
@@ -152,7 +148,19 @@ function Face({ beat, step, fly }: { beat: Beat; step: number; fly?: string }) {
           {beat.verdict}
         </motion.p>
       </div>
-      <FaceBody body={beat.body} step={step} wash={flooded && beat.tone !== "between"} fly={fly} />
+      <RevealBody
+        round={beat.round}
+        reveal={beat.reveal}
+        viewer={null}
+        players={SAMPLE_PLAYERS}
+        names={SAMPLE_NAMES}
+        who={sampleWho}
+        t={sampleSay}
+        compact
+        landed={step >= LANDED}
+        wash={flooded && beat.tone !== "between"}
+        fly={fly}
+      />
     </div>
   );
 }
@@ -175,7 +183,7 @@ function Locks({ step, fly }: { step: number; fly?: string }) {
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 500, damping: 16 }}
             >
-              <Avatar player={PLAYERS[seat]} tone={seat === "host" ? "me" : "partner"} size={32} />
+              <Avatar player={SAMPLE_PLAYERS[seat]} tone={seat === "host" ? "me" : "partner"} size={32} />
               <span className="absolute -top-1 -right-1 grid size-3.5 place-items-center rounded-full bg-ink text-white ring-2 ring-white">
                 <svg viewBox="0 0 12 12" className="size-2" aria-hidden>
                   <path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
@@ -187,132 +195,5 @@ function Locks({ step, fly }: { step: number; fly?: string }) {
         </span>
       ))}
     </motion.span>
-  );
-}
-
-/** `wash` is the verdict color filling the card: answers someone landed on go white over it, the rest fade into it. */
-function FaceBody({ body, step, wash, fly }: { body: Body; step: number; wash: boolean; fly?: string }) {
-  const landed = step >= LANDED;
-  const flooded = step === LAST_STEP;
-  const fill = (marked: boolean, both = false) =>
-    wash ? (marked ? "bg-white text-ink" : "bg-white/15") : landed && both ? "bg-blush" : "bg-tile";
-  // Over a verdict color, a fainter fade would mix the text into it.
-  const fade = (marked: boolean) => (landed && !marked ? (wash ? "opacity-80" : "opacity-60") : "");
-  // Hold the tint until the faces flying in from their seats have arrived.
-  const tint = landed && !flooded ? "delay-300" : "";
-
-  switch (body.kind) {
-    case "rows":
-      return (
-        <ul className="flex flex-col gap-2">
-          {body.rows.map((label, i) => {
-            const here = body.marks.filter((m) => m.at === i);
-            return (
-              <li key={i} className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 py-2 transition-colors duration-300 ${tint} ${fill(here.length > 0, here.length === 2)}`}>
-                <span className={`flex-1 text-[0.95rem] leading-tight lg:text-base xl:text-[1.0625rem] ${landed && here.length ? "font-bold" : "font-medium"} ${fade(here.length > 0)}`}>
-                  {label}
-                </span>
-                {landed && <Faces marks={here} fly={fly} />}
-              </li>
-            );
-          })}
-        </ul>
-      );
-    case "pairs":
-      return (
-        <ul className="flex flex-col gap-3">
-          {body.items.map((item, i) => (
-            <li key={i}>
-              <p className="text-sm leading-snug font-semibold opacity-75">{item.text}</p>
-              <div className="mt-1.5 grid grid-cols-2 gap-2">
-                {SEATS.map((named, j) => {
-                  const here = item.marks.filter((m) => m.at === j);
-                  return (
-                    <span key={named} className={`flex min-h-11 items-center justify-between gap-2 rounded-2xl px-3.5 py-1.5 transition-colors duration-300 ${tint} ${fill(here.length > 0, here.length === 2)}`}>
-                      <span className={`font-bold ${fade(here.length > 0)}`}>{NAMES[named]}</span>
-                      {landed && <Faces marks={here} fly={i === 0 ? fly : undefined} />}
-                    </span>
-                  );
-                })}
-              </div>
-            </li>
-          ))}
-        </ul>
-      );
-    case "rail":
-      return (
-        <div className="flex flex-col gap-3">
-          {body.tracks.map((track) => (
-            <div key={track.owner}>
-              <p className="mb-1.5 flex justify-between gap-3 text-sm font-semibold">
-                <span>{NAMES[track.owner]}</span>
-                <span className={`opacity-75 transition-opacity ${landed ? "" : "invisible"}`}>{track.note}</span>
-              </p>
-              <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${body.steps}, 1fr)` }}>
-                {Array.from({ length: body.steps }, (_, i) => (
-                  <span key={i} className={`grid aspect-square place-items-center rounded-full transition-colors duration-300 ${wash ? "bg-white/15" : "bg-tile"}`}>
-                    {landed && <Faces marks={track.marks.filter((m) => m.at === i)} fly={fly} />}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-          <p className="flex justify-between gap-4 text-sm font-semibold opacity-75">
-            <span>{body.left}</span>
-            <span className="text-right">{body.right}</span>
-          </p>
-        </div>
-      );
-    case "notes":
-      return (
-        <div className="grid grid-cols-2 gap-2">
-          {body.notes.map((note) => (
-            <div key={note.by} className={`flex flex-col gap-2 rounded-2xl p-3.5 transition-colors duration-300 lg:p-4 ${fill(true)}`}>
-              <span className="flex items-center gap-2 text-sm font-semibold opacity-75">
-                <Avatar player={PLAYERS[note.by]} tone={note.by === "host" ? "me" : "partner"} size={24} />
-                {note.caption}
-              </span>
-              <span className="min-h-[5.2em] text-base leading-snug font-bold lg:text-lg">
-                {landed ? (
-                  <motion.span className="block" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                    {note.text}
-                  </motion.span>
-                ) : (
-                  <TypingDots className="pt-2" />
-                )}
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-  }
-}
-
-/**
- * Faces on the answer they picked; a guess is the smaller face. A player's own pick flies in from their
- * seat when `fly` is set, anything else drops in. Two on one answer get a heart.
- */
-function Faces({ marks, fly }: { marks: Mark[]; fly?: string }) {
-  if (!marks.length) return null;
-  return (
-    <span className="flex flex-none items-center">
-      {marks.map((m, j) => (
-        <motion.span
-          key={m.by}
-          layoutId={fly && !m.guess ? `${fly}-${m.by}` : undefined}
-          initial={fly && !m.guess ? false : { scale: 0, y: -28 }}
-          animate={{ scale: 1, y: 0 }}
-          transition={{ delay: j * 0.1, type: "spring", stiffness: 500, damping: 16, layout: { type: "spring", stiffness: 260, damping: 26 } }}
-          className={`rounded-full ${j ? "-ml-1.5 ring-[3px] ring-white" : ""}`}
-        >
-          <Avatar player={PLAYERS[m.by]} tone={m.by === "host" ? "me" : "partner"} size={m.guess ? 22 : 28} />
-        </motion.span>
-      ))}
-      {marks.length === 2 && !marks.some((m) => m.guess) && (
-        <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.4, 1] }} transition={{ delay: 0.6, duration: 0.45 }} className="ml-1.5 text-red">
-          <Heart size={20} />
-        </motion.span>
-      )}
-    </span>
   );
 }

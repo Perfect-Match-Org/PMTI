@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { BRAND } from "@/brand";
 import { TONE_FILL, TONE_TEXT } from "@/components/game/tones";
-import { BEATS, SAMPLE_NAMES, type Beat, type Body } from "@/components/landing/sample-day";
+import { BEATS, SAMPLE_NAMES, sampleSay } from "@/components/landing/sample-day";
 import { HEART_PATH } from "@/components/ui/heart";
 import { PmLogo } from "@/components/ui/pm-logo";
 
@@ -51,13 +51,14 @@ export async function shareImage(inviter?: string) {
   );
 }
 
-/** The first sample round that floods with color and shows option rows; a deck edit that leaves none just drops the card. */
-const PREVIEW_BEAT = BEATS.find((b): b is Beat & { body: Extract<Body, { kind: "rows" }> } => b.body.kind === "rows" && b.tone !== "between");
+/** The first sample round that floods with color and shows options; a deck edit that leaves none just drops the card. */
+const PREVIEW_BEAT = BEATS.find((b) => "options" in b.round && b.tone !== "between");
 
-/** That beat at its verdict: the rows both players landed on first, then the rest. */
+/** That beat at its verdict: the option both players landed on first, then the rest. */
 function Deck({ beat }: { beat: NonNullable<typeof PREVIEW_BEAT> }) {
-  const { rows: labels, marks } = beat.body;
-  const rows = labels.map((text, i) => ({ text, both: marks.every((m) => m.at === i) }));
+  const options = "options" in beat.round ? beat.round.options : [];
+  const picked = (i: number) => beat.reveal.host.picks?.[0] === i && beat.reveal.guest.picks?.[0] === i;
+  const rows = options.map((o, i) => ({ text: sampleSay(o.label), both: picked(i) }));
   const shown = [...rows.filter((r) => r.both), ...rows.filter((r) => !r.both)].slice(0, 3);
   const ink = TONE_TEXT[beat.tone];
   const card = { position: "absolute", top: 0, left: 0, width: 390, height: 474, borderRadius: 38 } as const;

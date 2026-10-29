@@ -10,7 +10,8 @@ export function say(copy: Copy, mode: Mode, vars: Record<string, string> = {}): 
 /** Names a player from the viewer's side: your own phone says "you", never your name. */
 export type Who = (seat: Seat, capital?: boolean) => string;
 
-export function whoFor(viewer: Seat, names: Pair<string>): Who {
+/** With no viewer (the landing's sample couple), both players go by name. */
+export function whoFor(viewer: Seat | null, names: Pair<string>): Who {
   return (seat, capital = false) => (seat === viewer ? (capital ? "You" : "you") : names[seat]);
 }
 

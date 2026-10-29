@@ -138,6 +138,9 @@ export function checkMove(
 export type PlayerInfo = { name: string; avatarUrl: string | null };
 export type Pair<T> = { host: T; guest: T };
 
+/** Both players' answers to a round, once it's revealed. */
+export type RevealData = Pair<Answer> & { texts: ViewText[] };
+
 export type RoomView = {
   version: number;
   roomId: string;
@@ -152,7 +155,7 @@ export type RoomView = {
   partner: { answered: boolean; ready: boolean };
   /** Must Agree: earlier attempts of the current round, shown to both by design. */
   tries: Pair<Answer>[];
-  reveal: (Pair<Answer> & { texts: ViewText[] }) | null;
+  reveal: RevealData | null;
   /** Set once the game is done and scored. */
   result: Result | null;
 };

@@ -89,7 +89,7 @@ export function Choices({ label, options, value, onChange, disabled, layout = "s
 /** End labels for a scale, aligned with the first and last dot. */
 export function ScaleEnds({ left, right }: { left: string; right: string }) {
   return (
-    <div className="flex justify-between gap-6 text-sm font-semibold text-muted">
+    <div className="flex justify-between gap-6 text-sm font-semibold opacity-70">
       <span className="text-balance">{left}</span>
       <span className="text-right text-balance">{right}</span>
     </div>
