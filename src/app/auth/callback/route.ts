@@ -23,6 +23,6 @@ export async function GET(request: NextRequest) {
     if (!error) return NextResponse.redirect(back);
   }
   // A code, not the message: the page maps it to fixed copy, so a link can't put words in the alert.
-  back.searchParams.set("signin_error", failed && /cornell/i.test(failed) ? "cornell_only" : "failed");
+  back.searchParams.set("signin_error", "failed");
   return NextResponse.redirect(back);
 }

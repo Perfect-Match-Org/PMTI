@@ -6,13 +6,12 @@ import { supabaseBrowser } from "@/client/supabase";
 import { ErrorNote } from "@/components/ui/error-note";
 
 const RETURNED_ERRORS: Record<string, string> = {
-  cornell_only: "PMTI is for Cornell accounts. Sign in with your @cornell.edu email.",
   failed: "Sign-in didn’t finish. Try again.",
 };
 
 /**
  * Sends you to Google's sign-in page and back to the page you were on (through /auth/callback).
- * A sign-in that failed on the way, like a non-Cornell account, comes back as `?signin_error=<code>`.
+ * A sign-in that failed on the way comes back as `?signin_error=<code>`.
  */
 export function GoogleButton() {
   const code = useSearchParams().get("signin_error") ?? "";

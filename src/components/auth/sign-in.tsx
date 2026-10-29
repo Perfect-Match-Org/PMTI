@@ -15,14 +15,14 @@ const IN_APP: [RegExp, string][] = [
   [/\bLine\//, "LINE"],
 ];
 
-/** The signed-out action on the navy pages: Google (or a way out of an app's browser first), and who it's for. */
+/** The signed-out action on the navy pages: Google, or a way out of an app's browser first. */
 export async function SignIn({ note }: { note?: string }) {
   const agent = (await headers()).get("user-agent") ?? "";
   const app = IN_APP.find(([pattern]) => pattern.test(agent))?.[1];
   return (
     <div className="flex flex-col gap-3 lg:max-w-[22.5rem]">
       {app ? <OpenInBrowser app={app} android={/Android/i.test(agent)} /> : <GoogleButton />}
-      <p className="text-sm text-white/55">Cornell accounts only.{note && ` ${note}`}</p>
+      {note && <p className="text-sm text-white/55">{note}</p>}
       <DevLogin />
     </div>
   );

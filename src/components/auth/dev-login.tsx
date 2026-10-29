@@ -18,7 +18,7 @@ export function DevLogin() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    // A bare name becomes name@cornell.edu; a full address is used as is, so the Cornell-only rule can be tried too.
+    // A bare name becomes name@cornell.edu; a full address is used as is.
     const email = who.includes("@") ? who.trim() : `${who.trim().toLowerCase().replace(/[^a-z0-9.]/g, "")}@cornell.edu`;
     const auth = supabaseBrowser().auth;
     let { error } = await auth.signInWithPassword({ email, password: DEV_PASSWORD });

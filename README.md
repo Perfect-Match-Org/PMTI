@@ -31,8 +31,8 @@ Requires Node 22+, pnpm, and Docker. The Supabase CLI comes with the dev depende
 5. `pnpm dev`, then open http://localhost:3000. The dev sign-in takes any name (`Bob` signs in as
    `bob@cornell.edu`; nothing is checked, no Google needed). For the second player, open
    http://127.0.0.1:3000 in another tab of the same browser: a different address keeps a separate
-   sign-in, so you can watch both screens sync side by side. Typing a full address such as
-   `someone@gmail.com` tries the Cornell-only rule.
+   sign-in, so you can watch both screens sync side by side. A full address such as
+   `someone@gmail.com` works too.
 
 ## Google sign-in
 
@@ -57,8 +57,7 @@ the Vercel variables come from them.
    pnpm exec supabase link --project-ref <project-ref>
    pnpm exec supabase db push
    ```
-   `supabase/migrations/` creates the tables, the `vector` extension, the realtime policies and
-   `public.hook_before_user_created`.
+   `supabase/migrations/` creates the tables, the `vector` extension and the realtime policies.
 2. **Edge Function.** Pick a random string for `EMBED_SECRET`, then set it and deploy:
    ```
    pnpm exec supabase secrets set EMBED_SECRET=<random string>
@@ -67,15 +66,10 @@ the Vercel variables come from them.
    The function answers 403 unless the request's `x-embed-secret` header matches. `config.toml` turns
    JWT checking off for it, because our server sends that header instead of a user token. Use the same
    string for `EMBED_SECRET` on Vercel.
-3. **Auth hook.** `config.toml` enables `[auth.hook.before_user_created]` for local Supabase only. On
-   hosted, open the dashboard, go to Authentication → Hooks, and add a Before User Created hook of
-   type Postgres function, with schema `public` and function `hook_before_user_created`. This hook is
-   the only place the Cornell-only rule is enforced (it allows `@cornell.edu` and the PM gmail), so
-   without it any Google account can sign in.
-4. **Providers.** Set up Google as in [Google sign-in](#google-sign-in). Then, under Authentication →
-   Providers, turn **Email** off. The dev sign-in uses email and password, so with Email on, anyone
-   could create an `@cornell.edu` account without owning the address.
-5. **Vercel environment variables.** Set these for Production. The two `NEXT_PUBLIC_` ones are baked
+3. **Providers.** Set up Google as in [Google sign-in](#google-sign-in). Then, under Authentication →
+   Providers, turn **Email** off. The dev sign-in uses email and password without checking the
+   address, so with Email on, anyone could create an account under someone else's email.
+4. **Vercel environment variables.** Set these for Production. The two `NEXT_PUBLIC_` ones are baked
    in at build time, so changing them needs a redeploy.
    - `DATABASE_URL`: the Supabase transaction pooler connection string. `src/server/db.ts` turns
      prepared statements off because it expects the transaction pooler. Every room read and write uses it.
@@ -92,15 +86,15 @@ the Vercel variables come from them.
      about 7 idle days.
    - Do **not** set `NEXT_PUBLIC_DEV_LOGIN`. It shows the dev sign-in form, and that form's password
      is in the client code.
-6. **Seed the free-text pool.** `pnpm db:seed-pool` reads `.env.development.local`, so it targets
-   local. For hosted, put `DATABASE_URL`, `EMBED_URL` and `EMBED_SECRET` (the values from step 5) in a
+5. **Seed the free-text pool.** `pnpm db:seed-pool` reads `.env.development.local`, so it targets
+   local. For hosted, put `DATABASE_URL`, `EMBED_URL` and `EMBED_SECRET` (the values from step 4) in a
    git-ignored file such as `.env.hosted`, then run:
    ```
    node --env-file=.env.hosted scripts/seed-pool.mjs
    ```
    It needs steps 1 and 2 done first, and it is safe to rerun: it skips texts already there. Until a
    prompt has 10 other answers, its free-text round has no vibe match.
-7. **Deploy, then check the keepalive.** `curl -H "Authorization: Bearer <CRON_SECRET>"
+6. **Deploy, then check the keepalive.** `curl -H "Authorization: Bearer <CRON_SECRET>"
    https://<production-domain>/api/cron/keepalive` should return `{"ok":true}`. A 401 means
    `CRON_SECRET` is missing or different on Vercel.
 
