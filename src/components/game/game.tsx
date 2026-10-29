@@ -110,7 +110,6 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
   const showLive = (progress.phase === "answer" || presence?.online === false) && progress.phase !== "done";
   return (
     <MotionConfig reducedMotion="user">
-      <RoomProvider value={ctx}>
         <main className="min-h-dvh overflow-x-clip bg-white">
           {overlay(partner)}
           <div className="frame flex flex-col pt-4 pb-44 md:pt-8 lg:pt-6 lg:pb-36">
@@ -157,12 +156,12 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
                 exit={{ opacity: 0, x: -28 }}
                 transition={{ type: "spring", stiffness: 380, damping: 34 }}
               >
-                {screen}
+                {/* Inside the keyed screen: one that's leaving keeps the room as it was, not the next screen's. */}
+                <RoomProvider value={ctx}>{screen}</RoomProvider>
               </motion.div>
             </AnimatePresence>
           </div>
         </main>
-      </RoomProvider>
     </MotionConfig>
   );
 }
