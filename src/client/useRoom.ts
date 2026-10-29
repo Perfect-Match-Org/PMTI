@@ -11,6 +11,7 @@ const POLL_MS = 5000;
 const NETWORK_ERROR = "Couldn’t reach the server. Check your connection and try again.";
 /** Answers that mean this game is over for us: removed (403), gone (404), or a version that no longer exists (410). */
 const GONE = new Set([403, 404, 410]);
+const SIGNED_OUT = "You’re signed out, so this game can’t update.";
 const REACTION_FLUSH_MS = 250;
 const MAX_BURST = 12;
 
@@ -29,12 +30,12 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
   /** Null until the first presence sync, so the UI doesn't flash "offline" on load. */
   const [presence, setPresence] = useState<{ online: boolean; since: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** Set when the server says this game is over for us; the screen then offers a way out. */
-  const [gone, setGone] = useState<string | null>(null);
+  /** Set when the server says this game is over for us (or we're signed out); the screen then offers a way out. */
+  const [gone, setGone] = useState<{ message: string; signedOut: boolean } | null>(null);
   const goneRef = useRef(false);
-  const markGone = useCallback((message: string) => {
+  const markGone = useCallback((message: string, signedOut = false) => {
     goneRef.current = true;
-    setGone(message);
+    setGone({ message, signedOut });
   }, []);
   /** When the game last moved, so a stall shows however the partner is connected. */
   const [changedAt, setChangedAt] = useState(() => Date.now());
@@ -52,7 +53,11 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
 
   const accept = useCallback((next: RoomView) => {
     if (next.version < version.current) return;
-    if (next.version > version.current) setChangedAt(Date.now());
+    if (next.version > version.current) {
+      setChangedAt(Date.now());
+      // Whatever failed before, the game has moved on since.
+      setError(null);
+    }
     version.current = next.version;
     setView(next);
   }, []);
@@ -62,6 +67,7 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
     // A failed fetch is left to the next poll or ping.
     const res = await fetch(`/api/rooms/${code}`, { cache: "no-store" }).catch(() => null);
     if (res?.ok) accept(await res.json());
+    else if (res?.status === 401) markGone(SIGNED_OUT, true);
     else if (res && GONE.has(res.status)) markGone((await res.json().catch(() => ({}))).error ?? "This game is no longer available.");
   }, [code, accept, markGone]);
 
@@ -82,6 +88,8 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
       } else if (res.status === 409) {
         if (showConflict) setError(data.error ?? "Something changed. Try again.");
         await refresh();
+      } else if (res.status === 401) {
+        markGone(SIGNED_OUT, true);
       } else if (GONE.has(res.status)) {
         markGone(data.error ?? "This game is no longer available.");
       } else {

@@ -57,7 +57,18 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
   const ctx: RoomContextValue = { view, deck, seat, partnerSeat, names, t, busy, act, send, post, react };
 
   const progress = view.progress;
-  if (gone) return <GameClosed message={gone} />;
+  if (gone) {
+    return (
+      <GameClosed message={gone.message}>
+        {gone.signedOut && (
+          // The page itself shows the sign-in when signed out, and brings you back here after.
+          <button type="button" className="btn btn-secondary self-start" onClick={() => window.location.reload()}>
+            Sign in again
+          </button>
+        )}
+      </GameClosed>
+    );
+  }
   if (progress.phase === "ended") return <GameClosed message="This game was ended." />;
 
   let key: string;
