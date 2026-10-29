@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { BRAND } from "@/brand";
-import { duoType } from "@/game/types";
+import { duoType, splitPair } from "@/game/types";
 import { PmLogo } from "@/components/ui/pm-logo";
 import type { Card } from "./rooms";
 
@@ -28,50 +28,61 @@ export async function cardImage(card: Card, format: keyof typeof CARD_SIZES, sit
   const [bold, black, serif] = await Promise.all([font("Gabarito-700.ttf"), font("Gabarito-900.ttf"), font("BodoniModa-Italic-500.ttf")]);
   const story = format === "story";
   const s = (wide: number, tall: number) => (story ? tall : wide);
-  const [first, joiner, second] = type.name.split(/ (&|vs\.) /);
+  const { first, joiner, second } = splitPair(type.name);
   const mind = Math.round(card.mindReading * 100);
+  const width = s(640, 888);
 
-  const name = (
-    <div style={{ display: "flex", flexDirection: "column", fontSize: s(64, 116), fontWeight: 900, lineHeight: 0.95, letterSpacing: "-0.03em" }}>
-      <span>{second ? first : type.name}</span>
-      {second && (
-        <div style={{ display: "flex", alignItems: "baseline", gap: s(14, 24) }}>
-          <span style={joiner === "&" ? { fontFamily: "Bodoni", fontWeight: 500, letterSpacing: 0 } : { fontSize: "0.8em", fontWeight: 700 }}>{joiner}</span>
-          <span>{second}</span>
-        </div>
-      )}
-    </div>
-  );
+  // Each half once: the place, its role under it, and the person's name beside it only if they show it.
   const halves = (
-    // Fixed widths: the image renderer collapses flex-grown boxes in a column.
-    <div style={{ display: "flex", flexDirection: story ? "row" : "column", gap: s(14, 24), width: s(400, 888) }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: s(18, 40), width }}>
       {type.halves.map((half, i) => {
         const person = card.people[i]!;
-        const fill = person.seat === "host" ? BRAND.navy : BRAND.pink;
         return (
-          <div key={i} style={{ display: "flex", flexDirection: "column", width: s(400, 432), padding: s(18, 32), borderRadius: s(22, 36), background: "rgba(255,255,255,0.08)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: s(12, 20) }}>
+          // Tall: pills line up on the right. Wide: each sits right after its place, so it doesn't drift off.
+          <div key={i} style={{ display: "flex", justifyContent: story ? "space-between" : "flex-start", alignItems: "flex-start", gap: s(20, 28), width }}>
+            <div style={{ display: "flex", flexDirection: "column", flexShrink: 1 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: s(12, 22), fontSize: s(52, 100), fontWeight: 900, lineHeight: 0.98, letterSpacing: "-0.03em" }}>
+                {i === 1 && joiner && (
+                  <span style={joiner === "&" ? { fontFamily: "Bodoni", fontWeight: 500, letterSpacing: 0 } : { fontSize: "0.8em", fontWeight: 700 }}>{joiner}</span>
+                )}
+                <span>{i === 0 ? (second ? first : type.name) : (second ?? "")}</span>
+              </div>
+              <div style={{ marginTop: s(6, 14), fontSize: s(20, 34), fontWeight: 700, lineHeight: 1.3, color: "rgba(255,255,255,0.65)" }}>{half.line}</div>
+            </div>
+            {person.name && (
               <div
                 style={{
                   display: "flex",
-                  width: s(36, 64),
-                  height: s(36, 64),
-                  borderRadius: 999,
+                  flexShrink: 0,
                   alignItems: "center",
-                  justifyContent: "center",
-                  background: fill,
-                  color: person.seat === "host" ? BRAND.white : BRAND.ink,
-                  fontSize: s(17, 30),
-                  fontWeight: 900,
-                  border: "2px solid rgba(255,255,255,0.25)",
+                  gap: s(10, 16),
+                  marginTop: s(8, 16),
+                  padding: story ? "10px 28px 10px 10px" : "6px 16px 6px 6px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.1)",
+                  fontSize: s(20, 34),
+                  fontWeight: 700,
                 }}
               >
-                {person.name?.charAt(0).toUpperCase() ?? ""}
+                <div
+                  style={{
+                    display: "flex",
+                    width: s(30, 52),
+                    height: s(30, 52),
+                    borderRadius: 999,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: person.seat === "host" ? BRAND.navy : BRAND.pink,
+                    color: person.seat === "host" ? BRAND.white : BRAND.ink,
+                    fontSize: s(15, 26),
+                    fontWeight: 900,
+                  }}
+                >
+                  {person.name.charAt(0).toUpperCase()}
+                </div>
+                {person.name}
               </div>
-              {person.name && <div style={{ fontSize: s(18, 30), fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{`${person.name} is`}</div>}
-            </div>
-            <div style={{ marginTop: s(10, 20), fontSize: s(28, 48), fontWeight: 900, lineHeight: 1.05 }}>{half.name}</div>
-            <div style={{ marginTop: s(4, 10), fontSize: s(17, 30), fontWeight: 700, lineHeight: 1.3, color: "rgba(255,255,255,0.6)" }}>{half.line}</div>
+            )}
           </div>
         );
       })}
@@ -90,12 +101,11 @@ export async function cardImage(card: Card, format: keyof typeof CARD_SIZES, sit
       <div style={{ fontSize: s(26, 42), fontWeight: 900 }}>PMTI</div>
     </div>
   );
-  const title = (
+  const lead = <div style={{ fontSize: s(26, 44), fontWeight: 700, color: BRAND.pink, marginBottom: s(14, 28) }}>{cardLead(card)}</div>;
+  const nickname = (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ fontSize: s(26, 44), fontWeight: 700, color: BRAND.pink, marginBottom: s(12, 24) }}>{cardLead(card)}</div>
-      {name}
-      <div style={{ marginTop: s(16, 36), fontSize: s(28, 50), fontWeight: 700, color: BRAND.pink }}>{type.nickname}</div>
-      <div style={{ marginTop: s(4, 10), fontSize: s(22, 38), fontWeight: 700, color: "rgba(255,255,255,0.75)", lineHeight: 1.3 }}>{type.tagline}</div>
+      <div style={{ fontSize: s(30, 50), fontWeight: 700, color: BRAND.pink }}>{type.nickname}</div>
+      <div style={{ marginTop: s(6, 10), fontSize: s(22, 38), fontWeight: 700, color: "rgba(255,255,255,0.75)", lineHeight: 1.3 }}>{type.tagline}</div>
     </div>
   );
 
@@ -106,21 +116,25 @@ export async function cardImage(card: Card, format: keyof typeof CARD_SIZES, sit
         <div style={{ display: "flex", flexDirection: "column", marginTop: "auto" }}>
           <div style={{ fontSize: 34, fontWeight: 900 }}>11:58pm</div>
           <div style={{ fontSize: 34, fontWeight: 700, color: "rgba(255,255,255,0.7)", marginBottom: 72 }}>That’s the day.</div>
-          {title}
-          <div style={{ display: "flex", marginTop: 72 }}>{halves}</div>
+          {lead}
+          {halves}
+          <div style={{ display: "flex", marginTop: 64 }}>{nickname}</div>
           <div style={{ display: "flex", marginTop: 64 }}>{mindReading}</div>
         </div>
         <div style={{ display: "flex", marginTop: "auto", fontSize: 32, fontWeight: 700, color: "rgba(255,255,255,0.6)" }}>{`Find out which two you are at ${site}`}</div>
       </div>
     ) : (
       <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "space-between", background: BRAND.ink, color: BRAND.white, fontFamily: "Gabarito", padding: "52px 64px" }}>
-        <div style={{ display: "flex", flexDirection: "column", width: 620 }}>
+        <div style={{ display: "flex", flexDirection: "column", width: 640 }}>
           {brand}
-          <div style={{ display: "flex", marginTop: "auto" }}>{title}</div>
+          <div style={{ display: "flex", flexDirection: "column", marginTop: "auto" }}>
+            {lead}
+            {halves}
+          </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", width: 400, justifyContent: "space-between" }}>
+        <div style={{ display: "flex", flexDirection: "column", width: 360, justifyContent: "space-between" }}>
           {mindReading}
-          {halves}
+          {nickname}
         </div>
       </div>
     ),

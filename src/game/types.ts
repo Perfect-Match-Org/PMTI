@@ -197,3 +197,9 @@ export const DUO_TYPES: DuoType[] = [
 export function duoType(id: string): DuoType | undefined {
   return DUO_TYPES.find((t) => t.id === id);
 }
+
+/** A pair name's two places and what joins them ("&", or "vs." for the rivals). */
+export function splitPair(name: string): { first: string; joiner?: string; second?: string } {
+  const [first = name, joiner, second] = name.split(/ (&|vs\.) /);
+  return { first, joiner, second };
+}
