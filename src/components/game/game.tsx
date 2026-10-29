@@ -129,8 +129,9 @@ export function Game({ initial, origin }: { initial: RoomView; origin: string })
             {partner && stalled && (
               <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-tile px-4 py-3">
                 <p className="font-medium">
-                  {presence?.online === false ? `${partner.name} has been offline a while.` : `Still waiting on ${partner.name}.`} They can
-                  rejoin with the same link.
+                  {presence?.online === false
+                    ? `${partner.name} is offline. They can rejoin with the same link.`
+                    : `Still waiting on ${partner.name}.`}
                 </p>
                 <button type="button" className="font-bold text-navy underline" onClick={() => act(() => post("end"))}>
                   End game

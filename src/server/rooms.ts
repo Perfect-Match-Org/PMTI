@@ -134,7 +134,7 @@ export async function kickGuest(code: string, userId: string, body: unknown): Pr
     const room = await findRoom(tx, code, true);
     if (room.hostId !== userId) throw new RoomError(403, "Only the host can remove a player.");
     // A stale screen or a double tap must not remove someone who joined since.
-    if (room.seq !== seen.data.version) throw new RoomError(409, "The game moved on.");
+    if (room.seq !== seen.data.version) throw new RoomError(409, "Someone just joined or left. Check who’s here and try again.");
     const { moves } = await loadLog(tx, room.id);
     if (derive(deckOf(room), room, moves).phase !== "lobby") {
       throw new RoomError(409, "The game already started.");
@@ -176,7 +176,7 @@ export async function submitMove(code: string, userId: string, body: unknown): P
   const room = await findRoom(sql, code);
   const deck = deckOf(room);
   const pre = checkMove(deck, room, (await loadLog(sql, room.id)).moves, key);
-  if (pre === "not-player") throw new RoomError(403, "You’re not in this game.");
+  if (pre === "not-player") throw notPlayer(room, userId);
   if (pre === "stale") throw new RoomError(409, "The game moved on.");
   if (pre === "duplicate") return loadView(code, userId);
 

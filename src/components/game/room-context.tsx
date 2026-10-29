@@ -18,7 +18,7 @@ export type RoomContextValue = {
   /** Runs an action with the busy flag set, so buttons can't double-fire. */
   act: (fn: () => Promise<void>) => Promise<void>;
   send: (move: Move) => Promise<void>;
-  post: (path: string, body?: unknown) => Promise<void>;
+  post: (path: string, body?: unknown, options?: { showConflict?: boolean }) => Promise<void>;
   react: (emoji: Reaction) => void;
 };
 

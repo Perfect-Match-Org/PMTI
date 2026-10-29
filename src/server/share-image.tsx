@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { BRAND } from "@/brand";
 import { TONE_FILL, TONE_TEXT } from "@/components/game/tones";
-import { BEATS, SAMPLE_NAMES } from "@/components/landing/sample-day";
+import { BEATS, SAMPLE_NAMES, type Beat, type Body } from "@/components/landing/sample-day";
 import { HEART_PATH } from "@/components/ui/heart";
 import { PmLogo } from "@/components/ui/pm-logo";
 
@@ -38,7 +38,7 @@ export async function shareImage(inviter?: string) {
           </div>
         </div>
       </div>
-      <Deck />
+      {PREVIEW_BEAT && <Deck beat={PREVIEW_BEAT} />}
     </div>,
     {
       width: 1200,
@@ -51,10 +51,13 @@ export async function shareImage(inviter?: string) {
   );
 }
 
-/** The landing deck's first beat, flooded with its verdict: the rows both players landed on first, then the rest. */
-function Deck() {
-  const beat = BEATS[0]!;
-  const rows = beat.body.kind === "rows" ? beat.body.rows.map((text, i) => ({ text, both: beat.body.kind === "rows" && beat.body.marks.every((m) => m.at === i) })) : [];
+/** The first sample round that floods with color and shows option rows; a deck edit that leaves none just drops the card. */
+const PREVIEW_BEAT = BEATS.find((b): b is Beat & { body: Extract<Body, { kind: "rows" }> } => b.body.kind === "rows" && b.tone !== "between");
+
+/** That beat at its verdict: the rows both players landed on first, then the rest. */
+function Deck({ beat }: { beat: NonNullable<typeof PREVIEW_BEAT> }) {
+  const { rows: labels, marks } = beat.body;
+  const rows = labels.map((text, i) => ({ text, both: marks.every((m) => m.at === i) }));
   const shown = [...rows.filter((r) => r.both), ...rows.filter((r) => !r.both)].slice(0, 3);
   const ink = TONE_TEXT[beat.tone];
   const card = { position: "absolute", top: 0, left: 0, width: 390, height: 474, borderRadius: 38 } as const;

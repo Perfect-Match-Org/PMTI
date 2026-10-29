@@ -31,6 +31,11 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
   const [error, setError] = useState<string | null>(null);
   /** Set when the server says this game is over for us; the screen then offers a way out. */
   const [gone, setGone] = useState<string | null>(null);
+  const goneRef = useRef(false);
+  const markGone = useCallback((message: string) => {
+    goneRef.current = true;
+    setGone(message);
+  }, []);
   /** When the game last moved, so a stall shows however the partner is connected. */
   const [changedAt, setChangedAt] = useState(() => Date.now());
   const version = useRef(initial.version);
@@ -53,14 +58,16 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
   }, []);
 
   const refresh = useCallback(async () => {
+    if (goneRef.current) return;
     // A failed fetch is left to the next poll or ping.
     const res = await fetch(`/api/rooms/${code}`, { cache: "no-store" }).catch(() => null);
     if (res?.ok) accept(await res.json());
-    else if (res && GONE.has(res.status)) setGone((await res.json().catch(() => ({}))).error ?? "This game is no longer available.");
-  }, [code, accept]);
+    else if (res && GONE.has(res.status)) markGone((await res.json().catch(() => ({}))).error ?? "This game is no longer available.");
+  }, [code, accept, markGone]);
 
+  /** `showConflict`: say what changed on a 409 instead of quietly catching up (most moves just catch up). */
   const post = useCallback(
-    async (path: string, body?: unknown) => {
+    async (path: string, body?: unknown, { showConflict = false } = {}) => {
       setError(null);
       const res = await fetch(`/api/rooms/${code}/${path}`, {
         method: "POST",
@@ -73,14 +80,15 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
         if (data && typeof data.version === "number") accept(data);
         else await refresh();
       } else if (res.status === 409) {
+        if (showConflict) setError(data.error ?? "Something changed. Try again.");
         await refresh();
       } else if (GONE.has(res.status)) {
-        setGone(data.error ?? "This game is no longer available.");
+        markGone(data.error ?? "This game is no longer available.");
       } else {
         setError(data.error ?? "Something went wrong. Try again.");
       }
     },
-    [code, accept, refresh]
+    [code, accept, refresh, markGone]
   );
 
   // Reactions: batched into one broadcast per emoji every 250ms, and tallied per round so the
@@ -119,6 +127,7 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
   );
 
   useEffect(() => {
+    if (gone) return;
     const supabase = supabaseBrowser();
     let channel: RealtimeChannel | null = null;
     let cancelled = false;
@@ -162,16 +171,16 @@ export function useRoom(initial: RoomView, onReaction?: (burst: ReactionBurst) =
       channelRef.current = null;
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [roomId, seat, partnerSeat, refresh]);
+  }, [roomId, seat, partnerSeat, refresh, gone]);
 
   const waiting = waitingOnPartner(view);
   useEffect(() => {
-    if (connection === "live" && !waiting) return;
+    if (gone || (connection === "live" && !waiting)) return;
     const id = setInterval(() => {
       if (document.visibilityState === "visible") void refresh();
     }, POLL_MS);
     return () => clearInterval(id);
-  }, [connection, waiting, refresh]);
+  }, [connection, waiting, refresh, gone]);
 
   useEffect(() => {
     const onVisible = () => {

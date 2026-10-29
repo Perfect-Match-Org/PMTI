@@ -15,7 +15,8 @@ const RETURNED_ERRORS: Record<string, string> = {
  * A sign-in that failed on the way, like a non-Cornell account, comes back as `?signin_error=<code>`.
  */
 export function GoogleButton() {
-  const returned = RETURNED_ERRORS[useSearchParams().get("signin_error") ?? ""] ?? null;
+  const code = useSearchParams().get("signin_error") ?? "";
+  const returned = Object.hasOwn(RETURNED_ERRORS, code) ? RETURNED_ERRORS[code]! : null;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 

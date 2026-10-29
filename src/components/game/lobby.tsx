@@ -90,7 +90,7 @@ export function Lobby({ link }: { link: string }) {
         <button
           type="button"
           disabled={busy}
-          onClick={() => act(() => post("kick", { version: view.version }))}
+          onClick={() => act(() => post("kick", { version: view.version }, { showConflict: true }))}
           className="mt-6 font-semibold text-muted underline underline-offset-4"
         >
           Not who you invited? Remove {partner.name}
