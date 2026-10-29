@@ -10,6 +10,7 @@ import { score, type Result } from "@/game/scoring";
 import {
   checkMove,
   derive,
+  LOBBY_ROUND,
   viewFor,
   type Mode,
   type MoveRow,
@@ -144,7 +145,9 @@ export async function kickGuest(code: string, userId: string, body: unknown): Pr
     }
     if (!room.guestId) return;
     await tx`update rooms set kicked = array_append(kicked, ${room.guestId}::uuid) where id = ${room.id}`;
-    await bump(tx, room.id, { guestId: null });
+    // The host was ready for the person who's gone: whoever joins next has to be confirmed again.
+    await tx`delete from moves where room_id = ${room.id} and round = ${LOBBY_ROUND}`;
+    await bump(tx, room.id, { guestId: null, guestSharesName: false });
   });
 }
 
@@ -331,6 +334,8 @@ export async function setShareName(code: string, userId: string, body: unknown):
   await sql.begin(async (tx) => {
     const room = await findRoom(tx, code, true);
     if (!isPlayer(room, userId)) throw notPlayer(room, userId);
+    // Only from the result screen, so the choice belongs to someone who played this game.
+    if (!room.result) throw new RoomError(409, "Your result isn’t ready yet.");
     await bump(tx, room.id, { [userId === room.hostId ? "hostSharesName" : "guestSharesName"]: choice.data.on });
   });
 }

@@ -164,3 +164,27 @@ test("two players play a full game in sync", async ({ browser }) => {
   await Promise.all([alice.context().close(), bob.context().close(), carol.context().close()]);
   await Promise.all(videos);
 });
+
+test("after removing a guest, the host confirms whoever joins next", async ({ browser }) => {
+  const alice = await player(browser, "alice@cornell.edu");
+  await alice.getByRole("button", { name: "Play with my partner" }).click();
+  await expect(alice).toHaveURL(/\/play\/[A-Z0-9]{6}$/);
+  const url = new URL(alice.url()).pathname;
+
+  const dave = await player(browser, "dave@cornell.edu", url);
+  await expect(alice.getByText("Alice & Dave are in.")).toBeVisible({ timeout: REALTIME_MS });
+  await alice.getByRole("button", { name: "I’m ready", exact: true }).click();
+  await expect(alice.getByRole("button", { name: "Waiting for Dave" })).toBeDisabled();
+  await alice.getByRole("button", { name: "Not who you invited? Remove Dave" }).click();
+
+  const erin = await player(browser, "erin@cornell.edu", url);
+  await expect(alice.getByText("Alice & Erin are in.")).toBeVisible({ timeout: REALTIME_MS });
+  // Alice's ready was for Dave: Erin's tap alone mustn't start the game.
+  await expect(alice.getByRole("button", { name: "I’m ready", exact: true })).toBeEnabled();
+  await erin.getByRole("button", { name: "I’m ready", exact: true }).click();
+  await expect(erin.getByRole("button", { name: "Waiting for Alice" })).toBeDisabled();
+  await alice.getByRole("button", { name: "I’m ready", exact: true }).click();
+  await expect(erin.getByRole("button", { name: "Lock in", exact: true })).toBeVisible({ timeout: REALTIME_MS });
+
+  await Promise.all([alice, dave, erin].map((page) => page.context().close()));
+});
