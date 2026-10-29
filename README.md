@@ -17,7 +17,8 @@ Requires Node 22+, pnpm, and Docker. The Supabase CLI comes with the dev depende
    SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=...
    EMBED_SECRET=<any random string>
    ```
-3. Create `.env.development.local` (git-ignored). The keys come from `pnpm db:status`:
+3. `pnpm db:start`.
+4. Create `.env.development.local` (git-ignored). The keys come from `pnpm db:status`:
    ```
    NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
@@ -26,9 +27,9 @@ Requires Node 22+, pnpm, and Docker. The Supabase CLI comes with the dev depende
    EMBED_URL=http://127.0.0.1:54321/functions/v1/embed
    EMBED_SECRET=<same as above>
    ```
-4. `pnpm db:start`, then `pnpm db:reset` (applies migrations), then `pnpm db:seed-pool` (seeds the
-   free-text scoring pool; rerun it after every reset).
-5. `pnpm dev`, then open http://localhost:3000. The dev sign-in takes any name (`Bob` signs in as
+5. `pnpm db:reset` (applies migrations), then `pnpm db:seed-pool` (seeds the free-text scoring pool;
+   rerun it after every reset).
+6. `pnpm dev`, then open http://localhost:3000. The dev sign-in takes any name (`Bob` signs in as
    `bob@cornell.edu`; nothing is checked, no Google needed). For the second player, open
    http://127.0.0.1:3000 in another tab of the same browser: a different address keeps a separate
    sign-in, so you can watch both screens sync side by side. A full address such as
@@ -129,8 +130,9 @@ time they open, finished games included.
   launch, editing in place and resetting the database is fine.
 - **Changing weights** (`w`, `nudge`) shifts how often each duo type comes up. `pnpm test` fails if
   any type falls outside 4–15% of simulated games.
-- **A new free-text question** needs at least 10 seed answers per box in `supabase/seed-pool.json`
-  under its `poolKey`, then the seed script run against each database.
+- **A new free-text question** needs at least 10 seed answers per box in `supabase/seed-pool.json`,
+  keyed `<poolKey>:self` and `<poolKey>:partner` for a mirror round or `<poolKey>:shared` for a shared
+  one, then the seed script run against each database.
 
 `pnpm test` also fails if a landing sample no longer fits the deck, a branch names a round that isn't
 earlier in it, or two rounds share an id.
