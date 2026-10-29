@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -23,10 +24,10 @@ export async function supabaseServer() {
 
 export type SessionUser = { id: string; email: string };
 
-export async function currentUser(): Promise<SessionUser | null> {
+export const currentUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await supabaseServer();
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;
   if (!claims?.sub || typeof claims.email !== "string") return null;
   return { id: claims.sub, email: claims.email };
-}
+});

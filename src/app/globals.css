@@ -31,6 +31,17 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Pages that open on the navy poster keep navy behind an overscroll, instead of a white seam. */
+html:has(#top) {
+  background: var(--color-navy);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 :focus-visible {
   outline: 3px solid var(--color-navy);
   outline-offset: 3px;

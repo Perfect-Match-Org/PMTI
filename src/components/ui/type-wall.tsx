@@ -30,6 +30,7 @@ export function TypeWall() {
                   )}
                 </p>
                 <p className="mt-1.5 text-sm font-semibold text-muted lg:mt-2 lg:text-lg">{type.nickname}</p>
+                <p className="mt-1 text-[0.8125rem] leading-snug text-ink/80 lg:mt-1.5 lg:max-w-[22rem] lg:text-base">{type.tagline}</p>
               </li>
             );
           })}
