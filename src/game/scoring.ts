@@ -28,7 +28,8 @@ export type Moment =
   | { kind: "denial"; round: number; item: number }
   | { kind: "both-claim"; round: number; item: number }
   | { kind: "dinner"; round: number; tries: number; failed: boolean; caved: Seat | null; budged?: boolean }
-  | { kind: "close-call"; round: number; guesser: Seat }
+  /** `guesser` null: you both placed each other exactly. */
+  | { kind: "close-call"; round: number; guesser: Seat | null }
   | { kind: "mirror"; round: number; about: Seat; pct: number }
   | { kind: "reactions"; round: number; who: Seat; emoji: Reaction; count: number };
 
@@ -147,13 +148,16 @@ export function score(
           const v = self(s);
           if (v != null) tally[s].add({ [round.axis]: round.leftWeight * (1 - (2 * v) / span) }, possible);
         }
+        const exact: Seat[] = [];
         for (const s of SEATS) {
           const guess = answer(s, r)?.guesses?.[0];
           const actual = self(other(s));
           if (guess == null || actual == null) continue;
           mind[s].push(1 - Math.abs(guess - actual) / span);
-          if (guess === actual) note(1.5, { kind: "close-call", round: r, guesser: s });
+          if (guess === actual) exact.push(s);
         }
+        // Both exact is one moment for the two of you, not the host's alone.
+        if (exact.length) note(exact.length === 2 ? 1.75 : 1.5, { kind: "close-call", round: r, guesser: exact.length === 2 ? null : exact[0]! });
         break;
       }
       case "agree": {

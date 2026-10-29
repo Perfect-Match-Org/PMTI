@@ -40,10 +40,12 @@ export function momentText(m: Moment, { deck, names, viewer, t }: Context): stri
       return m.caved
         ? `Dinner took ${m.tries} tries. ${who(m.caved, true)} caved first.`
         : `Dinner took ${m.tries} tries. You both caved at the same time.`;
-    case "close-call":
+    case "close-call": {
+      const placed = m.guesser ? `${who(m.guesser, true)} placed ${who(other(m.guesser))}` : "You both placed each other";
       return round?.format === "scale"
-        ? `${who(m.guesser, true)} placed ${who(other(m.guesser))} exactly right between “${t(round.left)}” and “${t(round.right)}”.`
-        : `${who(m.guesser, true)} placed ${who(other(m.guesser))} exactly right.`;
+        ? `${placed} exactly right between “${t(round.left)}” and “${t(round.right)}”.`
+        : `${placed} exactly right.`;
+    }
     case "mirror": {
       const topic = (round?.format === "write" && round.topic) || "answer";
       const whose = m.about === viewer ? "your" : `${names[m.about]}’s`;
