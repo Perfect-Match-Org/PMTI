@@ -95,13 +95,13 @@ the Vercel variables come from them.
    It needs steps 1 and 2 done first, and it is safe to rerun: it skips texts already there. Until a
    prompt has 10 other answers, its free-text round has no vibe match.
 6. **Deploy, then check the keepalive.** `curl -H "Authorization: Bearer <CRON_SECRET>"
-   https://<production-domain>/api/cron/keepalive` should return `{"ok":true}`. A 401 means
-   `CRON_SECRET` is missing or different on Vercel.
+   https://<production-domain>/api/cron/keepalive` should return `{"ok":true,...}` with counts of
+   what it cleaned up. A 401 means `CRON_SECRET` is missing or different on Vercel.
 
 ## Checks
 
 - `pnpm typecheck` · `pnpm lint`
-- `pnpm test`: engine, scoring, and a type-distribution simulation (4,000 simulated couples).
+- `pnpm test`: engine, scoring, deck checks, and a type-distribution simulation (4,000 simulated couples).
 - `pnpm exec playwright test`: browser tests, including two players playing a full game in sync.
 
 ## Layout
@@ -110,10 +110,30 @@ the Vercel variables come from them.
   - `engine.ts`: progress is derived from the move log, plus the sanitized per-player view.
   - `scoring.ts`: turns a finished game into a duo type.
   - `types.ts`: the 14 duo types.
-  - `decks/`: the content. Decks are immutable once shipped; new content gets a new id.
+  - `decks/`: the questions. See [Editing questions](#editing-questions).
 - `src/server/`: rooms (locked transactions), auth, embeddings and free-text similarity.
 - `src/client/useRoom.ts`: keeps a player in sync (realtime ping, refetch, polling fallback).
 - `supabase/`: migrations, the `embed` Edge Function, and local config.
+
+## Editing questions
+
+The questions are in `src/game/decks/cornell-day-1.ts`. Each game remembers which deck it started
+with and saves answers as positions ("round 0, option 0"). Its pages are rebuilt from that deck every
+time they open, finished games included.
+
+- **Rewording** a scene, prompt or option: edit it in place. Every game, old ones too, shows the new
+  words.
+- **Adding, removing or reordering** rounds, options or items: copy the file under a new `id`
+  (`cornell-day@2`), register it in `decks/index.ts` and point `CURRENT_DECK` at it. New games get
+  the new deck and earlier games keep theirs, so never delete a deck that games have used. Before
+  launch, editing in place and resetting the database is fine.
+- **Changing weights** (`w`, `nudge`) shifts how often each duo type comes up. `pnpm test` fails if
+  any type falls outside 4–15% of simulated games.
+- **A new free-text question** needs at least 10 seed answers per box in `supabase/seed-pool.json`
+  under its `poolKey`, then the seed script run against each database.
+
+`pnpm test` also fails if a landing sample no longer fits the deck, a branch names a round that isn't
+earlier in it, or two rounds share an id.
 
 ## Contact
 
