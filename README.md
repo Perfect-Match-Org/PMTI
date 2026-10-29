@@ -23,7 +23,6 @@ Requires Node 22+, pnpm, and Docker. The Supabase CLI comes with the dev depende
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
    DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
    NEXT_PUBLIC_DEV_LOGIN=1
-   NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
    EMBED_URL=http://127.0.0.1:54321/functions/v1/embed
    EMBED_SECRET=<same as above>
    ```
@@ -31,6 +30,19 @@ Requires Node 22+, pnpm, and Docker. The Supabase CLI comes with the dev depende
    free-text scoring pool; rerun it after every reset).
 5. `pnpm dev`, then open http://localhost:3000. Use the dev sign-in with any `@cornell.edu` address.
    Two browser profiles make two players.
+
+## Google sign-in
+
+The Google button sends players to Google through Supabase and back to `/auth/callback`, which
+returns them to the page they started on. It needs the Google client ID and secret in Supabase:
+
+- **Google Cloud console**, on the OAuth client: add these as authorized redirect URIs:
+  `http://127.0.0.1:54321/auth/v1/callback` (local) and `https://<project-ref>.supabase.co/auth/v1/callback` (hosted).
+- **Local:** `supabase/.env` (above) holds the ID and secret; `supabase/config.toml` already allows
+  redirects back to `localhost:3000`. Restart Supabase after changing either.
+- **Hosted Supabase dashboard:** under Authentication → Providers → Google, enter the client ID and secret.
+  Under URL Configuration, set the Site URL to the production address, and add
+  `https://<production-domain>/**` (plus `https://*-<vercel-team>.vercel.app/**` for preview deploys) to Redirect URLs.
 
 ## Checks
 
