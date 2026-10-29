@@ -9,7 +9,7 @@ const CODE = /^[A-Z0-9]{6}$/;
  * For when scanning isn't handy: type the six-character code from your partner's screen, or paste
  * their link. It joins on the sixth character, so there's no button to find.
  */
-export function JoinWithCode({ tone = "navy", placeholder = "Got a code? Type it here" }: { tone?: "navy" | "white"; placeholder?: string }) {
+export function JoinWithCode({ placeholder = "Got a code? Type it here" }: { placeholder?: string }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [joining, startJoining] = useTransition();
@@ -43,13 +43,11 @@ export function JoinWithCode({ tone = "navy", placeholder = "Got a code? Type it
         autoCapitalize="characters"
         autoComplete="off"
         enterKeyHint="go"
-        className={`field py-3 font-bold tracking-[0.08em] placeholder:font-medium placeholder:tracking-normal ${
-          tone === "navy" ? "border-white/20 bg-white/10 text-white placeholder:text-white/60 focus:border-white" : "placeholder:text-muted"
-        }`}
+        className="field border-white/20 bg-white/10 py-3 font-bold tracking-[0.08em] text-white placeholder:font-medium placeholder:tracking-normal placeholder:text-white/60 focus:border-white"
       />
       <span
         aria-hidden
-        className={`pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-semibold ${tone === "navy" ? "text-white/60" : "text-muted"}`}
+        className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-semibold text-white/60"
       >
         {joining ? "Joining…" : code.length > 0 && code.length < 6 ? `${6 - code.length} more` : ""}
       </span>

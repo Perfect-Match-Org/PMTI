@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { BrandHeader } from "@/components/ui/brand-header";
 import { JoinWithCode } from "./join-with-code";
 
 /** Joins on mount (never on a server GET, so link prefetching can't join anyone by accident). */
@@ -19,23 +20,26 @@ export function JoinGate({ code }: { code: string }) {
   }, [code, router]);
 
   return (
-    <main className="min-h-dvh bg-white">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-5">
+    <main className="flex min-h-dvh flex-col bg-navy text-white">
+      <div className="frame pt-5 lg:pt-8">
+        <BrandHeader />
+      </div>
+      <div className="frame flex flex-1 flex-col justify-center gap-8 py-14 lg:max-w-[40rem]">
         {error ? (
           <>
-            <p role="alert" className="text-4xl leading-tight font-black tracking-[-0.02em]">
+            <p role="alert" className="text-[clamp(2.5rem,11vw,4rem)] leading-[0.95] font-black tracking-[-0.03em]">
               {error}
             </p>
             <div className="flex flex-col gap-2">
-              <p className="font-semibold text-muted">Have a different code?</p>
-              <JoinWithCode tone="white" placeholder="Six letters and numbers" />
+              <p className="font-semibold text-white/70">Have a different code?</p>
+              <JoinWithCode placeholder="Six letters and numbers" />
             </div>
-            <Link href="/" className="btn btn-primary self-start">
+            <Link href="/" className="btn btn-pink self-start">
               Start your own game
             </Link>
           </>
         ) : (
-          <p className="text-4xl font-black tracking-[-0.02em]">Joining game {code}…</p>
+          <p className="text-[clamp(2.5rem,11vw,4rem)] leading-[0.95] font-black tracking-[-0.03em]">Joining game {code}…</p>
         )}
       </div>
     </main>

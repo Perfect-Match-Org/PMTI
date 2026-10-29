@@ -3,11 +3,10 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { currentUser } from "@/server/auth";
 import { isInRoom, loadView, RoomError } from "@/server/rooms";
-import { GoogleButton } from "@/components/auth/google-button";
-import { DevLogin } from "@/components/auth/dev-login";
+import { SignIn } from "@/components/auth/sign-in";
 import { Game } from "@/components/game/game";
 import { JoinGate } from "@/components/game/join-gate";
-import { Hero } from "@/components/ui/hero";
+import { Hero, Pitch } from "@/components/ui/hero";
 
 // Signed out, this is the navy invitation; signed in, the white game.
 export async function generateViewport(): Promise<Viewport> {
@@ -22,11 +21,8 @@ export default async function PlayPage({ params }: { params: Promise<{ code: str
     return (
       <main className="min-h-dvh bg-navy">
         <Hero compact title="You’re invited to a Cornell day for two.">
-          <p className="text-xl text-white/85">Sign in with your Cornell account to join game {code}.</p>
-          <div className="flex max-w-xl flex-col gap-5">
-            <GoogleButton />
-            <DevLogin />
-          </div>
+          <Pitch />
+          <SignIn note={`You’re joining game ${code}.`} />
         </Hero>
       </main>
     );

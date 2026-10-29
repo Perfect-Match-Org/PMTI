@@ -26,7 +26,7 @@ export function StartGame() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2">
       <button
         type="button"
         disabled={busy}
@@ -43,9 +43,9 @@ export function StartGame() {
       >
         Play with a friend
       </button>
-      <p className="-mt-1 text-sm text-white/65">With a friend, you play as a couple in a parallel universe.</p>
+      <p className="-mt-1 text-sm text-white/65 lg:col-span-2">With a friend, you play as a couple in a parallel universe.</p>
       {error && (
-        <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep">
+        <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep lg:col-span-2">
           {error}
         </p>
       )}
