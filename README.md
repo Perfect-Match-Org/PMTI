@@ -47,6 +47,63 @@ returns them to the page they started on. It needs the Google client ID and secr
   Under URL Configuration, set the Site URL to the production address, and add
   `https://<production-domain>/**` (plus `https://*-<vercel-team>.vercel.app/**` for preview deploys) to Redirect URLs.
 
+## Deploy
+
+Production is a hosted Supabase project plus a Vercel project. Do the Supabase steps first, because
+the Vercel variables come from them.
+
+1. **Supabase project.** Create one, then link the CLI to it and apply the migrations:
+   ```
+   pnpm exec supabase link --project-ref <project-ref>
+   pnpm exec supabase db push
+   ```
+   `supabase/migrations/` creates the tables, the `vector` extension, the realtime policies and
+   `public.hook_before_user_created`.
+2. **Edge Function.** Pick a random string for `EMBED_SECRET`, then set it and deploy:
+   ```
+   pnpm exec supabase secrets set EMBED_SECRET=<random string>
+   pnpm exec supabase functions deploy embed
+   ```
+   The function answers 403 unless the request's `x-embed-secret` header matches. `config.toml` turns
+   JWT checking off for it, because our server sends that header instead of a user token. Use the same
+   string for `EMBED_SECRET` on Vercel.
+3. **Auth hook.** `config.toml` enables `[auth.hook.before_user_created]` for local Supabase only. On
+   hosted, open the dashboard, go to Authentication → Hooks, and add a Before User Created hook of
+   type Postgres function, with schema `public` and function `hook_before_user_created`. This hook is
+   the only place the Cornell-only rule is enforced (it allows `@cornell.edu` and the PM gmail), so
+   without it any Google account can sign in.
+4. **Providers.** Set up Google as in [Google sign-in](#google-sign-in). Then, under Authentication →
+   Providers, turn **Email** off. The dev sign-in uses email and password, so with Email on, anyone
+   could create an `@cornell.edu` account without owning the address.
+5. **Vercel environment variables.** Set these for Production. The two `NEXT_PUBLIC_` ones are baked
+   in at build time, so changing them needs a redeploy.
+   - `DATABASE_URL`: the Supabase transaction pooler connection string. `src/server/db.ts` turns
+     prepared statements off because it expects the transaction pooler. Every room read and write uses it.
+   - `NEXT_PUBLIC_SUPABASE_URL`: `https://<project-ref>.supabase.co`.
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: the project's publishable key (`sb_publishable_...`). The
+     browser, the server and `src/proxy.ts` use these two for sign-in and realtime.
+   - `EMBED_URL`: `https://<project-ref>.supabase.co/functions/v1/embed`, the function from step 2.
+   - `EMBED_SECRET`: the same string as in step 2. If `EMBED_URL` or `EMBED_SECRET` is missing, the
+     game still plays, but free-text rounds get no vibe match.
+   - `CRON_SECRET`: any random string. `vercel.json` calls `/api/cron/keepalive` daily at 15:00 UTC.
+     The route runs `select 1` and returns 401 unless its `Authorization: Bearer` header equals
+     `CRON_SECRET` (Vercel sends that header once the variable exists). Without the variable every
+     call gets 401, the database sees no traffic from it, and a free Supabase project pauses after
+     about 7 idle days.
+   - Do **not** set `NEXT_PUBLIC_DEV_LOGIN`. It shows the dev sign-in form, and that form's password
+     is in the client code.
+6. **Seed the free-text pool.** `pnpm db:seed-pool` reads `.env.development.local`, so it targets
+   local. For hosted, put `DATABASE_URL`, `EMBED_URL` and `EMBED_SECRET` (the values from step 5) in a
+   git-ignored file such as `.env.hosted`, then run:
+   ```
+   node --env-file=.env.hosted scripts/seed-pool.mjs
+   ```
+   It needs steps 1 and 2 done first, and it is safe to rerun: it skips texts already there. Until a
+   prompt has 10 other answers, its free-text round has no vibe match.
+7. **Deploy, then check the keepalive.** `curl -H "Authorization: Bearer <CRON_SECRET>"
+   https://<production-domain>/api/cron/keepalive` should return `{"ok":true}`. A 401 means
+   `CRON_SECRET` is missing or different on Vercel.
+
 ## Checks
 
 - `pnpm typecheck` · `pnpm lint`
