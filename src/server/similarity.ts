@@ -2,7 +2,7 @@ import "server-only";
 import type { Db } from "./db";
 
 const POOL_SIZE = 200;
-const MIN_POOL = 10;
+export const MIN_POOL = 10;
 
 /**
  * Daily: a game answer's vector is only needed while it's among the latest POOL_SIZE distinct answers

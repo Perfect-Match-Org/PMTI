@@ -25,7 +25,7 @@ export type Beat = { step: number; time: string; scene: string; ask: string; rou
  * game's own reveal and verdict rules, so the landing (and the link preview) can't promise anything
  * the game doesn't do.
  */
-const SAMPLES: { id: string; reveal: RevealData }[] = [
+export const SAMPLES: { id: string; reveal: RevealData }[] = [
   { id: "prelim-morning", reveal: { host: { picks: [0] }, guest: { picks: [0] }, texts: [] } },
   { id: "group-project", reveal: { host: { picks: [1, 1, 1] }, guest: { picks: [1, 1, 1] }, texts: [] } },
   { id: "dinner", reveal: { host: { picks: [0] }, guest: { picks: [0] }, texts: [] } },
