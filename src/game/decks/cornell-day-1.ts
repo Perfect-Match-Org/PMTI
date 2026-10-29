@@ -28,7 +28,7 @@ export const cornellDay1: Deck = {
       guessPrompt: "It’s Friday, 5pm. What does {s} actually want to do?",
       options: [
         { label: "Pregame, then Collegetown", w: { E: 2, P: -1 } },
-        { label: "The dinner reservation you made on Monday", w: { E: 1, P: 2 } },
+        { label: "The dinner reservation made back on Monday", w: { E: 1, P: 2 } },
         { label: "Takeout, blanket, one episode that becomes five", w: { E: -2, P: -1 } },
         { label: "A long walk and a longer talk", w: { H: 2 } },
       ],
@@ -44,7 +44,7 @@ export const cornellDay1: Deck = {
           nudge: { P: 1 },
           brag: true,
         },
-        { text: "…reply \"k\" and genuinely mean nothing by it", nudge: { H: -1 } },
+        { text: "…reply “k” and genuinely mean nothing by it", nudge: { H: -1 } },
         { text: "…know everyone in the room by the end", nudge: { E: 1 }, brag: true },
       ],
     },

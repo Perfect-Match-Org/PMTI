@@ -22,7 +22,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const invite = await invitation(await codeOf({ params }));
   if ("closed" in invite) return {};
   const title = `${invite.host.name} invited you to a Cornell day for two`;
-  return { title, openGraph: { title }, twitter: { card: "summary_large_image", title } };
+  // Only the link preview: the host's own tab shouldn't say they were invited.
+  return { openGraph: { title }, twitter: { card: "summary_large_image", title } };
 }
 
 export default async function PlayPage({ params }: Props) {
