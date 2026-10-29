@@ -20,7 +20,7 @@ export default async function PlayPage({ params }: { params: Promise<{ code: str
   if (!user) {
     return (
       <main className="min-h-dvh bg-navy">
-        <Hero compact title="You’re invited to a Cornell day for two.">
+        <Hero eyebrow="You’re invited">
           <Pitch />
           <SignIn note={`You’re joining game ${code}.`} />
         </Hero>

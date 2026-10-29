@@ -24,7 +24,7 @@ export function JoinGate({ code }: { code: string }) {
       <div className="frame pt-5 lg:pt-8">
         <BrandHeader />
       </div>
-      <div className="frame flex flex-1 flex-col justify-center gap-8 py-14 lg:max-w-[40rem]">
+      <div className="frame flex flex-col gap-8 pt-12 pb-14 lg:max-w-[40rem] lg:pt-16">
         {error ? (
           <>
             <p role="alert" className="text-[clamp(2.5rem,11vw,4rem)] leading-[0.95] font-black tracking-[-0.03em]">

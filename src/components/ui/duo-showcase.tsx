@@ -57,12 +57,12 @@ export function DuoShowcase() {
                 <button
                   type="button"
                   onClick={() => setActive(i)}
-                  className={`relative w-full border-t-2 border-line py-3 text-left text-[0.95rem] leading-tight font-black transition-colors lg:text-xl lg:leading-[1.15] ${
+                  className={`relative w-full border-t-2 border-line py-3 text-left text-[0.95rem] leading-tight font-black transition-colors lg:text-lg lg:leading-[1.15] xl:text-xl ${
                     i === active ? "text-ink" : "text-ink/35 pointer-fine:hover:text-ink/70"
                   }`}
                 >
                   {i === active && <motion.span layoutId="duo-index" className="absolute inset-x-0 -top-0.5 h-0.5 bg-ink" />}
-                  <PairName name={type.name} />
+                  <PairName name={type.name} stack />
                 </button>
               </li>
             ))}
@@ -106,7 +106,7 @@ function CardFace({ type, live = false }: { type: DuoType; live?: boolean }) {
       </p>
       <div className="flex flex-1 flex-col justify-center py-10">
         <p className="font-bold text-pink lg:text-lg">You two are</p>
-        <h3 className="mt-2 text-[2.4rem] leading-[0.95] font-black tracking-[-0.03em] lg:text-[3rem]">
+        <h3 className="mt-2 text-[2.4rem] leading-[0.95] font-black tracking-[-0.03em] text-balance lg:text-[2.5rem] xl:text-[3rem]">
           <PairName name={type.name} stack spring={live ? { delay: 0.05 } : undefined} />
         </h3>
         <motion.p {...rise(0.2 + words * 0.12)} className="mt-4 text-xl font-bold text-pink">

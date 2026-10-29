@@ -3,16 +3,20 @@
 import { motion } from "motion/react";
 
 /**
- * A duo type's name with its joiner ("&" or "vs.") in the italic serif: the one flourish in the type
- * system, so a pair always looks like a pair. `stack` puts each place on its own line; `spring` rises
- * the words in one by one, as the result reveals them.
+ * A duo type's name with its "&" in the italic serif: the one flourish in the type system, so a pair
+ * always looks like a pair ("vs." stays in the sans, where the serif's v reads as an r). `stack` puts
+ * each place on its own line; `spring` rises the words in one by one, as the result reveals them.
  */
 export function PairName({ name, stack = false, spring }: { name: string; stack?: boolean; spring?: { delay: number } }) {
   const [first = name, joiner, second] = name.split(/ (&|vs\.) /);
   let n = 0;
-  const words = (text: string, serif = false) =>
+  const words = (text: string, joining = false) =>
     text.split(" ").map((word) => {
-      const className = serif ? "font-pair text-[1.08em] leading-none font-medium tracking-normal italic" : undefined;
+      const className = !joining
+        ? undefined
+        : word === "&"
+          ? "font-pair text-[1.08em] leading-none font-medium tracking-normal italic"
+          : "text-[0.8em] font-bold tracking-normal";
       if (!spring) return <span key={n++} className={className}>{word} </span>;
       const i = n++;
       return (

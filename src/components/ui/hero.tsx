@@ -17,23 +17,22 @@ export function Pitch({ children }: { children?: React.ReactNode }) {
  * The navy poster at the top of the landing and invite pages. On a wide screen the headline runs
  * across the whole frame and the deck of rounds tucks up beside its last line; on a phone the
  * deck follows the actions. It sizes to its content, so the next section peeks in below.
+ * `eyebrow` is a pink line above the headline, like "You two are" above a result.
  */
-export function Hero({ title, compact = false, children }: { title: React.ReactNode; compact?: boolean; children: React.ReactNode }) {
+export function Hero({ eyebrow, children }: { eyebrow?: string; children: React.ReactNode }) {
   return (
     <section id="top" className="overflow-x-clip bg-navy text-white">
       <div className="frame pt-5 pb-14 lg:pt-8 lg:pb-24">
         <BrandHeader />
         <div className="grid pt-12 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-x-16 lg:pt-14 xl:grid-cols-[minmax(0,1fr)_30rem] xl:gap-x-20">
-          <h1
-            className={`leading-[0.88] font-black tracking-[-0.04em] lg:col-span-2 ${
-              compact ? "text-[clamp(3rem,15vw,4.25rem)] lg:text-[clamp(3.5rem,6vw,5.5rem)]" : "text-[clamp(3.25rem,17vw,5rem)] lg:text-[clamp(5rem,11vw,8.75rem)]"
-            }`}
-          >
-            {title}
+          {eyebrow && <p className="mb-3 text-xl font-bold text-pink lg:col-span-2 lg:mb-4 lg:text-2xl">{eyebrow}</p>}
+          <h1 className="text-[clamp(3.25rem,17vw,5rem)] leading-[0.88] font-black tracking-[-0.04em] lg:col-span-2 lg:text-[clamp(5rem,11vw,8.75rem)]">
+            A Cornell day <br className="max-lg:hidden" />
+            for two.
           </h1>
           <div className="mt-8 flex flex-col gap-8 lg:mt-10 lg:gap-10">{children}</div>
           {/* Pulled up by one headline line (less a little air), into the space beside "for two." */}
-          <div className={`relative z-10 mt-14 ${compact ? "lg:mt-10" : "lg:-mt-[calc(0.88*clamp(5rem,11vw,8.75rem)_-_2.75rem)]"}`}>
+          <div className="relative z-10 mt-14 lg:-mt-[calc(0.88*clamp(5rem,11vw,8.75rem)_-_2.75rem)]">
             <DayDeck />
           </div>
         </div>

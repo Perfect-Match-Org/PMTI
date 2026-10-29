@@ -15,14 +15,7 @@ export default async function Home() {
 
   return (
     <main>
-      <Hero
-        title={
-          <>
-            A Cornell day <br className="max-lg:hidden" />
-            for two.
-          </>
-        }
-      >
+      <Hero>
         <Pitch>
           {!user && (
             <>
