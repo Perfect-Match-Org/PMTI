@@ -166,7 +166,7 @@ export function DayDeck() {
         ))}
         <AnimatePresence initial={false}>
           {[n, n + 1, n + 2].map((k) => (
-            <Card key={k} beat={BEATS[k % BEATS.length]!} depth={k - n} playing={playing} still={still} />
+            <Card key={k} id={k} beat={BEATS[k % BEATS.length]!} depth={k - n} playing={playing} still={still} />
           ))}
         </AnimatePresence>
       </div>
@@ -174,13 +174,14 @@ export function DayDeck() {
   );
 }
 
-function Card({ beat, depth, playing, still }: { beat: Beat; depth: number; playing: boolean; still: boolean }) {
+function Card({ id, beat, depth, playing, still }: { id: number; beat: Beat; depth: number; playing: boolean; still: boolean }) {
   const front = depth === 0;
   const [step, setStep] = useState(0);
   useEffect(() => {
     if (!front || !playing) return;
     const at = [...LOCK_MS, beat.land, beat.land + VERDICT_AFTER_MS];
-    const timers = at.map((ms, i) => setTimeout(() => setStep(i + 1), ms));
+    // Only ever forward, so scrolling away and back mid-beat doesn't replay steps already shown.
+    const timers = at.map((ms, i) => setTimeout(() => setStep((s) => Math.max(s, i + 1)), ms));
     return () => timers.forEach(clearTimeout);
   }, [front, playing, beat.land]);
   const shown = still && front ? LAST_STEP : step;
@@ -207,13 +208,14 @@ function Card({ beat, depth, playing, still }: { beat: Beat; depth: number; play
         animate={{ opacity: front ? 1 : 0, color: flooded ? TEXT[beat.tone] : "#1a2550" }}
         transition={{ duration: 0.3, delay: front && !flooded ? 0.2 : 0.05 }}
       >
-        <Face beat={beat} step={shown} />
+        <Face beat={beat} step={shown} fly={`card-${id}`} />
       </motion.div>
     </motion.div>
   );
 }
 
-function Face({ beat, step }: { beat: Beat; step: number }) {
+/** `fly` names a live card's avatars so each one flies from its seat to its answer; the invisible sizers leave it out. */
+function Face({ beat, step, fly }: { beat: Beat; step: number; fly?: string }) {
   const flooded = step === LAST_STEP;
   return (
     <div className="flex h-full flex-col p-5 lg:p-8">
@@ -222,7 +224,7 @@ function Face({ beat, step }: { beat: Beat; step: number }) {
           <b className="font-bold">{beat.time}</b>
           <span className="block opacity-75">{beat.scene}</span>
         </p>
-        <Locks step={step} />
+        <Locks step={step} fly={beat.body.kind === "notes" ? undefined : fly} />
       </div>
       <div className="grid flex-1 items-center py-4 lg:py-6">
         <motion.p
@@ -242,23 +244,34 @@ function Face({ beat, step }: { beat: Beat; step: number }) {
           {beat.verdict}
         </motion.p>
       </div>
-      <FaceBody body={beat.body} step={step} />
+      <FaceBody body={beat.body} step={step} fly={fly} />
     </div>
   );
 }
 
-/** Two empty seats that fill as each player locks in a pick nobody can see yet. They clear once the answers land. */
-function Locks({ step }: { step: number }) {
+/**
+ * Two empty seats that fill as each player locks in a pick nobody can see yet. When the answers land,
+ * each avatar leaves its seat for the answer it picked (or, with nowhere to fly, fades with the seats).
+ */
+function Locks({ step, fly }: { step: number; fly?: string }) {
+  const landed = step >= LANDED;
   return (
-    <motion.span className="flex flex-none gap-1.5 pt-0.5" initial={false} animate={{ opacity: step >= LANDED ? 0 : 1 }} transition={{ duration: 0.2 }}>
+    <motion.span className="flex flex-none gap-1.5 pt-0.5" initial={false} animate={{ opacity: landed ? 0 : 1 }} transition={{ duration: 0.2 }}>
       {SEATS.map((seat, i) => (
         <span key={seat} className="relative size-8 rounded-full border-2 border-dashed border-current/25">
-          {step > i && (
-            <motion.span className="absolute -inset-0.5" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 16 }}>
+          {step > i && !(landed && fly) && (
+            <motion.span
+              layoutId={fly && `${fly}-${seat}`}
+              className="absolute -inset-0.5 rounded-full"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 16 }}
+            >
               <Avatar player={PLAYERS[seat]} tone={seat === "host" ? "me" : "partner"} size={32} />
-              <span className="absolute -right-1 -bottom-1 grid size-4 place-items-center rounded-full bg-red text-white ring-2 ring-white">
-                <svg viewBox="0 0 12 12" className="size-2.5" aria-hidden>
-                  <path d="M2.5 6.3 5 8.6l4.5-5.2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <span className="absolute -top-1 -right-1 grid size-3.5 place-items-center rounded-full bg-ink text-white ring-2 ring-white">
+                <svg viewBox="0 0 12 12" className="size-2" aria-hidden>
+                  <path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                  <rect x="2.5" y="5.5" width="7" height="5" rx="1.2" fill="currentColor" />
                 </svg>
               </span>
             </motion.span>
@@ -269,7 +282,7 @@ function Locks({ step }: { step: number }) {
   );
 }
 
-function FaceBody({ body, step }: { body: Body; step: number }) {
+function FaceBody({ body, step, fly }: { body: Body; step: number; fly?: string }) {
   const landed = step >= LANDED;
   const flooded = step === LAST_STEP;
   // Answers someone landed on go white over the verdict color; the rest fade into it.
@@ -288,7 +301,7 @@ function FaceBody({ body, step }: { body: Body; step: number }) {
                 <span className={`flex-1 text-[0.95rem] leading-tight lg:text-base ${landed && here.length ? "font-bold" : "font-medium"} ${fade(here.length > 0)}`}>
                   {label}
                 </span>
-                {landed && <Faces marks={here} />}
+                {landed && <Faces marks={here} fly={fly} />}
               </li>
             );
           })}
@@ -306,7 +319,7 @@ function FaceBody({ body, step }: { body: Body; step: number }) {
                   return (
                     <span key={named} className={`flex min-h-11 items-center justify-between gap-2 rounded-2xl px-3.5 py-1.5 transition-colors duration-300 ${fill(here.length > 0, here.length === 2)}`}>
                       <span className={`font-bold ${fade(here.length > 0)}`}>{NAMES[named]}</span>
-                      {landed && <Faces marks={here} />}
+                      {landed && <Faces marks={here} fly={i === 0 ? fly : undefined} />}
                     </span>
                   );
                 })}
@@ -327,7 +340,7 @@ function FaceBody({ body, step }: { body: Body; step: number }) {
               <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${body.steps}, 1fr)` }}>
                 {Array.from({ length: body.steps }, (_, i) => (
                   <span key={i} className={`grid aspect-square place-items-center rounded-full transition-colors duration-300 ${flooded ? "bg-white/15" : "bg-tile"}`}>
-                    {landed && <Faces marks={track.marks.filter((m) => m.at === i)} />}
+                    {landed && <Faces marks={track.marks.filter((m) => m.at === i)} fly={fly} />}
                   </span>
                 ))}
               </div>
@@ -368,24 +381,28 @@ function FaceBody({ body, step }: { body: Body; step: number }) {
   }
 }
 
-/** Faces dropping onto the answer they picked; a guess is the smaller face. Two on one answer get a heart. */
-function Faces({ marks }: { marks: Mark[] }) {
+/**
+ * Faces on the answer they picked; a guess is the smaller face. A player's own pick flies in from their
+ * seat when `fly` is set, anything else drops in. Two on one answer get a heart.
+ */
+function Faces({ marks, fly }: { marks: Mark[]; fly?: string }) {
   if (!marks.length) return null;
   return (
     <span className="flex flex-none items-center">
       {marks.map((m, j) => (
         <motion.span
           key={m.by}
-          initial={{ scale: 0, y: -28 }}
+          layoutId={fly && !m.guess ? `${fly}-${m.by}` : undefined}
+          initial={fly && !m.guess ? false : { scale: 0, y: -28 }}
           animate={{ scale: 1, y: 0 }}
-          transition={{ delay: j * 0.1, type: "spring", stiffness: 500, damping: 16 }}
+          transition={{ delay: j * 0.1, type: "spring", stiffness: 500, damping: 16, layout: { type: "spring", stiffness: 260, damping: 26 } }}
           className={`rounded-full ${j ? "-ml-1.5 ring-[3px] ring-white" : ""}`}
         >
           <Avatar player={PLAYERS[m.by]} tone={m.by === "host" ? "me" : "partner"} size={m.guess ? 22 : 28} />
         </motion.span>
       ))}
       {marks.length === 2 && !marks.some((m) => m.guess) && (
-        <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.4, 1] }} transition={{ delay: 0.35, duration: 0.45 }} className="ml-1.5 text-red">
+        <motion.span initial={{ scale: 0 }} animate={{ scale: [0, 1.4, 1] }} transition={{ delay: 0.5, duration: 0.45 }} className="ml-1.5 text-red">
           <Heart size={20} />
         </motion.span>
       )}
