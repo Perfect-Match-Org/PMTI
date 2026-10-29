@@ -43,7 +43,7 @@ export function JoinWithCode({ placeholder = "Got a code? Type it here" }: { pla
         autoCapitalize="characters"
         autoComplete="off"
         enterKeyHint="go"
-        className="field border-white/20 bg-white/10 py-3 font-bold tracking-[0.08em] text-white placeholder:font-medium placeholder:tracking-normal placeholder:text-white/60 focus:border-white"
+        className="field border-white/20 bg-white/10 py-3 font-bold tracking-[0.08em] text-white placeholder:font-medium placeholder:tracking-normal placeholder:text-white/60 pointer-fine:hover:border-white/40 focus:border-white"
       />
       <span
         aria-hidden

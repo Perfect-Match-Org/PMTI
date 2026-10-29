@@ -39,11 +39,10 @@ export function StartGame() {
         type="button"
         disabled={busy}
         onClick={() => start("friends")}
-        className="btn border-2 border-white/40 bg-transparent text-white shadow-none"
+        className="btn btn-ghost"
       >
         Play with a friend
       </button>
-      <p className="-mt-1 text-sm text-white/65 lg:col-span-2">With a friend, you play as a couple in a parallel universe.</p>
       {error && (
         <p role="alert" className="rounded-2xl bg-white px-4 py-3 font-semibold text-red-deep lg:col-span-2">
           {error}
