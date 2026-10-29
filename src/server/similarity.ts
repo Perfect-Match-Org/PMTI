@@ -4,6 +4,32 @@ import type { Db } from "./db";
 const POOL_SIZE = 200;
 const MIN_POOL = 10;
 
+/**
+ * Daily: a game answer's vector is only needed while it's among the latest POOL_SIZE distinct answers
+ * to its prompt, the pool that new answers are compared against. Older ones are cleared once their
+ * round is scored (both players answered; a game can pause for days); the text and its score stay,
+ * and the seed answers (no room) are always kept.
+ */
+export async function pruneEmbeddings(db: Db): Promise<number> {
+  const rows = await db`
+    with latest as (
+           select distinct on (prompt_id, lower(trim(body))) id, prompt_id, created_at from texts
+           where embedding is not null
+           order by prompt_id, lower(trim(body)), created_at desc),
+         kept as (
+           select id from (
+             select id, row_number() over (partition by prompt_id order by created_at desc) as rank from latest
+           ) ranked
+           where rank <= ${POOL_SIZE})
+    update texts t set embedding = null
+    where t.embedding is not null
+      and t.room_id is not null
+      and exists (select 1 from texts o where o.room_id = t.room_id and o.round = t.round and o.player_id <> t.player_id)
+      and t.id not in (select id from kept)
+    returning id`;
+  return rows.length;
+}
+
 export type TextRef = { id: string; body: string; promptId: string; hasEmbedding: boolean };
 
 /** Same words regardless of case, punctuation or order: "Funny, warm!" matches "warm funny". */
