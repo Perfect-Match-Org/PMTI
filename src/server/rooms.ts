@@ -33,6 +33,9 @@ type RoomRow = {
   createdAt: Date;
   endedAt: Date | null;
   kicked: string[];
+  hostSharesName: boolean;
+  guestSharesName: boolean;
+  shareId: string | null;
   result: Result | null;
 };
 
@@ -48,8 +51,8 @@ export class RoomError extends Error {
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
 
-function newCode(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(6));
+function newCode(length = 6): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
   return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
 }
 
@@ -318,6 +321,51 @@ async function ensureResult(deck: Deck, room: RoomRow, moves: MoveRow[], texts: 
     return null;
   }
 }
+
+const shareNameBody = z.object({ on: z.boolean() });
+
+/** A player's own choice: whether their first name may appear on the public share card. */
+export async function setShareName(code: string, userId: string, body: unknown): Promise<void> {
+  const choice = shareNameBody.safeParse(body);
+  if (!choice.success) throw new RoomError(400, "Malformed request.");
+  await sql.begin(async (tx) => {
+    const room = await findRoom(tx, code, true);
+    if (!isPlayer(room, userId)) throw notPlayer(room, userId);
+    await bump(tx, room.id, { [userId === room.hostId ? "hostSharesName" : "guestSharesName"]: choice.data.on });
+  });
+}
+
+/** The share card's address for a finished game, made the first time either player shares. */
+export async function shareCard(code: string, userId: string): Promise<{ shareId: string }> {
+  return sql.begin(async (tx) => {
+    const room = await findRoom(tx, code, true);
+    if (!isPlayer(room, userId)) throw notPlayer(room, userId);
+    if (!room.result) throw new RoomError(409, "Your result isn’t ready yet.");
+    if (room.shareId) return { shareId: room.shareId };
+    // Ten characters, so nobody finds a card by guessing; the room code alone would be too short.
+    const shareId = newCode(10);
+    await tx`update rooms set share_id = ${shareId} where id = ${room.id}`;
+    return { shareId };
+  });
+}
+
+/** One player on the share card: their first name only if they chose to show it. */
+export type CardPerson = { seat: "host" | "guest"; name: string | null };
+export type Card = { typeId: string; mode: Mode; mindReading: number; people: [CardPerson, CardPerson] };
+
+/** What anyone with a share link sees: the duo, each half, and mind reading; names only by choice. */
+export const cardFor = cache(async (shareId: string): Promise<Card | null> => {
+  const [room] = await sql<RoomRow[]>`select * from rooms where share_id = ${shareId}`;
+  if (!room?.result || !room.guestId) return null;
+  const found = await profiles([room.hostId, room.guestId]);
+  const ids = { host: room.hostId, guest: room.guestId };
+  const shares = { host: room.hostSharesName, guest: room.guestSharesName };
+  const person = (half: 0 | 1): CardPerson => {
+    const seat = room.result!.roles.host === half ? "host" : "guest";
+    return { seat, name: shares[seat] ? (found.get(ids[seat])?.name ?? null) : null };
+  };
+  return { typeId: room.result.type, mode: room.mode, mindReading: room.result.mindReading, people: [person(0), person(1)] };
+});
 
 export type Invitation = { host: PlayerInfo; mode: Mode } | { closed: string; full: boolean };
 

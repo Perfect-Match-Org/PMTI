@@ -158,11 +158,22 @@ export type RoomView = {
   reveal: RevealData | null;
   /** Set once the game is done and scored. */
   result: Result | null;
+  /** Whether each player lets their name appear on the public share card. */
+  shareNames: Pair<boolean>;
 };
 
 export type ViewInput = {
   deck: Deck;
-  room: RoomFacts & { id: string; code: string; mode: Mode; deckId: string; seq: number; result?: Result | null };
+  room: RoomFacts & {
+    id: string;
+    code: string;
+    mode: Mode;
+    deckId: string;
+    seq: number;
+    result?: Result | null;
+    hostSharesName?: boolean;
+    guestSharesName?: boolean;
+  };
   moves: MoveRow[];
   texts: TextRow[];
   players: RoomView["players"];
@@ -205,6 +216,7 @@ export function viewFor({ deck, room, moves, texts, players, viewerId }: ViewInp
     tries: [],
     reveal: null,
     result: progress.phase === "done" ? (room.result ?? null) : null,
+    shareNames: { host: !!room.hostSharesName, guest: !!room.guestSharesName },
   };
 
   if (progress.phase === "lobby") {

@@ -4,12 +4,14 @@ import { AnimatePresence, motion, useInView } from "motion/react";
 import { usePrefersReducedMotion } from "@/client/motion";
 import { useEffect, useRef, useState } from "react";
 import { DUO_TYPES, type DuoType } from "@/game/types";
-import { Avatar } from "@/components/ui/avatar";
-import { afterPairName, PairName } from "@/components/ui/pair-name";
-import { Rise } from "@/components/ui/rise";
+import { DuoCardFace, type CardPerson } from "@/components/ui/duo-card";
+import { PairName } from "@/components/ui/pair-name";
 import { SAMPLE_PLAYERS } from "./sample-day";
 
-const PLAYERS = [SAMPLE_PLAYERS.host, SAMPLE_PLAYERS.guest];
+const PEOPLE: [CardPerson, CardPerson] = [
+  { name: SAMPLE_PLAYERS.host.name, tone: "me" },
+  { name: SAMPLE_PLAYERS.guest.name, tone: "partner" },
+];
 const STAY_MS = 3600;
 
 /**
@@ -81,52 +83,14 @@ function DuoCard({ type }: { type: DuoType }) {
     <div className="grid rounded-[1.75rem] bg-ink p-6 text-white shadow-[0_40px_80px_-40px_rgba(21,42,94,0.6)] lg:rounded-[2.25rem] lg:p-8">
       {DUO_TYPES.map((t) => (
         <div key={t.id} aria-hidden className="invisible [grid-area:1/1]">
-          <CardFace type={t} />
+          <DuoCardFace type={t} lead="You two are" people={PEOPLE} />
         </div>
       ))}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={type.id} className="[grid-area:1/1]" exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.18 }}>
-          <CardFace type={type} live />
+          <DuoCardFace type={type} lead="You two are" people={PEOPLE} live />
         </motion.div>
       </AnimatePresence>
-    </div>
-  );
-}
-
-function CardFace({ type, live = false }: { type: DuoType; live?: boolean }) {
-  return (
-    <div className="flex h-full flex-col">
-      <p className="text-[0.95rem] leading-snug lg:text-lg">
-        <b className="font-bold">11:58pm</b>
-        <span className="block text-white/70">That’s the day.</span>
-      </p>
-      <div className="flex flex-1 flex-col justify-center py-10">
-        <p className="font-bold text-pink lg:text-lg">You two are</p>
-        <h3 className="mt-2 text-[2.4rem] leading-[0.95] font-black tracking-[-0.03em] text-balance lg:text-[2.5rem] xl:text-[3rem]">
-          <PairName name={type.name} stack spring={live ? { delay: 0.05 } : undefined} />
-        </h3>
-        <Rise delay={afterPairName(type.name, 0.2)} className="mt-4 text-xl font-bold text-pink">
-          {type.nickname}
-        </Rise>
-        <Rise delay={afterPairName(type.name, 0.3)} className="mt-1 text-lg leading-snug text-white/75">
-          {type.tagline}
-        </Rise>
-      </div>
-      <div className="grid grid-cols-2 gap-2.5">
-        {type.halves.map((half, i) => (
-          <div key={i} className="flex flex-col rounded-2xl bg-white/[0.08] p-3.5">
-            <motion.span
-              className="self-start rounded-full ring-2 ring-white/25"
-              {...(live ? { initial: { scale: 0 }, animate: { scale: 1 }, transition: { delay: 0.15 + i * 0.1, type: "spring", stiffness: 500, damping: 16 } } : {})}
-            >
-              <Avatar player={PLAYERS[i]!} tone={i ? "partner" : "me"} size={32} />
-            </motion.span>
-            <p className="mt-2.5 text-xs font-semibold text-white/60">{PLAYERS[i]!.name} is</p>
-            <p className="text-lg leading-tight font-black">{half.name}</p>
-            <p className="mt-1 text-xs leading-snug text-white/60 lg:text-sm">{half.line}</p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

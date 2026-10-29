@@ -2,7 +2,7 @@
 
 import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Axis } from "@/game/deck";
 import { useCopy } from "@/client/useCopy";
 
@@ -10,6 +10,7 @@ import { momentMood, momentText } from "@/game/moments";
 import type { Moment, Result } from "@/game/scoring";
 import { duoType, type DuoType } from "@/game/types";
 import { Avatar } from "@/components/ui/avatar";
+import { ErrorNote } from "@/components/ui/error-note";
 import { afterPairName, PairName } from "@/components/ui/pair-name";
 import { BrokenHeart, Heart } from "@/components/ui/heart";
 import { Portal } from "@/components/ui/portal";
@@ -209,17 +210,40 @@ function StoryArrow({ side, onClick, hidden = false }: { side: "left" | "right";
 const AXIS_ENDS: Record<Axis, [string, string]> = { E: ["Out", "In"], P: ["Plan", "Wing it"], H: ["Say it", "Show it"] };
 
 function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
-  const { view, deck, seat, partnerSeat, names, t } = useRoomContext();
+  const { view, deck, seat, partnerSeat, names, t, busy, act, post } = useRoomContext();
   const router = useRouter();
   const copied = useCopy();
+  const [cardError, setCardError] = useState(false);
+  // Shown at once, then the server's answer takes over.
+  const [showNameNow, setShowNameNow] = useState<boolean | null>(null);
+  const shareId = useRef<string | null>(null);
   const runnerUp = result.runnerUp ? duoType(result.runnerUp) : undefined;
-  const mine = type.halves[result.roles[seat]];
+
+  /** The public card's address; the server makes it the first time either of you shares. */
+  async function cardUrl() {
+    if (!shareId.current) {
+      const res = await fetch(`/api/rooms/${view.code}/share`, { method: "POST" }).catch(() => null);
+      const data = await res?.json().catch(() => null);
+      setCardError(!res?.ok || !data?.shareId);
+      if (!res?.ok || !data?.shareId) return null;
+      shareId.current = data.shareId as string;
+    }
+    return `${window.location.origin}/card/${shareId.current}`;
+  }
 
   async function share() {
-    const text = `I’m ${mine.name} in a ${type.name} duo (${type.nickname}). What kind of duo are you two?`;
-    const url = window.location.origin;
+    const url = await cardUrl();
+    if (!url) return;
+    const text = `We’re ${type.name} (${type.nickname}). What kind of duo are you two?`;
     if (navigator.share) await navigator.share({ title: "PMTI", text, url }).catch(() => {});
     else await copied.copy(`${text} ${url}`);
+  }
+
+  async function saveImage() {
+    const url = await cardUrl();
+    if (!url) return;
+    const link = Object.assign(document.createElement("a"), { href: `${url}/story`, download: "pmti-card.png" });
+    link.click();
   }
 
   return (
@@ -274,6 +298,36 @@ function ResultSummary({ result, type }: { result: Result; type: DuoType }) {
           ))}
         </ul>
       )}
+
+      <section className="mt-10 rounded-[1.25rem] bg-tile p-5">
+        <p className="text-lg font-bold">Your share card</p>
+        <p className="mt-1 text-muted">Anyone with the link sees your duo, your halves and mind reading. Never your answers.</p>
+        <label className="mt-4 flex items-center gap-3 font-semibold">
+          <input
+            type="checkbox"
+            className="size-5 accent-navy"
+            checked={showNameNow ?? view.shareNames[seat]}
+            disabled={busy}
+            onChange={(event) => {
+              const on = event.target.checked;
+              setShowNameNow(on);
+              void act(() => post("share-name", { on })).finally(() => setShowNameNow(null));
+            }}
+          />
+          Show my first name on it
+        </label>
+        <p className="mt-2 text-sm text-muted">
+          {names[partnerSeat]} {view.shareNames[partnerSeat] ? "shows their name too." : "keeps their name off for now."}
+        </p>
+        <button type="button" onClick={saveImage} className="mt-4 font-bold text-navy underline underline-offset-4">
+          Save it as an image
+        </button>
+        {cardError && (
+          <ErrorNote on="white" className="mt-3">
+            Couldn’t make your card. Try again.
+          </ErrorNote>
+        )}
+      </section>
 
       <ActionBar
         reactions={false}
