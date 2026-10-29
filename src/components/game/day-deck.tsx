@@ -23,7 +23,7 @@ type Body =
   | { kind: "pairs"; items: { text: string; marks: Mark[] }[] }
   | { kind: "rail"; steps: number; left: string; right: string; tracks: { owner: Seat; note: string; marks: Mark[] }[] }
   | { kind: "notes"; notes: { by: Seat; caption: string; text: string }[] };
-type Beat = { time: string; scene: string; ask: string; body: Body; verdict: string; tone: Tone };
+type Beat = { time: string; scene: string; ask: string; body: Body; verdict: string; tone: Tone; land: number };
 type Sample = { id: string; answers: Pair<Answer>; texts?: ViewText[]; show: (round: Round, answers: Pair<Answer>) => Body | null };
 
 const picked = (answers: Pair<Answer>, item = 0): Mark[] => SEATS.map((by) => ({ by, at: answers[by].picks![item]! }));
@@ -79,7 +79,7 @@ const SAMPLES: Sample[] = [
   },
   {
     id: "slope-night",
-    answers: { host: { picks: [4], guesses: [2] }, guest: { picks: [5], guesses: [2] } },
+    answers: { host: { picks: [4], guesses: [3] }, guest: { picks: [5], guesses: [2] } },
     show: (r, a) =>
       r.format === "scale"
         ? {
@@ -109,12 +109,18 @@ const BEATS: Beat[] = SAMPLES.flatMap((sample) => {
   const body = round && sample.show(round, sample.answers);
   if (!round || !body) return [];
   const verdict = verdictFor(round, { ...sample.answers, texts: sample.texts ?? [] }, "host", whoFor("host", NAMES), 1);
-  return [{ time: round.scene.time, scene: s(round.scene.title), ask: s(round.prompt), body, verdict: verdict.text, tone: verdict.tone }];
+  // Option rows read fastest; cards with more words on them hold the question longer.
+  const land = body.kind === "rows" ? 2200 : 2600;
+  return [{ time: round.scene.time, scene: s(round.scene.title), ask: s(round.prompt), body, verdict: verdict.text, tone: verdict.tone, land }];
 });
 
-const BEAT_MS = 4800;
-const LAND_MS = 1000;
-const VERDICT_MS = 1800;
+/** A card's steps: 0 the question, 1–2 each player locked in (picks still hidden), 3 both answers landed, 4 the verdict. */
+const LANDED = 3;
+const LAST_STEP = 4;
+const LOCK_MS = [1200, 1700];
+const VERDICT_AFTER_MS = 700;
+const HOLD_MS = 2000;
+const beatMs = (beat: Beat) => beat.land + VERDICT_AFTER_MS + HOLD_MS;
 
 /** Front card, then the two waiting behind it, fanned so their edges show. */
 const POSES = [
@@ -126,6 +132,12 @@ const POSES = [
 const FLOOD: Record<Tone, string> = { pink: "bg-pink", navy: "bg-navy-deep", red: "bg-red" };
 const TEXT: Record<Tone, string> = { pink: "#1a2550", navy: "#ffffff", red: "#ffffff" };
 const ORIGIN = "at 86% 86%";
+// A match is swiped right and a miss left; an in-between just sinks. The left swipe is short and fades, so it never crosses the headline.
+const EXIT: Record<Tone, { x: number | string; y: number; rotate: number; scale?: number; opacity?: number }> = {
+  pink: { x: "125%", y: 40, rotate: 16 },
+  red: { x: "-45%", y: 30, rotate: -14, opacity: 0 },
+  navy: { x: 0, y: 70, rotate: 2, scale: 0.88, opacity: 0 },
+};
 
 /**
  * The landing's picture of the game: a Cornell day as a deck of rounds. The front card plays a
@@ -139,9 +151,9 @@ export function DayDeck() {
   const [n, setN] = useState(0);
   useEffect(() => {
     if (!playing) return;
-    const id = setInterval(() => setN((x) => x + 1), BEAT_MS);
-    return () => clearInterval(id);
-  }, [playing]);
+    const id = setTimeout(() => setN((x) => x + 1), beatMs(BEATS[n % BEATS.length]!));
+    return () => clearTimeout(id);
+  }, [playing, n]);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -149,7 +161,7 @@ export function DayDeck() {
       <div ref={ref} aria-hidden className="relative mt-14 grid w-full lg:mt-0">
         {BEATS.map((beat, i) => (
           <div key={i} className="invisible [grid-area:1/1]">
-            <Face beat={beat} step={2} />
+            <Face beat={beat} step={LAST_STEP} />
           </div>
         ))}
         <AnimatePresence initial={false}>
@@ -167,11 +179,12 @@ function Card({ beat, depth, playing, still }: { beat: Beat; depth: number; play
   const [step, setStep] = useState(0);
   useEffect(() => {
     if (!front || !playing) return;
-    const timers = [setTimeout(() => setStep(1), LAND_MS), setTimeout(() => setStep(2), VERDICT_MS)];
+    const at = [...LOCK_MS, beat.land, beat.land + VERDICT_AFTER_MS];
+    const timers = at.map((ms, i) => setTimeout(() => setStep(i + 1), ms));
     return () => timers.forEach(clearTimeout);
-  }, [front, playing]);
-  const shown = still && front ? 2 : step;
-  const flooded = shown === 2;
+  }, [front, playing, beat.land]);
+  const shown = still && front ? LAST_STEP : step;
+  const flooded = shown === LAST_STEP;
 
   return (
     <motion.div
@@ -179,7 +192,7 @@ function Card({ beat, depth, playing, still }: { beat: Beat; depth: number; play
       style={{ zIndex: 10 - depth }}
       initial={{ ...POSES[2], y: -70, opacity: 0 }}
       animate={{ ...POSES[depth], opacity: 1 }}
-      exit={{ x: "125%", y: 40, rotate: 16, zIndex: 20, transition: { duration: 0.5, ease: [0.55, 0, 0.8, 0.4], zIndex: { duration: 0 } } }}
+      exit={{ ...EXIT[beat.tone], zIndex: 20, transition: { duration: 0.5, ease: [0.55, 0, 0.8, 0.4], zIndex: { duration: 0 } } }}
       transition={{ type: "spring", stiffness: 260, damping: 26 }}
     >
       <motion.div
@@ -200,15 +213,17 @@ function Card({ beat, depth, playing, still }: { beat: Beat; depth: number; play
   );
 }
 
-/** What a card shows at a step: 0 the question, 1 both answers landed, 2 the verdict. */
 function Face({ beat, step }: { beat: Beat; step: number }) {
-  const flooded = step === 2;
+  const flooded = step === LAST_STEP;
   return (
     <div className="flex h-full flex-col p-5 lg:p-8">
-      <p className="text-[0.95rem] leading-snug lg:text-lg">
-        <b className="font-bold">{beat.time}</b>
-        <span className="block opacity-75">{beat.scene}</span>
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-[0.95rem] leading-snug lg:text-lg">
+          <b className="font-bold">{beat.time}</b>
+          <span className="block opacity-75">{beat.scene}</span>
+        </p>
+        <Locks step={step} />
+      </div>
       <div className="grid flex-1 items-center py-4 lg:py-6">
         <motion.p
           className="text-[1.125rem] leading-snug font-bold text-balance [grid-area:1/1] lg:text-[1.5rem]"
@@ -232,9 +247,31 @@ function Face({ beat, step }: { beat: Beat; step: number }) {
   );
 }
 
+/** Two empty seats that fill as each player locks in a pick nobody can see yet. They clear once the answers land. */
+function Locks({ step }: { step: number }) {
+  return (
+    <motion.span className="flex flex-none gap-1.5 pt-0.5" initial={false} animate={{ opacity: step >= LANDED ? 0 : 1 }} transition={{ duration: 0.2 }}>
+      {SEATS.map((seat, i) => (
+        <span key={seat} className="relative size-8 rounded-full border-2 border-dashed border-current/25">
+          {step > i && (
+            <motion.span className="absolute -inset-0.5" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 500, damping: 16 }}>
+              <Avatar player={PLAYERS[seat]} tone={seat === "host" ? "me" : "partner"} size={32} />
+              <span className="absolute -right-1 -bottom-1 grid size-4 place-items-center rounded-full bg-red text-white ring-2 ring-white">
+                <svg viewBox="0 0 12 12" className="size-2.5" aria-hidden>
+                  <path d="M2.5 6.3 5 8.6l4.5-5.2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </motion.span>
+          )}
+        </span>
+      ))}
+    </motion.span>
+  );
+}
+
 function FaceBody({ body, step }: { body: Body; step: number }) {
-  const landed = step >= 1;
-  const flooded = step === 2;
+  const landed = step >= LANDED;
+  const flooded = step === LAST_STEP;
   // Answers someone landed on go white over the verdict color; the rest fade into it.
   const fill = (marked: boolean, both = false) =>
     flooded ? (marked ? "bg-white text-ink" : "bg-white/15") : landed && both ? "bg-blush" : "bg-tile";
